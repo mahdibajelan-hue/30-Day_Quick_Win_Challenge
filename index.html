@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سامانه تحول و پایش ۳۰ روزه پروژه‌ها | شرکت گاز</title>
+    <!-- Vazirmatn Font & Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-blue-900 text-white shadow-lg border-b-4 border-amber-500">
+        <div class="max-w-5xl mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold">سامانه تحول و پایش ۳۰ روزه پروژه‌ها</h1>
+                <p class="text-blue-200 text-sm mt-1">دفتر مجری طرح‌های توسعه شرکت گاز</p>
+            </div>
+            <span class="bg-blue-800 text-amber-400 border border-amber-500/30 text-xs px-3 py-1.5 rounded-full font-medium">
+                برنامه Quick Win & X-Ray
+            </span>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-8 space-y-8">
+
+        <!-- Banner / Intro -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h2 class="text-lg font-bold text-blue-900 mb-2">راهنمای ذینفعان (کارفرما، مشاور، پیمانکار)</h2>
+            <p class="text-slate-600 leading-relaxed text-sm">
+                این سامانه جهت شناسایی سریع گلوگاه‌های عملیاتی و اجرای دستاوردهای ملموس ۳۰ روزه طراحی شده است. اطلاعات ثبت‌شده صرفاً جهت پشتیبانی مدیریتی استفاده شده و فاقد استناد حقوقی یا ادعای قراردادی می‌باشد.
+            </p>
+        </div>
+
+        <!-- Notification Message Box -->
+        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-6">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-bold text-amber-900 text-base flex items-center gap-2">
+                    <span>📨</span> متن پیام ابلاغی جهت ارسال به مدیران پروژه
+                </h3>
+                <button onclick="copyMessage()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-3 py-1.5 rounded-lg transition shadow-sm">
+                    کپی متن پیام
+                </button>
+            </div>
+            <textarea id="noticeMessage" readonly class="w-full h-36 p-3 bg-white border border-amber-300 rounded-xl text-xs text-slate-700 leading-relaxed focus:outline-none resize-none">
+با سلام و احترام؛
+با توجه به آغاز برنامه تحول و پایش ۳۰ روزه پروژه‌های طرح، جهت شناسایی دقیق گلوگاه‌ها و اتخاذ تصمیمات مدیریتی مشکل‌گشا، خواهشمند است فرم‌های عارضه‌یابی را حداکثر ظرف ۴۸ ساعت آینده از طریق لینک زیر تکمیل فرمایید.
+
+📌 تذکر مهم: اطلاعات این فرم صرفاً جهت عارضه‌یابی و حمایت مدیریتی است و هیچ‌گونه استناد حقوقی یا ادعای قراردادی بر اساس آن مسموع نخواهد بود.
+
+با سپاس
+دفتر مجری طرح‌های توسعه شرکت گاز
+            </textarea>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex border-b border-slate-300 gap-2">
+            <button id="tab1Btn" onclick="switchTab('form1')" class="px-6 py-3 font-bold border-b-2 border-blue-900 text-blue-900 transition">
+                ۱. فرم وضعیت پروژه (X-Ray)
+            </button>
+            <button id="tab2Btn" onclick="switchTab('form2')" class="px-6 py-3 font-semibold text-slate-500 border-b-2 border-transparent hover:text-slate-800 transition">
+                ۲. پیشنهاد Quick Win
+            </button>
+        </div>
+
+        <!-- FORM 1: X-Ray -->
+        <form id="form1" onsubmit="handleFormSubmit(event, 'X-Ray')" class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+            <h3 class="text-xl font-bold text-slate-800 border-r-4 border-blue-900 pr-3">شناسایی سریع وضعیت پروژه (X-Ray)</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">نام پروژه *</label>
+                    <input type="text" required name="projectName" class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-blue-900 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">سازمان پاسخ‌دهنده *</label>
+                    <select name="organization" required class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-blue-900 outline-none">
+                        <option value="">انتخاب کنید...</option>
+                        <option value="کارفرما">کارفرما</option>
+                        <option value="مشاور">مشاور</option>
+                        <option value="پیمانکار">پیمانکار</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">نام و سمت پاسخ‌دهنده</label>
+                    <input type="text" name="respondent" class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-blue-900 outline-none">
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <label class="block text-sm font-bold text-slate-800">ارزیابی وضعیت حوزه‌های کلیدی</label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                    <div class="p-3 bg-slate-50 rounded-xl flex justify-between items-center">
+                        <span>تحصیل اراضی و مسیر (ROW)</span>
+                        <select name="status_ROW" class="p-1.5 border rounded-lg text-xs">
+                            <option value="🟢 سبز">🟢 تحت کنترل</option>
+                            <option value="🟡 زرد">🟡 نیازمند توجه</option>
+                            <option value="🔴 قرمز">🔴 بحرانی</option>
+                        </select>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-xl flex justify-between items-center">
+                        <span>تأمین لوله و شیرآلات</span>
+                        <select name="status_Procurement" class="p-1.5 border rounded-lg text-xs">
+                            <option value="🟢 سبز">🟢 تحت کنترل</option>
+                            <option value="🟡 زرد">🟡 نیازمند توجه</option>
+                            <option value="🔴 قرمز">🔴 بحرانی</option>
+                        </select>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-xl flex justify-between items-center">
+                        <span>عملیات اجرایی (جوش/حفاری)</span>
+                        <select name="status_Construction" class="p-1.5 border rounded-lg text-xs">
+                            <option value="🟢 سبز">🟢 تحت کنترل</option>
+                            <option value="🟡 زرد">🟡 نیازمند توجه</option>
+                            <option value="🔴 قرمز">🔴 بحرانی</option>
+                        </select>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-xl flex justify-between items-center">
+                        <span>مالی و صورت‌وضعیت‌ها</span>
+                        <select name="status_Finance" class="p-1.5 border rounded-lg text-xs">
+                            <option value="🟢 سبز">🟢 تحت کنترل</option>
+                            <option value="🟡 زرد">🟡 نیازمند توجه</option>
+                            <option value="🔴 قرمز">🔴 بحرانی</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">مهم‌ترین گلوگاه فعلی پروژه و علت ریشه‌ای آن *</label>
+                <textarea required name="mainBottleneck" rows="3" class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-blue-900 outline-none"></textarea>
+            </div>
+
+            <button type="submit" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-3 rounded-xl transition shadow-md">
+                ثبت فرم X-Ray
+            </button>
+        </form>
+
+        <!-- FORM 2: Quick Win -->
+        <form id="form2" onsubmit="handleFormSubmit(event, 'Quick-Win')" class="hidden bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+            <h3 class="text-xl font-bold text-slate-800 border-r-4 border-amber-500 pr-3">پیشنهاد برد سریع ۳۰ روزه (Quick Win)</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">نام پروژه *</label>
+                    <input type="text" required name="projectName" class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">سازمان پاسخ‌دهنده *</label>
+                    <select name="organization" required class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+                        <option value="">انتخاب کنید...</option>
+                        <option value="کارفرما">کارفرما</option>
+                        <option value="مشاور">مشاور</option>
+                        <option value="پیمانکار">پیمانکار</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">عنوان پیشنهاد Quick Win *</label>
+                    <input type="text" required name="quickWinTitle" class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">اقدام مشخص پیشنهادی (عملیاتی و غیرکلی) *</label>
+                <textarea required name="actionDetails" rows="3" class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-amber-500 outline-none" placeholder="به جای «پیگیری شود»، اقدام دقیق را بنویسید..."></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">نتیجه ملموس و قابل اندازه‌گیری در ۳۰ روز *</label>
+                    <input type="text" required name="tangibleResult" class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-amber-500 outline-none" placeholder="مثلاً: آزادپزی ۵ کیلومتر از مسیر">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">حمایت مورد نیاز از مجری طرح *</label>
+                    <input type="text" required name="supportNeeded" class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-amber-500 outline-none" placeholder="مثلاً: ابلاغ مجوز پرداخت یا هماهنگی استانی">
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl transition shadow-md">
+                ثبت پیشنهاد Quick Win
+            </button>
+        </form>
+
+        <!-- Admin Data Panel -->
+        <div class="bg-slate-900 text-white p-6 rounded-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-lg">پنل مدیریت داده‌ها (مخصوص مجری طرح)</h3>
+                <button onclick="downloadCSV()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition">
+                    📥 دانلود خروجی اکسل (CSV)
+                </button>
+            </div>
+            <p class="text-xs text-slate-400">پاسخ‌های ثبت‌شده در این مرورگر ذخیره می‌شوند. جهت تحلیل می‌توانید خروجی فایل اکسل بگیرید.</p>
+            <div id="submissionsCount" class="text-sm text-amber-400 font-semibold">تعداد پاسخ‌های ثبت‌شده: ۰</div>
+        </div>
+
+    </main>
+
+    <script>
+        let submissions = JSON.parse(localStorage.getItem('gas_project_data') || '[]');
+        updateCount();
+
+        function switchTab(tab) {
+            const f1 = document.getElementById('form1');
+            const f2 = document.getElementById('form2');
+            const t1 = document.getElementById('tab1Btn');
+            const t2 = document.getElementById('tab2Btn');
+
+            if (tab === 'form1') {
+                f1.classList.remove('hidden');
+                f2.classList.add('hidden');
+                t1.className = "px-6 py-3 font-bold border-b-2 border-blue-900 text-blue-900 transition";
+                t2.className = "px-6 py-3 font-semibold text-slate-500 border-b-2 border-transparent hover:text-slate-800 transition";
+            } else {
+                f2.classList.remove('hidden');
+                f1.classList.add('hidden');
+                t2.className = "px-6 py-3 font-bold border-b-2 border-amber-500 text-amber-600 transition";
+                t1.className = "px-6 py-3 font-semibold text-slate-500 border-b-2 border-transparent hover:text-slate-800 transition";
+            }
+        }
+
+        function copyMessage() {
+            const copyText = document.getElementById("noticeMessage");
+            copyText.select();
+            document.execCommand("copy");
+            alert("متن پیام ابلاغی کپی شد!");
+        }
+
+        function handleFormSubmit(e, type) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = { type, timestamp: new Date().toLocaleString('fa-IR') };
+            
+            formData.forEach((value, key) => data[key] = value);
+            
+            submissions.push(data);
+            localStorage.setItem('gas_project_data', JSON.stringify(submissions));
+            updateCount();
+            
+            alert(`فرم ${type} با موفقیت ثبت شد.`);
+            e.target.reset();
+        }
+
+        function updateCount() {
+            document.getElementById('submissionsCount').innerText = `تعداد پاسخ‌های ثبت‌شده: ${submissions.length}`;
+        }
+
+        function downloadCSV() {
+            if (submissions.length === 0) {
+                alert("هیچ داده‌ای برای دانلود وجود ندارد.");
+                return;
+            }
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+            const headers = Object.keys(submissions[0]).join(",");
+            csvContent += headers + "\r\n";
+
+            submissions.forEach(row => {
+                const values = Object.values(row).map(v => `"${v}"`).join(",");
+                csvContent += values + "\r\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Gas_Project_Responses_${Date.now()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
