@@ -17,158 +17,211 @@
         <div class="max-w-6xl mx-auto px-4 py-5 flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
                 <h1 class="text-2xl font-bold">سامانه تحول و پایش ۳۰ روزه پروژه‌ها</h1>
-                <p class="text-blue-200 text-sm mt-1">دفتر مجری طرح‌های توسعه شرکت گاز (متصل به Supabase)</p>
-                <p class="text-blue-300/80 text-[11px] mt-1">روند کار: ثبت وضعیت و پیشنهاد ← انتخاب Quick Win برگزیده ← پایش تا نتیجه ← داشبورد پورتفولیو</p>
+                <p class="text-blue-200 text-sm mt-1" id="headerSubtitle">دفتر مجری طرح‌های توسعه شرکت گاز</p>
             </div>
-            <div class="flex flex-wrap gap-2 justify-center">
-                <button onclick="switchView('forms')" id="btnForms" class="bg-amber-500 text-blue-950 px-4 py-2 rounded-xl font-bold text-xs shadow hover:bg-amber-400 transition">📝 فرم‌ها</button>
-                <button onclick="switchView('selection')" id="btnSelection" class="bg-blue-800 text-white px-4 py-2 rounded-xl font-bold text-xs border border-blue-700 hover:bg-blue-700 transition">🏆 انتخاب Quick Win</button>
-                <button onclick="switchView('tracking')" id="btnTracking" class="bg-blue-800 text-white px-4 py-2 rounded-xl font-bold text-xs border border-blue-700 hover:bg-blue-700 transition">📈 پایش پیشرفت</button>
-                <button onclick="switchView('analytics')" id="btnAnalytics" class="bg-blue-800 text-white px-4 py-2 rounded-xl font-bold text-xs border border-blue-700 hover:bg-blue-700 transition">📊 داشبورد پورتفولیو</button>
-            </div>
+            <div class="flex flex-wrap gap-2 justify-center items-center" id="navButtons"></div>
         </div>
     </header>
 
     <main class="max-w-6xl mx-auto px-4 py-8 space-y-8">
 
-        <!-- VIEW 1: FORMS -->
-        <div id="formsView" class="space-y-8">
-            <!-- Notification Box -->
-            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex justify-between items-center">
-                <p class="text-xs text-amber-900 font-medium">📌 لینک این صفحه را همراه با متن ابلاغیه برای مدیران کارفرما، مشاور و پیمانکار ارسال کنید.</p>
-                <button onclick="navigator.clipboard.writeText('با سلام، لطفاً فرم‌های پایش پروژه را جهت شناسایی گلوگاه‌ها از طریق لینک ثبت فرمایید.'); alert('متن کپی شد!')" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-3 py-1.5 rounded-lg">کپی پیام ابلاغی</button>
-            </div>
+        <!-- AUTH SCREEN -->
+        <div id="authScreen" class="hidden max-w-md mx-auto bg-white rounded-2xl shadow-sm border p-8 space-y-4 text-center">
+            <h2 class="text-lg font-bold text-blue-900">ورود به سامانه</h2>
+            <p class="text-xs text-slate-500">ایمیلی که ادمین برایتان ثبت کرده را وارد کنید تا لینک ورود برایتان ایمیل شود.</p>
+            <input id="loginEmail" type="email" placeholder="ایمیل شما" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center">
+            <button id="loginBtn" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-2.5 rounded-xl transition">ارسال لینک ورود</button>
+            <p id="loginMsg" class="text-xs"></p>
+        </div>
 
-            <!-- Form Tabs -->
-            <div class="flex border-b border-slate-300 gap-2">
-                <button id="tab1Btn" onclick="switchForm('form1')" class="px-6 py-3 font-bold border-b-2 border-blue-900 text-blue-900">۱. وضعیت پروژه (X-Ray)</button>
-                <button id="tab2Btn" onclick="switchForm('form2')" class="px-6 py-3 font-semibold text-slate-500 border-b-2 border-transparent">۲. پیشنهاد Quick Win</button>
-            </div>
+        <!-- NOT AUTHORIZED SCREEN -->
+        <div id="notAuthorizedScreen" class="hidden max-w-md mx-auto bg-white rounded-2xl shadow-sm border p-8 space-y-3 text-center">
+            <h2 class="text-lg font-bold text-red-700">دسترسی تعریف نشده</h2>
+            <p class="text-sm text-slate-600">ایمیل <b id="unauthEmail" dir="ltr"></b> به هیچ پروژه‌ای متصل نیست. لطفاً با ادمین سامانه تماس بگیرید تا شما را دعوت کند.</p>
+            <button id="unauthLogoutBtn" class="text-xs text-blue-700 underline">خروج و ورود با ایمیل دیگر</button>
+        </div>
 
-            <!-- FORM 1 -->
-            <form id="form1" onsubmit="submitToSupabase(event, 'X-Ray')" class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
-                <h3 class="text-lg font-bold border-r-4 border-blue-900 pr-3">شناسایی سریع وضعیت پروژه (X-Ray)</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div><label class="block text-xs font-semibold mb-1">نام پروژه *</label><input type="text" name="project_name" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+        <!-- APP SHELL -->
+        <div id="appShell" class="hidden space-y-8">
+
+            <!-- MANAGER: CHECK-IN FORM -->
+            <div id="checkinView" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-1">
+                    <h2 class="text-xl font-bold text-blue-900">📝 گزارش دوره‌ای پروژه</h2>
+                    <p class="text-xs text-slate-500">پروژه: <b id="ciProjectName"></b> — سازمان: <b id="ciOrganization"></b></p>
+                </div>
+
+                <form id="checkinForm" class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
                     <div>
-                        <label class="block text-xs font-semibold mb-1">سازمان پاسخ‌دهنده *</label>
-                        <select name="organization" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
-                            <option value="">انتخاب...</option><option value="کارفرما">کارفرما</option><option value="مشاور">مشاور</option><option value="پیمانکار">پیمانکار</option>
-                        </select>
+                        <label class="block text-xs font-semibold mb-1">نام و سمت پاسخ‌دهنده *</label>
+                        <input type="text" id="ci_respondent" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
                     </div>
-                    <div><label class="block text-xs font-semibold mb-1">نام پاسخ‌دهنده</label><input type="text" name="respondent" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    <div class="p-3 bg-slate-50 rounded-xl flex justify-between items-center"><span>تحصیل اراضی / ROW</span><select name="status_row" class="p-1 border rounded text-xs"><option>🟢 سبز</option><option>🟡 زرد</option><option>🔴 قرمز</option></select></div>
-                    <div class="p-3 bg-slate-50 rounded-xl flex justify-between items-center"><span>تأمین لوله و شیرآلات</span><select name="status_procurement" class="p-1 border rounded text-xs"><option>🟢 سبز</option><option>🟡 زرد</option><option>🔴 قرمز</option></select></div>
-                    <div class="p-3 bg-slate-50 rounded-xl flex justify-between items-center"><span>عملیات اجرایی (جوش/حفاری)</span><select name="status_construction" class="p-1 border rounded text-xs"><option>🟢 سبز</option><option>🟡 زرد</option><option>🔴 قرمز</option></select></div>
-                    <div class="p-3 bg-slate-50 rounded-xl flex justify-between items-center"><span>مالی و صورت‌وضعیت‌ها</span><select name="status_finance" class="p-1 border rounded text-xs"><option>🟢 سبز</option><option>🟡 زرد</option><option>🔴 قرمز</option></select></div>
-                </div>
-
-                <div><label class="block text-xs font-semibold mb-1">مهم‌ترین گلوگاه فعلی پروژه *</label><textarea name="main_bottleneck" required rows="3" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></textarea></div>
-                <button type="submit" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-3 rounded-xl transition shadow">ثبت در Supabase</button>
-            </form>
-
-            <!-- FORM 2 -->
-            <form id="form2" onsubmit="submitToSupabase(event, 'Quick-Win')" class="hidden bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
-                <h3 class="text-lg font-bold border-r-4 border-amber-500 pr-3">پیشنهاد برد سریع ۳۰ روزه (Quick Win)</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div><label class="block text-xs font-semibold mb-1">نام پروژه *</label><input type="text" name="project_name" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
-                    <div>
-                        <label class="block text-xs font-semibold mb-1">سازمان پاسخ‌دهنده *</label>
-                        <select name="organization" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500">
-                            <option value="">انتخاب...</option><option value="کارفرما">کارفرما</option><option value="مشاور">مشاور</option><option value="پیمانکار">پیمانکار</option>
-                        </select>
+                    <h3 class="text-sm font-bold border-r-4 border-blue-900 pr-3">وضعیت پروژه</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div class="p-3 bg-slate-50 rounded-xl flex justify-between items-center"><span>تحصیل اراضی / ROW</span><select id="ci_status_row" class="p-1 border rounded text-xs"><option>🟢 سبز</option><option>🟡 زرد</option><option>🔴 قرمز</option></select></div>
+                        <div class="p-3 bg-slate-50 rounded-xl flex justify-between items-center"><span>تأمین لوله و شیرآلات</span><select id="ci_status_procurement" class="p-1 border rounded text-xs"><option>🟢 سبز</option><option>🟡 زرد</option><option>🔴 قرمز</option></select></div>
+                        <div class="p-3 bg-slate-50 rounded-xl flex justify-between items-center"><span>عملیات اجرایی (جوش/حفاری)</span><select id="ci_status_construction" class="p-1 border rounded text-xs"><option>🟢 سبز</option><option>🟡 زرد</option><option>🔴 قرمز</option></select></div>
+                        <div class="p-3 bg-slate-50 rounded-xl flex justify-between items-center"><span>مالی و صورت‌وضعیت‌ها</span><select id="ci_status_finance" class="p-1 border rounded text-xs"><option>🟢 سبز</option><option>🟡 زرد</option><option>🔴 قرمز</option></select></div>
                     </div>
-                    <div><label class="block text-xs font-semibold mb-1">عنوان Quick Win *</label><input type="text" name="quick_win_title" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label class="block text-xs font-semibold mb-1">% پیشرفت فیزیکی *</label><input type="number" id="ci_physical_progress" min="0" max="100" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                        <div><label class="block text-xs font-semibold mb-1">% پیشرفت مالی *</label><input type="number" id="ci_financial_progress" min="0" max="100" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                        <div><label class="block text-xs font-semibold mb-1">تاریخ پیش‌بینی فعلی تکمیل پروژه *</label><input type="date" id="ci_forecast_date" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label class="block text-xs font-semibold mb-1">نیروی انسانی مستقر در سایت (نفر)</label><input type="number" id="ci_manpower" min="0" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                        <div><label class="block text-xs font-semibold mb-1">نرخ ردی جوش (٪) — در صورت مصداق</label><input type="number" id="ci_weld_reject" min="0" max="100" step="0.1" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">رویداد HSE در این دوره؟</label>
+                            <select id="ci_hse_incident" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
+                                <option value="false">خیر</option>
+                                <option value="true">بله</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="ci_hse_note_wrap" class="hidden">
+                        <label class="block text-xs font-semibold mb-1">توضیح رویداد HSE *</label>
+                        <input type="text" id="ci_hse_note" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500">
+                    </div>
+
+                    <div><label class="block text-xs font-semibold mb-1">مهم‌ترین گلوگاه فعلی پروژه *</label><textarea id="ci_bottleneck" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></textarea></div>
+                    <div><label class="block text-xs font-semibold mb-1">مهم‌ترین ریسک پیش‌رو (ماه آینده) *</label><textarea id="ci_top_risk" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></textarea></div>
+
+                    <h3 class="text-sm font-bold border-r-4 border-amber-500 pr-3">پیشنهاد Quick Win این دوره</h3>
+                    <div><label class="block text-xs font-semibold mb-1">عنوان Quick Win *</label><input type="text" id="ci_qw_title" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                    <div><label class="block text-xs font-semibold mb-1">اقدام عملیاتی دقیق *</label><textarea id="ci_qw_action" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></textarea></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="block text-xs font-semibold mb-1">نتیجه ملموس ۳۰ روزه *</label><input type="text" id="ci_qw_result" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                        <div><label class="block text-xs font-semibold mb-1">حمایت مورد نیاز از مجری طرح *</label><input type="text" id="ci_qw_support" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-3 rounded-xl transition shadow">ثبت گزارش دوره‌ای</button>
+                </form>
+            </div>
+
+            <!-- ADMIN PANEL -->
+            <div id="adminView" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                    <h2 class="text-xl font-bold text-blue-900">🛠 مدیریت پروژه‌ها و کاربران</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <h3 class="text-sm font-bold">تعریف پروژه جدید</h3>
+                            <div class="flex gap-2">
+                                <input id="admNewProject" type="text" placeholder="نام پروژه" class="flex-1 p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
+                                <button id="admAddProjectBtn" class="bg-blue-900 hover:bg-blue-800 text-white text-sm px-4 rounded-xl font-bold">افزودن</button>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <h3 class="text-sm font-bold">دعوت مدیر پروژه (ارسال لینک ورود به ایمیل)</h3>
+                            <div class="grid grid-cols-3 gap-2">
+                                <select id="admInviteProject" class="p-2.5 border rounded-xl text-xs"></select>
+                                <select id="admInviteOrg" class="p-2.5 border rounded-xl text-xs">
+                                    <option value="کارفرما">کارفرما</option><option value="مشاور">مشاور</option><option value="پیمانکار">پیمانکار</option>
+                                </select>
+                                <input id="admInviteEmail" type="email" placeholder="ایمیل" dir="ltr" class="p-2.5 border rounded-xl text-xs">
+                            </div>
+                            <button id="admInviteBtn" class="w-full bg-amber-600 hover:bg-amber-500 text-white text-sm py-2 rounded-xl font-bold">ارسال دعوت</button>
+                        </div>
+                    </div>
+                    <p id="admMsg" class="text-xs"></p>
                 </div>
-                <div><label class="block text-xs font-semibold mb-1">اقدام عملیاتی دقیق *</label><textarea name="action_details" required rows="3" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></textarea></div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label class="block text-xs font-semibold mb-1">نتیجه ملموس ۳۰ روزه *</label><input type="text" name="tangible_result" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
-                    <div><label class="block text-xs font-semibold mb-1">حمایت مورد نیاز از مجری طرح *</label><input type="text" name="support_needed" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-3">
+                    <h3 class="text-sm font-bold">پروژه‌ها</h3>
+                    <div id="admProjectsList" class="text-xs grid grid-cols-2 md:grid-cols-4 gap-2"></div>
                 </div>
-                <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl transition shadow">ثبت پیشنهاد Quick Win</button>
-            </form>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-3">
+                    <h3 class="text-sm font-bold">مدیران پروژه (فعال / در انتظار ورود)</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs">
+                            <thead class="bg-slate-100 text-slate-700"><tr>
+                                <th class="p-2 border">پروژه</th><th class="p-2 border">سازمان</th><th class="p-2 border">ایمیل</th><th class="p-2 border">وضعیت</th>
+                            </tr></thead>
+                            <tbody id="admUsersTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SELECTION -->
+            <div id="selectionView" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-2">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xl font-bold text-blue-900">🏆 پیشنهادهای Quick Win</h2>
+                        <button onclick="loadSelectionData()" class="bg-blue-100 text-blue-900 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200">🔄 بروزرسانی</button>
+                    </div>
+                    <p class="text-xs text-slate-500">آخرین پیشنهاد Quick Win هر سازمان برای هر پروژه، برای مقایسه و انتخاب برگزیده.</p>
+                </div>
+                <div id="selectionContainer" class="space-y-6">
+                    <p class="text-center text-slate-400 p-4">در حال بارگذاری...</p>
+                </div>
+            </div>
+
+            <!-- TRACKING -->
+            <div id="trackingView" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-2">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xl font-bold text-blue-900">📈 پایش اقدامات تا حصول نتیجه</h2>
+                        <button onclick="loadTrackingData()" class="bg-blue-100 text-blue-900 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200">🔄 بروزرسانی</button>
+                    </div>
+                    <p class="text-xs text-slate-500">وضعیت اجرای Quick Win برگزیده هر پروژه، تا رسیدن به نتیجه نهایی.</p>
+                </div>
+                <div id="trackingContainer" class="space-y-6">
+                    <p class="text-center text-slate-400 p-4">در حال بارگذاری...</p>
+                </div>
+            </div>
+
+            <!-- ANALYTICS DASHBOARD -->
+            <div id="analyticsView" class="hidden space-y-8">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                    <div class="flex justify-between items-center border-b pb-4">
+                        <h2 class="text-xl font-bold text-blue-900">📊 داشبورد پورتفولیو</h2>
+                        <button onclick="loadAnalyticsData()" class="bg-blue-100 text-blue-900 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200">🔄 بروزرسانی داده‌ها</button>
+                    </div>
+                    <div id="kpiCards" class="grid grid-cols-2 md:grid-cols-5 gap-3"></div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                    <h2 class="text-lg font-bold text-slate-800">🧭 پیشرفت Quick Winهای برگزیده</h2>
+                    <div id="portfolioList"></div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                    <div class="border-b pb-4">
+                        <h2 class="text-xl font-bold text-blue-900">🔍 تحلیل متقاطع دیدگاه‌ها (۳ Perspective Matrix)</h2>
+                        <p class="text-xs text-slate-500 mt-1">گلوگاه و درصد پیشرفت گزارش‌شده توسط هر طرف — تناقض بین دیدگاه‌ها را فوراً آشکار می‌کند.</p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs">
+                            <thead class="bg-slate-100 text-slate-700">
+                                <tr>
+                                    <th class="p-3 border">نام پروژه</th>
+                                    <th class="p-3 border text-blue-900">دیدگاه کارفرما</th>
+                                    <th class="p-3 border text-amber-900">دیدگاه مشاور</th>
+                                    <th class="p-3 border text-emerald-900">دیدگاه پیمانکار</th>
+                                </tr>
+                            </thead>
+                            <tbody id="matrixTableBody" class="divide-y">
+                                <tr><td colspan="4" class="p-4 text-center text-slate-400">در حال دریافت داده‌ها از Supabase...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
         </div>
-
-        <!-- VIEW 2: SELECTION -->
-        <div id="selectionView" class="hidden space-y-6">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-2">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-bold text-blue-900">🏆 تحلیل، مقایسه و انتخاب Quick Win برگزیده</h2>
-                    <button onclick="loadSelectionData()" class="bg-blue-100 text-blue-900 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200">🔄 بروزرسانی</button>
-                </div>
-                <p class="text-xs text-slate-500">پیشنهادهای دریافتی از کارفرما، مشاور و پیمانکار برای هر پروژه را مقایسه کنید، به هرکدام از نظر اثرگذاری/سرعت اجرا/نیاز به منابع امتیاز دهید و بهترین گزینه را به‌عنوان Quick Win ۳۰ روزه برگزینید. این اقدام نیازمند رمز دفتر مجری طرح است.</p>
-            </div>
-            <div id="selectionContainer" class="space-y-6">
-                <p class="text-center text-slate-400 p-4">در حال بارگذاری...</p>
-            </div>
-        </div>
-
-        <!-- VIEW 3: TRACKING -->
-        <div id="trackingView" class="hidden space-y-6">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-2">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-bold text-blue-900">📈 پایش اقدامات تا حصول نتیجه</h2>
-                    <button onclick="loadTrackingData()" class="bg-blue-100 text-blue-900 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200">🔄 بروزرسانی</button>
-                </div>
-                <p class="text-xs text-slate-500">وضعیت اجرای Quick Win برگزیده هر پروژه را گزارش‌گیری و تا رسیدن به نتیجه نهایی پیگیری کنید.</p>
-            </div>
-            <div id="trackingContainer" class="space-y-6">
-                <p class="text-center text-slate-400 p-4">در حال بارگذاری...</p>
-            </div>
-        </div>
-
-        <!-- VIEW 4: ANALYTICS DASHBOARD -->
-        <div id="analyticsView" class="hidden space-y-8">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                <div class="flex justify-between items-center border-b pb-4">
-                    <h2 class="text-xl font-bold text-blue-900">📊 داشبورد پورتفولیو</h2>
-                    <button onclick="loadAnalyticsData()" class="bg-blue-100 text-blue-900 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200">🔄 بروزرسانی داده‌ها</button>
-                </div>
-                <div id="kpiCards" class="grid grid-cols-2 md:grid-cols-5 gap-3"></div>
-            </div>
-
-            <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                <h2 class="text-lg font-bold text-slate-800">🧭 پیشرفت Quick Winهای برگزیده</h2>
-                <div id="portfolioList"></div>
-            </div>
-
-            <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                <div class="border-b pb-4">
-                    <h2 class="text-xl font-bold text-blue-900">🔍 تحلیل متقاطع دیدگاه‌ها (۳ Perspective Matrix)</h2>
-                    <p class="text-xs text-slate-500 mt-1">این جدول، تناقض‌ها و اختلاف‌نظرها بین ۳ طرف پروژه را فوراً آشکار می‌کند.</p>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-right text-xs">
-                        <thead class="bg-slate-100 text-slate-700">
-                            <tr>
-                                <th class="p-3 border">نام پروژه</th>
-                                <th class="p-3 border text-blue-900">گلوگاه از دید کارفرما</th>
-                                <th class="p-3 border text-amber-900">گلوگاه از دید مشاور</th>
-                                <th class="p-3 border text-emerald-900">گلوگاه از دید پیمانکار</th>
-                            </tr>
-                        </thead>
-                        <tbody id="matrixTableBody" class="divide-y">
-                            <tr><td colspan="4" class="p-4 text-center text-slate-400">در حال دریافت داده‌ها از Supabase...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
     </main>
 
     <script>
         // --------------------------------------------------
-        // CONFIGURATION: اطلاعات Supabase خود را اینجا بذارید
+        // CONFIGURATION
         // --------------------------------------------------
         const SUPABASE_URL = "https://gaympxsebjicpolapgql.supabase.co";
         const SUPABASE_KEY = "sb_publishable_JZq6MiCKxjahUqHZ_dwxDQ_jckIi1y9";
-        // این رمز فقط یک مانع سبک در رابط کاربری برای اقدامات مدیریتی (انتخاب برگزیده/ثبت پیشرفت) است،
-        // نه یک لایه امنیتی واقعی؛ چون کلید بالا anon/public است و طبق طراحی در دسترس همه‌ست.
-        const MANAGER_PASSCODE = "GAS6-PMO";
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         function esc(str) {
@@ -177,88 +230,279 @@
             return d.innerHTML;
         }
 
-        function scoreSelectHtml() {
-            return `<select class="border rounded p-1">${[1, 2, 3, 4, 5].map(n => `<option value="${n}" ${n === 3 ? 'selected' : ''}>${n}</option>`).join('')}</select>`;
-        }
-
-        function checkPasscode() {
-            if (sessionStorage.getItem('pmo_authed') === '1') return true;
-            const input = prompt('این یک اقدام مدیریتی است. رمز دفتر مجری طرح را وارد کنید:');
-            if (input === null) return false;
-            if (input !== MANAGER_PASSCODE) { alert('رمز نادرست است.'); return false; }
-            try { sessionStorage.setItem('pmo_authed', '1'); } catch (e) {}
-            return true;
+        function redirectUrl() {
+            return window.location.href.split('#')[0].split('?')[0];
         }
 
         // --------------------------------------------------
-        // VIEW SWITCHING
+        // AUTH STATE
         // --------------------------------------------------
+        let currentUser = null;
+        let currentProfile = null;
+        let hasResolvedOnce = false;
+
         const ACTIVE_BTN_CLASS = 'bg-amber-500 text-blue-950 px-4 py-2 rounded-xl font-bold text-xs shadow hover:bg-amber-400 transition';
         const INACTIVE_BTN_CLASS = 'bg-blue-800 text-white px-4 py-2 rounded-xl font-bold text-xs border border-blue-700 hover:bg-blue-700 transition';
-        const VIEW_BTN_IDS = { forms: 'btnForms', selection: 'btnSelection', tracking: 'btnTracking', analytics: 'btnAnalytics' };
+
+        async function initApp() {
+            const { data: { session } } = await _supabase.auth.getSession();
+            await handleSession(session);
+            _supabase.auth.onAuthStateChange((_event, s) => { handleSession(s); });
+        }
+
+        async function handleSession(session) {
+            const newUser = session ? session.user : null;
+            const sameUser = hasResolvedOnce && (newUser?.id || null) === (currentUser?.id || null);
+            hasResolvedOnce = true;
+            currentUser = newUser;
+            if (sameUser) return;
+            currentProfile = null;
+            if (currentUser) await resolveProfile();
+            render();
+        }
+
+        async function resolveProfile() {
+            const { data: profile } = await _supabase.from('app_users').select('*').eq('user_id', currentUser.id).maybeSingle();
+            if (profile) { currentProfile = profile; return; }
+
+            const { data: invite } = await _supabase.from('pending_invites').select('*').eq('email', currentUser.email).eq('consumed', false).limit(1).maybeSingle();
+            if (invite) {
+                const { data: inserted, error } = await _supabase.from('app_users').insert([{
+                    user_id: currentUser.id, email: currentUser.email, role: 'manager',
+                    project_name: invite.project_name, organization: invite.organization
+                }]).select().maybeSingle();
+                if (!error && inserted) {
+                    await _supabase.from('pending_invites').update({ consumed: true }).eq('id', invite.id);
+                    currentProfile = inserted;
+                }
+            }
+        }
+
+        function render() {
+            document.getElementById('authScreen').classList.toggle('hidden', !!currentUser);
+            document.getElementById('notAuthorizedScreen').classList.toggle('hidden', !currentUser || !!currentProfile);
+            document.getElementById('appShell').classList.toggle('hidden', !currentProfile);
+
+            if (currentUser && !currentProfile) {
+                document.getElementById('unauthEmail').textContent = currentUser.email;
+            }
+
+            document.getElementById('headerSubtitle').textContent = currentProfile
+                ? (currentProfile.role === 'admin' ? 'دفتر مجری طرح (ادمین)' : `مدیر پروژه — ${currentProfile.project_name} (${currentProfile.organization})`)
+                : 'دفتر مجری طرح‌های توسعه شرکت گاز';
+
+            if (currentProfile) renderNav();
+        }
+
+        function renderNav() {
+            const nav = document.getElementById('navButtons');
+            nav.innerHTML = '';
+
+            const buttons = currentProfile.role === 'admin'
+                ? [['admin', '🛠 مدیریت'], ['selection', '🏆 انتخاب Quick Win'], ['tracking', '📈 پایش پیشرفت'], ['analytics', '📊 داشبورد پورتفولیو']]
+                : [['checkin', '📝 گزارش دوره‌ای'], ['selection', '🏆 پیشنهادها'], ['tracking', '📈 پایش پیشرفت'], ['analytics', '📊 وضعیت پروژه']];
+
+            buttons.forEach(([view, label], i) => {
+                const btn = document.createElement('button');
+                btn.textContent = label;
+                btn.className = i === 0 ? ACTIVE_BTN_CLASS : INACTIVE_BTN_CLASS;
+                btn.dataset.view = view;
+                btn.addEventListener('click', () => switchView(view));
+                nav.appendChild(btn);
+            });
+
+            const logoutBtn = document.createElement('button');
+            logoutBtn.textContent = '🚪 خروج';
+            logoutBtn.className = 'bg-red-800 text-white px-4 py-2 rounded-xl font-bold text-xs border border-red-700 hover:bg-red-700 transition';
+            logoutBtn.addEventListener('click', logout);
+            nav.appendChild(logoutBtn);
+
+            switchView(buttons[0][0]);
+        }
 
         function switchView(view) {
-            Object.keys(VIEW_BTN_IDS).forEach(v => {
-                document.getElementById(v + 'View').classList.toggle('hidden', v !== view);
-                document.getElementById(VIEW_BTN_IDS[v]).className = v === view ? ACTIVE_BTN_CLASS : INACTIVE_BTN_CLASS;
+            ['checkin', 'admin', 'selection', 'tracking', 'analytics'].forEach(v => {
+                const el = document.getElementById(v + 'View');
+                if (el) el.classList.toggle('hidden', v !== view);
             });
+            document.querySelectorAll('#navButtons button[data-view]').forEach(b => {
+                b.className = b.dataset.view === view ? ACTIVE_BTN_CLASS : INACTIVE_BTN_CLASS;
+            });
+            if (view === 'checkin') prefillCheckinForm();
+            if (view === 'admin') loadAdminData();
             if (view === 'selection') loadSelectionData();
             if (view === 'tracking') loadTrackingData();
             if (view === 'analytics') loadAnalyticsData();
         }
 
-        function switchForm(form) {
-            if (form === 'form1') {
-                document.getElementById('form1').classList.remove('hidden');
-                document.getElementById('form2').classList.add('hidden');
-            } else {
-                document.getElementById('form2').classList.remove('hidden');
-                document.getElementById('form1').classList.add('hidden');
-            }
+        async function login() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const msg = document.getElementById('loginMsg');
+            if (!email) return;
+            msg.textContent = 'در حال ارسال...';
+            msg.className = 'text-xs text-slate-500';
+            const { error } = await _supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectUrl() } });
+            if (error) { msg.textContent = 'خطا: ' + error.message; msg.className = 'text-xs text-red-600'; return; }
+            msg.textContent = 'لینک ورود به ایمیلتان ارسال شد. صندوق ورودی (و پوشه اسپم) را بررسی کنید.';
+            msg.className = 'text-xs text-emerald-700';
         }
 
+        async function logout() {
+            await _supabase.auth.signOut();
+        }
+
+        document.getElementById('loginBtn').addEventListener('click', login);
+        document.getElementById('unauthLogoutBtn').addEventListener('click', logout);
+
         // --------------------------------------------------
-        // FORM SUBMISSION (X-Ray / Quick-Win intake)
+        // MANAGER: CHECK-IN FORM (unified status + quick-win report)
         // --------------------------------------------------
-        async function submitToSupabase(e, formType) {
+        function prefillCheckinForm() {
+            document.getElementById('ciProjectName').textContent = currentProfile.project_name;
+            document.getElementById('ciOrganization').textContent = currentProfile.organization;
+        }
+
+        document.getElementById('ci_hse_incident').addEventListener('change', (e) => {
+            document.getElementById('ci_hse_note_wrap').classList.toggle('hidden', e.target.value !== 'true');
+        });
+
+        document.getElementById('checkinForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const formData = new FormData(e.target);
-            const data = { form_type: formType };
-            formData.forEach((value, key) => data[key] = value);
+            const hseIncident = document.getElementById('ci_hse_incident').value === 'true';
+            const hseNote = document.getElementById('ci_hse_note').value.trim();
+            if (hseIncident && !hseNote) { alert('لطفاً توضیح رویداد HSE را وارد کنید.'); return; }
 
-            const { error } = await _supabase.from('project_submissions').insert([data]);
+            const manpowerVal = document.getElementById('ci_manpower').value;
+            const weldVal = document.getElementById('ci_weld_reject').value;
 
-            if (error) {
-                alert('خطا در ثبت: ' + error.message);
-            } else {
-                alert(`اطلاعات ${formType} با موفقیت در دیتابیس آنلاین ثبت شد!`);
-                e.target.reset();
-            }
+            const row = {
+                user_id: currentUser.id,
+                project_name: currentProfile.project_name,
+                organization: currentProfile.organization,
+                respondent: document.getElementById('ci_respondent').value,
+                status_row: document.getElementById('ci_status_row').value,
+                status_procurement: document.getElementById('ci_status_procurement').value,
+                status_construction: document.getElementById('ci_status_construction').value,
+                status_finance: document.getElementById('ci_status_finance').value,
+                physical_progress: Number(document.getElementById('ci_physical_progress').value),
+                financial_progress: Number(document.getElementById('ci_financial_progress').value),
+                forecast_completion_date: document.getElementById('ci_forecast_date').value,
+                manpower_count: manpowerVal ? Number(manpowerVal) : null,
+                weld_reject_rate: weldVal ? Number(weldVal) : null,
+                hse_incident: hseIncident,
+                hse_incident_note: hseIncident ? hseNote : null,
+                main_bottleneck: document.getElementById('ci_bottleneck').value,
+                top_risk: document.getElementById('ci_top_risk').value,
+                quick_win_title: document.getElementById('ci_qw_title').value,
+                action_details: document.getElementById('ci_qw_action').value,
+                tangible_result: document.getElementById('ci_qw_result').value,
+                support_needed: document.getElementById('ci_qw_support').value
+            };
+
+            const { error } = await _supabase.from('check_ins').insert([row]);
+            if (error) { alert('خطا در ثبت: ' + error.message); return; }
+            alert('گزارش دوره‌ای با موفقیت ثبت شد!');
+            e.target.reset();
+            document.getElementById('ci_hse_note_wrap').classList.add('hidden');
+        });
+
+        // --------------------------------------------------
+        // ADMIN: projects + invites
+        // --------------------------------------------------
+        async function loadAdminData() {
+            const { data: projects } = await _supabase.from('projects').select('*').order('name');
+
+            const projSelect = document.getElementById('admInviteProject');
+            projSelect.innerHTML = (projects || []).length
+                ? projects.map(p => `<option value="${esc(p.name)}">${esc(p.name)}</option>`).join('')
+                : '<option value="">-- ابتدا پروژه بسازید --</option>';
+
+            document.getElementById('admProjectsList').innerHTML = (projects || []).length
+                ? projects.map(p => `<div class="p-2 bg-slate-50 rounded-lg text-center">${esc(p.name)}</div>`).join('')
+                : '<p class="text-slate-400 col-span-full">هنوز پروژه‌ای تعریف نشده.</p>';
+
+            const { data: users } = await _supabase.from('app_users').select('*').eq('role', 'manager').order('project_name');
+            const { data: invites } = await _supabase.from('pending_invites').select('*').eq('consumed', false).order('project_name');
+
+            const rows = [
+                ...(users || []).map(u => ({ project_name: u.project_name, organization: u.organization, email: u.email, status: 'فعال ✅' })),
+                ...(invites || []).map(i => ({ project_name: i.project_name, organization: i.organization, email: i.email, status: 'در انتظار ورود ⏳' }))
+            ];
+
+            document.getElementById('admUsersTableBody').innerHTML = rows.length
+                ? rows.map(r => `<tr>
+                    <td class="p-2 border">${esc(r.project_name)}</td>
+                    <td class="p-2 border">${esc(r.organization)}</td>
+                    <td class="p-2 border" dir="ltr">${esc(r.email)}</td>
+                    <td class="p-2 border">${esc(r.status)}</td>
+                </tr>`).join('')
+                : '<tr><td colspan="4" class="p-3 text-center text-slate-400">هنوز کاربری دعوت نشده.</td></tr>';
         }
 
+        async function addProject() {
+            const input = document.getElementById('admNewProject');
+            const name = input.value.trim();
+            const msg = document.getElementById('admMsg');
+            if (!name) return;
+            const { error } = await _supabase.from('projects').insert([{ name }]);
+            msg.textContent = error ? 'خطا: ' + error.message : `پروژه «${name}» اضافه شد.`;
+            msg.className = error ? 'text-xs text-red-600' : 'text-xs text-emerald-700';
+            if (!error) { input.value = ''; loadAdminData(); }
+        }
+
+        async function inviteManager() {
+            const project_name = document.getElementById('admInviteProject').value;
+            const organization = document.getElementById('admInviteOrg').value;
+            const email = document.getElementById('admInviteEmail').value.trim();
+            const msg = document.getElementById('admMsg');
+            if (!project_name || !email) { msg.textContent = 'پروژه و ایمیل الزامی است.'; msg.className = 'text-xs text-red-600'; return; }
+
+            const { error: insertError } = await _supabase.from('pending_invites').insert([{ project_name, organization, email }]);
+            if (insertError) { msg.textContent = 'خطا: ' + insertError.message; msg.className = 'text-xs text-red-600'; return; }
+
+            const { error: otpError } = await _supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectUrl() } });
+            msg.textContent = otpError
+                ? 'دعوت ثبت شد ولی ارسال ایمیل خطا داد: ' + otpError.message
+                : `دعوت برای ${email} ثبت و لینک ورود ایمیل شد.`;
+            msg.className = otpError ? 'text-xs text-amber-700' : 'text-xs text-emerald-700';
+            document.getElementById('admInviteEmail').value = '';
+            loadAdminData();
+        }
+
+        document.getElementById('admAddProjectBtn').addEventListener('click', addProject);
+        document.getElementById('admInviteBtn').addEventListener('click', inviteManager);
+
         // --------------------------------------------------
-        // SELECTION: compare Quick Win proposals per project and pick one
+        // SELECTION: compare latest Quick Win proposal per project and pick one
         // --------------------------------------------------
+        function scoreSelectHtml() {
+            return `<select class="border rounded p-1">${[1, 2, 3, 4, 5].map(n => `<option value="${n}" ${n === 3 ? 'selected' : ''}>${n}</option>`).join('')}</select>`;
+        }
+
         async function loadSelectionData() {
             const container = document.getElementById('selectionContainer');
             container.innerHTML = '<p class="text-center text-slate-400 p-4">در حال دریافت پیشنهادها...</p>';
 
-            const { data: proposals, error: e1 } = await _supabase.from('project_submissions').select('*').eq('form_type', 'Quick-Win').order('created_at', { ascending: true });
+            const { data: checkins, error: e1 } = await _supabase.from('check_ins').select('*').order('created_at', { ascending: true });
             const { data: decisions, error: e2 } = await _supabase.from('quick_win_decisions').select('*');
             if (e1 || e2) { container.innerHTML = '<p class="text-red-600 p-4">خطا در دریافت داده‌ها.</p>'; return; }
 
+            const latestByKey = {};
+            (checkins || []).forEach(c => { latestByKey[c.project_name + '||' + c.organization] = c; });
+
             const byProject = {};
-            (proposals || []).forEach(p => { (byProject[p.project_name] ??= []).push(p); });
+            Object.values(latestByKey).forEach(c => { (byProject[c.project_name] ??= []).push(c); });
 
             const decisionByProject = {};
             (decisions || []).forEach(d => decisionByProject[d.project_name] = d);
 
             const projectNames = Object.keys(byProject);
             if (projectNames.length === 0) {
-                container.innerHTML = '<p class="text-center text-slate-400 p-4">هنوز هیچ پیشنهاد Quick Win ثبت نشده است.</p>';
+                container.innerHTML = '<p class="text-center text-slate-400 p-4">هنوز هیچ گزارشی ثبت نشده است.</p>';
                 return;
             }
 
+            const isAdmin = currentProfile.role === 'admin';
             container.innerHTML = '';
             projectNames.forEach(pName => {
                 const decision = decisionByProject[pName];
@@ -267,7 +511,7 @@
 
                 const header = document.createElement('div');
                 header.className = 'flex justify-between items-center border-b pb-3';
-                header.innerHTML = `<h3 class="font-bold text-blue-900">${esc(pName)}</h3><span class="text-xs bg-slate-100 px-2 py-1 rounded-lg">${byProject[pName].length} پیشنهاد</span>`;
+                header.innerHTML = `<h3 class="font-bold text-blue-900">${esc(pName)}</h3><span class="text-xs bg-slate-100 px-2 py-1 rounded-lg">${byProject[pName].length} پیشنهاد فعال</span>`;
                 card.appendChild(header);
 
                 if (decision) {
@@ -277,8 +521,8 @@
                         <p class="font-bold text-emerald-800">✅ منتخب نهایی: ${esc(decision.selected_title)} <span class="font-normal text-emerald-700">(${esc(decision.selected_organization)})</span></p>
                         ${decision.rationale ? `<p class="text-xs text-slate-600">دلیل انتخاب: ${esc(decision.rationale)}</p>` : ''}
                         <p class="text-xs text-slate-500">امتیاز اولویت: ${decision.priority_score} | مهلت: ${esc(decision.target_date)}</p>
-                        <button type="button" class="clear-btn text-xs text-red-600 underline mt-1">تغییر انتخاب</button>`;
-                    banner.querySelector('.clear-btn').addEventListener('click', () => clearDecision(pName));
+                        ${isAdmin ? '<button type="button" class="clear-btn text-xs text-red-600 underline mt-1">تغییر انتخاب</button>' : ''}`;
+                    if (isAdmin) banner.querySelector('.clear-btn').addEventListener('click', () => clearDecision(pName));
                     card.appendChild(banner);
                 }
 
@@ -293,18 +537,21 @@
                         <p><b>اقدام:</b> ${esc(prop.action_details)}</p>
                         <p class="text-emerald-700"><b>نتیجه ۳۰ روزه:</b> ${esc(prop.tangible_result)}</p>
                         <p class="text-blue-800"><b>حمایت لازم:</b> ${esc(prop.support_needed)}</p>
+                        ${isAdmin ? `
                         <div class="grid grid-cols-3 gap-1 pt-2 border-t text-center">
                             <label class="flex flex-col gap-0.5">اثرگذاری${scoreSelectHtml()}</label>
                             <label class="flex flex-col gap-0.5">سرعت اجرا${scoreSelectHtml()}</label>
                             <label class="flex flex-col gap-0.5">نیاز منابع${scoreSelectHtml()}</label>
                         </div>
-                        <button type="button" class="select-btn w-full bg-blue-900 hover:bg-blue-800 text-white rounded-lg py-1.5 font-bold">انتخاب به‌عنوان Quick Win برگزیده</button>
+                        <button type="button" class="select-btn w-full bg-blue-900 hover:bg-blue-800 text-white rounded-lg py-1.5 font-bold">انتخاب به‌عنوان Quick Win برگزیده</button>` : ''}
                     </div>`;
                     const propEl = wrap.firstElementChild;
-                    const selects = propEl.querySelectorAll('select');
-                    propEl.querySelector('.select-btn').addEventListener('click', () => {
-                        selectWinner(pName, prop, Number(selects[0].value), Number(selects[1].value), Number(selects[2].value));
-                    });
+                    if (isAdmin) {
+                        const selects = propEl.querySelectorAll('select');
+                        propEl.querySelector('.select-btn').addEventListener('click', () => {
+                            selectWinner(pName, prop, Number(selects[0].value), Number(selects[1].value), Number(selects[2].value));
+                        });
+                    }
                     grid.appendChild(propEl);
                 });
 
@@ -314,9 +561,7 @@
         }
 
         async function selectWinner(projectName, prop, impact, speed, cost) {
-            if (!checkPasscode()) return;
             const rationale = prompt('دلیل انتخاب این پیشنهاد به‌عنوان Quick Win برگزیده چیست؟ (اختیاری)') || '';
-            const decidedBy = prompt('نام تصمیم‌گیرنده (مجری طرح):') || 'دفتر مجری طرح';
             const priority = impact + speed - cost;
             const targetDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
@@ -332,17 +577,16 @@
                 cost_score: cost,
                 priority_score: priority,
                 rationale: rationale,
-                decided_by: decidedBy,
+                decided_by: currentUser.email,
                 target_date: targetDate
             }], { onConflict: 'project_name' });
 
             if (error) { alert('خطا در ثبت تصمیم: ' + error.message); return; }
-            alert('Quick Win برگزیده با موفقیت ثبت شد. از تب «پایش پیشرفت» می‌توانید روند اجرا را دنبال کنید.');
+            alert('Quick Win برگزیده با موفقیت ثبت شد.');
             loadSelectionData();
         }
 
         async function clearDecision(projectName) {
-            if (!checkPasscode()) return;
             if (!confirm('آیا مطمئنید می‌خواهید انتخاب فعلی این پروژه حذف شود؟')) return;
             const { error } = await _supabase.from('quick_win_decisions').delete().eq('project_name', projectName);
             if (error) { alert('خطا: ' + error.message); return; }
@@ -363,13 +607,14 @@
             if (e1 || e2) { container.innerHTML = '<p class="text-red-600 p-4">خطا در دریافت داده‌ها.</p>'; return; }
 
             if (!decisions || decisions.length === 0) {
-                container.innerHTML = '<p class="text-center text-slate-400 p-4">هنوز هیچ Quick Win‌ی انتخاب نشده. ابتدا از تب «انتخاب Quick Win» یک پیشنهاد را برگزینید.</p>';
+                container.innerHTML = '<p class="text-center text-slate-400 p-4">هنوز هیچ Quick Win‌ی انتخاب نشده.</p>';
                 return;
             }
 
             const logsByProject = {};
             (logs || []).forEach(l => { (logsByProject[l.project_name] ??= []).push(l); });
 
+            const isAdmin = currentProfile.role === 'admin';
             container.innerHTML = '';
             const today = new Date(); today.setHours(0, 0, 0, 0);
 
@@ -400,8 +645,6 @@
                         <span class="text-slate-400">- ${esc(l.reported_by || '')}</span>
                     </div>`).join('') || '<p class="text-xs text-slate-400">هنوز بروزرسانی‌ای ثبت نشده.</p>';
 
-                const statusOptionsHtml = STATUS_OPTIONS.map(s => `<option ${s === status ? 'selected' : ''}>${s}</option>`).join('');
-
                 const wrap = document.createElement('div');
                 wrap.innerHTML = `<div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-3">
                     <div class="flex justify-between items-center flex-wrap gap-2">
@@ -416,21 +659,24 @@
                     </div>
                     <p class="text-xs text-slate-500">وضعیت فعلی: <b>${esc(status)}</b> — مهلت: ${esc(dec.target_date)}</p>
                     <div class="space-y-1 max-h-40 overflow-y-auto">${timelineHtml}</div>
+                    ${isAdmin ? `
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-2 pt-3 border-t text-xs">
-                        <select class="status-select border rounded-lg p-2">${statusOptionsHtml}</select>
+                        <select class="status-select border rounded-lg p-2">${STATUS_OPTIONS.map(s => `<option ${s === status ? 'selected' : ''}>${s}</option>`).join('')}</select>
                         <input class="percent-input border rounded-lg p-2" type="number" min="0" max="100" value="${percent}" placeholder="درصد پیشرفت">
                         <input class="note-input border rounded-lg p-2 md:col-span-2" type="text" placeholder="توضیح بروزرسانی">
                     </div>
-                    <button type="button" class="update-btn w-full bg-amber-600 hover:bg-amber-500 text-white rounded-lg py-2 font-bold text-xs">ثبت بروزرسانی پیشرفت</button>
+                    <button type="button" class="update-btn w-full bg-amber-600 hover:bg-amber-500 text-white rounded-lg py-2 font-bold text-xs">ثبت بروزرسانی پیشرفت</button>` : ''}
                 </div>`;
 
                 const cardEl = wrap.firstElementChild;
-                const statusSel = cardEl.querySelector('.status-select');
-                const percentInput = cardEl.querySelector('.percent-input');
-                const noteInput = cardEl.querySelector('.note-input');
-                cardEl.querySelector('.update-btn').addEventListener('click', () => {
-                    addProgressUpdate(dec.project_name, statusSel.value, percentInput.value, noteInput.value);
-                });
+                if (isAdmin) {
+                    const statusSel = cardEl.querySelector('.status-select');
+                    const percentInput = cardEl.querySelector('.percent-input');
+                    const noteInput = cardEl.querySelector('.note-input');
+                    cardEl.querySelector('.update-btn').addEventListener('click', () => {
+                        addProgressUpdate(dec.project_name, statusSel.value, percentInput.value, noteInput.value);
+                    });
+                }
                 container.appendChild(cardEl);
             });
         }
@@ -439,11 +685,8 @@
             let percent = Math.max(0, Math.min(100, Number(rawPercent) || 0));
             if (status === 'تکمیل شده') percent = 100;
 
-            if (!checkPasscode()) return;
-            const reportedBy = prompt('نام گزارش‌دهنده:') || 'دفتر مجری طرح';
-
             const { error } = await _supabase.from('quick_win_progress').insert([{
-                project_name: projectName, status, progress_percent: percent, note, reported_by: reportedBy
+                project_name: projectName, status, progress_percent: percent, note, reported_by: currentUser.email
             }]);
             if (error) { alert('خطا در ثبت بروزرسانی: ' + error.message); return; }
             loadTrackingData();
@@ -460,31 +703,32 @@
         }
 
         async function loadAnalyticsData() {
-            const { data: subs, error: e1 } = await _supabase.from('project_submissions').select('*');
+            const { data: checkins, error: e1 } = await _supabase.from('check_ins').select('*').order('created_at', { ascending: true });
             const { data: decisions, error: e2 } = await _supabase.from('quick_win_decisions').select('*');
             const { data: logs, error: e3 } = await _supabase.from('quick_win_progress').select('*');
             if (e1 || e2 || e3) { alert('خطا در دریافت داده‌ها'); return; }
 
-            // 1. 3-Perspective Matrix (X-Ray bottlenecks)
+            // 1. 3-Perspective Matrix (latest bottleneck + physical progress per org)
             const projects = {};
-            (subs || []).forEach(item => {
+            (checkins || []).forEach(item => {
                 if (!projects[item.project_name]) projects[item.project_name] = {};
-                if (item.form_type === 'X-Ray') projects[item.project_name][item.organization] = item.main_bottleneck;
+                projects[item.project_name][item.organization] = item;
             });
             const matrixBody = document.getElementById('matrixTableBody');
             const projectKeys = Object.keys(projects);
+            const cell = (rec) => rec ? `${esc(rec.main_bottleneck)} <span class="text-slate-400">(پیشرفت ${rec.physical_progress}%)</span>` : '---';
             matrixBody.innerHTML = projectKeys.length === 0
                 ? '<tr><td colspan="4" class="p-4 text-center text-slate-400">داده‌ای ثبت نشده است.</td></tr>'
                 : projectKeys.map(pName => `<tr>
                         <td class="p-3 border font-bold bg-slate-50">${esc(pName)}</td>
-                        <td class="p-3 border text-blue-900">${esc(projects[pName]['کارفرما'] || '---')}</td>
-                        <td class="p-3 border text-amber-900">${esc(projects[pName]['مشاور'] || '---')}</td>
-                        <td class="p-3 border text-emerald-900">${esc(projects[pName]['پیمانکار'] || '---')}</td>
+                        <td class="p-3 border text-blue-900">${cell(projects[pName]['کارفرما'])}</td>
+                        <td class="p-3 border text-amber-900">${cell(projects[pName]['مشاور'])}</td>
+                        <td class="p-3 border text-emerald-900">${cell(projects[pName]['پیمانکار'])}</td>
                     </tr>`).join('');
 
             // 2. Portfolio KPIs
-            const totalProjects = new Set((subs || []).map(s => s.project_name)).size;
-            const totalProposals = (subs || []).filter(s => s.form_type === 'Quick-Win').length;
+            const totalProjects = new Set((checkins || []).map(s => s.project_name)).size;
+            const totalProposals = (checkins || []).length;
             const totalDecided = (decisions || []).length;
 
             const logsByProject = {};
@@ -502,7 +746,7 @@
 
             document.getElementById('kpiCards').innerHTML =
                 kpiCard('پروژه‌های تحت پایش', totalProjects, 'text-blue-900') +
-                kpiCard('پیشنهادهای Quick Win', totalProposals, 'text-amber-700') +
+                kpiCard('گزارش‌های دریافتی', totalProposals, 'text-amber-700') +
                 kpiCard('Quick Win برگزیده‌شده', totalDecided, 'text-blue-900') +
                 kpiCard('تکمیل‌شده', completed, 'text-emerald-700') +
                 kpiCard('دارای تأخیر', overdue, 'text-red-700');
@@ -530,6 +774,8 @@
                     </div>`;
                 }).join('');
         }
+
+        initApp();
     </script>
 </body>
 </html>
