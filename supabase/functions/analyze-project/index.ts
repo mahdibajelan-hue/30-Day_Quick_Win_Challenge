@@ -90,18 +90,47 @@ Deno.serve(async (req) => {
     const latestByOrg: Record<string, any> = {};
     for (const c of checkins) latestByOrg[c.organization] = c;
 
+    // deno-lint-ignore no-explicit-any
+    function summarizeStatusGroup(group: any): string {
+      if (!group) return "-";
+      return Object.entries(group)
+        // deno-lint-ignore no-explicit-any
+        .map(([k, v]: [string, any]) => `${k}=${v?.status ?? "-"}${v?.issue ? `(${v.issue})` : ""}`)
+        .join(", ");
+    }
+    // deno-lint-ignore no-explicit-any
+    function summarizeIssues(issues: any): string {
+      if (!issues || !issues.length) return "-";
+      // deno-lint-ignore no-explicit-any
+      return issues.map((i: any, idx: number) => `  ${idx + 1}) ${i.description} [اثر: ${(i.impact || []).join(",")}] شدت:${i.severity}`).join("\n");
+    }
+    // deno-lint-ignore no-explicit-any
+    function summarizeRisks(risks: any): string {
+      if (!risks || !risks.length) return "-";
+      // deno-lint-ignore no-explicit-any
+      return risks.map((r: any, idx: number) => `  ${idx + 1}) ${r.risk} (احتمال:${r.probability}, اثر:${r.impact}, سطح:${r.level}) اقدام فعلی:${r.current_action || "-"}`).join("\n");
+    }
+
     const perspectiveText = Object.entries(latestByOrg)
       .map(([org, c]: [string, any]) => `
 ### دیدگاه ${org}
-- پاسخ‌دهنده: ${c.respondent || "-"}
-- وضعیت‌ها: ROW=${c.status_row}, تدارکات=${c.status_procurement}, اجرا=${c.status_construction}, مالی=${c.status_finance}
+- پاسخ‌دهنده: ${c.respondent || "-"} (${c.respondent_position || "-"})
+- وضعیت حوزه‌ها (X-Ray): ${summarizeStatusGroup(c.area_status)}
+- وضعیت جبهه‌های کاری: ${summarizeStatusGroup(c.work_fronts)}
 - پیشرفت برنامه‌ای: ${c.planned_progress ?? "-"}% | پیشرفت فیزیکی واقعی: ${c.physical_progress}% | پیشرفت مالی: ${c.financial_progress}%
 - تاریخ پیش‌بینی فعلی تکمیل: ${c.forecast_completion_date}
 - نیروی انسانی مستقر: ${c.manpower_count ?? "-"} | نرخ ردی جوش: ${c.weld_reject_rate ?? "-"}%
 - رویداد HSE: ${c.hse_incident ? "بله - " + c.hse_incident_note : "خیر"}
-- گلوگاه فعلی: ${c.main_bottleneck}
+- سه مسئله اصلی:\n${summarizeIssues(c.issues)}
+- سه ریسک اصلی:\n${summarizeRisks(c.risks)}
+- اگر اقدامی نشود (افق سه‌ماهه): ${c.q_negative_event || "-"}
+- گلوگاه فعلی: ${c.main_bottleneck} | علت ریشه‌ای: ${c.bottleneck_root_cause || "-"} | راه باز کردن: ${c.bottleneck_unlock_action || "-"}
+- نیاز به تصمیم مدیریت ارشد (اولویت ${c.senior_decision_priority || "-"}): ${c.senior_decision_needed || "-"}
 - ریسک پیش‌رو (شدت ${c.risk_severity ?? "-"}/۵): ${c.top_risk}
-- پیشنهاد Quick Win: ${c.quick_win_title} — اقدام: ${c.action_details} — نتیجه ۳۰ روزه: ${c.tangible_result} — حمایت لازم: ${c.support_needed}`)
+- پیشنهاد Quick Win: ${c.quick_win_title} — اقدام: ${c.action_details} — چرا: ${c.qw_rationale || "-"} — نتیجه ۳۰ روزه: ${c.tangible_result}
+- برنامه تحقق: مسئول=${c.plan_responsible || "-"}, تاریخ هدف=${c.plan_target_date || "-"}, خروجی=${c.plan_deliverable || "-"}
+- اثر برآوردی: تأخیر=${c.impact_delay_days ?? "-"} روز, پیشرفت=${c.impact_progress_increase ?? "-"}%, هزینه=${c.impact_cost_avoided ?? "-"} ریال
+- حمایت لازم: ${c.support_needed} | برآورد زمان تحقق: ${c.time_estimate || "-"}`)
       .join("\n");
 
     const decisionText = decision
