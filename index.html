@@ -8,21 +8,40 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style> body { font-family: 'Vazirmatn', sans-serif; } </style>
+    <!-- Chart.js (for the AI analysis report's charts) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; }
+        .brand-title { letter-spacing: 0.02em; }
+        @media print {
+            body * { visibility: hidden; }
+            #aiReportView, #aiReportView * { visibility: visible; }
+            #aiReportView { position: absolute; inset: 0; padding: 0; margin: 0; }
+            .no-print { display: none !important; }
+            .print-card { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: avoid; }
+        }
+    </style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen">
 
-    <!-- Header -->
-    <header class="bg-blue-900 text-white shadow-lg border-b-4 border-amber-500">
-        <div class="max-w-6xl mx-auto px-4 py-5 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div>
-                <h1 class="text-2xl font-bold">دفتر مجری طرح‌های توسعه گاز</h1>
-                <p class="text-blue-200 text-sm mt-1">طرح خط انتقال گاز ششم سراسری</p>
-                <p class="text-blue-300/80 text-xs mt-0.5" id="headerSubtitle">سامانه تحول و پایش ۳۰ روزه پروژه‌ها</p>
+    <!-- Header / Letterhead -->
+    <header class="bg-white shadow-md border-b-4 border-amber-500">
+        <div class="max-w-6xl mx-auto px-4 pt-5 pb-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="text-center md:text-right order-2 md:order-1">
+                <h1 class="brand-title text-lg md:text-2xl font-extrabold text-blue-900">30-DAY PROJECT TRANSFORMATION PROGRAM</h1>
+                <p class="text-slate-500 text-xs mt-1" id="headerSubtitle">سامانه تحول و پایش ۳۰ روزه پروژه‌ها</p>
             </div>
-            <div class="flex flex-wrap gap-2 justify-center items-center" id="navButtons"></div>
+            <div class="flex flex-col items-center text-center gap-1 order-1 md:order-2">
+                <img src="logo.png" alt="لوگوی شرکت" class="h-12 w-12 object-contain" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
+                <p class="font-bold text-sm text-slate-800">شرکت مهندسی و توسعه گاز ایران</p>
+                <p class="text-xs text-slate-500">طرح خط لوله ششم سراسری</p>
+            </div>
+        </div>
+        <div class="bg-slate-50 border-t border-slate-200">
+            <div class="max-w-6xl mx-auto px-4 flex flex-wrap gap-2 justify-center items-center py-3" id="navButtons"></div>
         </div>
     </header>
+    <template id="logoFallbackTpl"><div class="h-12 w-12 rounded-full bg-blue-900 text-white flex items-center justify-center font-bold text-sm mx-auto">گاز</div></template>
 
     <main class="max-w-6xl mx-auto px-4 py-8 space-y-8">
 
@@ -244,6 +263,60 @@
                 </div>
             </div>
 
+            <!-- AI ANALYSIS REPORT (full page, printable) -->
+            <div id="aiReportView" class="hidden space-y-6">
+                <div class="no-print flex justify-between items-center">
+                    <button type="button" onclick="closeAiReport()" class="text-xs text-blue-700 hover:underline font-bold">→ بازگشت به انتخاب Quick Win</button>
+                    <button type="button" onclick="window.print()" class="bg-blue-900 hover:bg-blue-800 text-white text-xs px-4 py-2 rounded-lg font-bold">🖨 چاپ / ذخیره PDF</button>
+                </div>
+
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="text-center md:text-right">
+                        <h2 class="text-lg font-extrabold text-blue-900">گزارش تحلیلی هوشمند پروژه</h2>
+                        <p class="text-sm font-bold text-slate-700 mt-1" id="reportProjectName">-</p>
+                        <p class="text-xs text-slate-500 mt-1">تاریخ تولید: <span id="reportGeneratedAt"></span> — تهیه‌کننده: <span id="reportGeneratedBy"></span> — ابزار تحلیل: <span id="reportAiProvider">-</span></p>
+                    </div>
+                    <div class="flex flex-col items-center text-center gap-1">
+                        <img src="logo.png" alt="لوگوی شرکت" class="h-10 w-10 object-contain" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
+                        <p class="font-bold text-xs text-slate-800">شرکت مهندسی و توسعه گاز ایران</p>
+                    </div>
+                </div>
+
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-6 space-y-4">
+                    <h3 class="text-sm font-bold text-slate-800 border-r-4 border-blue-900 pr-3">خلاصه شاخص‌ها</h3>
+                    <div id="reportKpiCards" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+                </div>
+
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-6 space-y-4">
+                    <h3 class="text-sm font-bold text-slate-800 border-r-4 border-blue-900 pr-3">مقایسه پیشرفت گزارش‌شده توسط هر طرف</h3>
+                    <div style="max-height:320px">
+                        <canvas id="reportChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-6 space-y-4">
+                    <h3 class="text-sm font-bold text-slate-800 border-r-4 border-blue-900 pr-3">جدول تطبیقی ۳ دیدگاه</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs">
+                            <thead class="bg-slate-100 text-slate-700">
+                                <tr>
+                                    <th class="p-2 border">شاخص</th>
+                                    <th class="p-2 border text-blue-900">کارفرما</th>
+                                    <th class="p-2 border text-amber-900">مشاور</th>
+                                    <th class="p-2 border text-emerald-900">پیمانکار</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-6 space-y-3">
+                    <h3 class="text-sm font-bold text-slate-800 border-r-4 border-purple-600 pr-3">🤖 تحلیل و پیشنهاد هوش مصنوعی</h3>
+                    <div id="reportAiText" class="text-sm leading-loose"></div>
+                </div>
+            </div>
+
         </div>
     </main>
 
@@ -356,6 +429,7 @@
                 const el = document.getElementById(v + 'View');
                 if (el) el.classList.toggle('hidden', v !== view);
             });
+            document.getElementById('aiReportView').classList.add('hidden');
             document.querySelectorAll('#navButtons button[data-view]').forEach(b => {
                 b.className = b.dataset.view === view ? ACTIVE_BTN_CLASS : INACTIVE_BTN_CLASS;
             });
@@ -593,17 +667,10 @@
                 card.appendChild(header);
 
                 if (isAdmin) {
-                    const aiPanel = document.createElement('div');
-                    aiPanel.className = 'hidden bg-purple-50 border border-purple-200 rounded-xl p-4';
                     const providerSelect = header.querySelector('.ai-provider-select');
                     header.querySelector('.ai-btn').addEventListener('click', () => {
-                        if (aiPanel.dataset.loaded === '1' && !aiPanel.classList.contains('hidden')) {
-                            aiPanel.classList.add('hidden');
-                            return;
-                        }
-                        runAiAnalysis(pName, providerSelect.value, aiPanel);
+                        showAiReport(pName, providerSelect.value);
                     });
-                    card.appendChild(aiPanel);
                 }
 
                 if (decision) {
@@ -653,12 +720,118 @@
         }
 
         // --------------------------------------------------
-        // AI ANALYSIS: admin-only, runs server-side via a Supabase Edge Function
+        // AI ANALYSIS REPORT: admin-only, full printable page
+        // Table/KPIs/chart are built client-side from check_ins (instant);
+        // the narrative text comes from a Supabase Edge Function (async).
         // --------------------------------------------------
-        async function runAiAnalysis(projectName, provider, panelEl) {
-            panelEl.classList.remove('hidden');
-            panelEl.dataset.loaded = '0';
-            panelEl.innerHTML = '<p class="text-xs text-purple-700">🤖 در حال تحلیل ۳ دیدگاه با هوش مصنوعی...</p>';
+        const ORG_COLORS = { 'کارفرما': '#2563eb', 'مشاور': '#d97706', 'پیمانکار': '#059669' };
+        let reportChartInstance = null;
+
+        function showAiReport(projectName, provider) {
+            ['checkin', 'admin', 'selection', 'tracking', 'analytics'].forEach(v => {
+                document.getElementById(v + 'View').classList.add('hidden');
+            });
+            document.getElementById('aiReportView').classList.remove('hidden');
+            loadAiReport(projectName, provider);
+            window.scrollTo(0, 0);
+        }
+
+        function closeAiReport() {
+            document.getElementById('aiReportView').classList.add('hidden');
+            switchView('selection');
+        }
+
+        function reportRow(label, latestByOrg, field, suffix) {
+            const cell = (org) => {
+                const v = latestByOrg[org]?.[field];
+                return v === undefined || v === null || v === '' ? '<span class="text-slate-300">-</span>' : esc(String(v)) + (suffix || '');
+            };
+            return `<tr>
+                <td class="p-2 border font-bold bg-slate-50">${esc(label)}</td>
+                <td class="p-2 border">${cell('کارفرما')}</td>
+                <td class="p-2 border">${cell('مشاور')}</td>
+                <td class="p-2 border">${cell('پیمانکار')}</td>
+            </tr>`;
+        }
+
+        function renderReportTable(latestByOrg) {
+            document.getElementById('reportTableBody').innerHTML = [
+                reportRow('پاسخ‌دهنده', latestByOrg, 'respondent'),
+                reportRow('تحصیل اراضی / ROW', latestByOrg, 'status_row'),
+                reportRow('تأمین لوله و شیرآلات', latestByOrg, 'status_procurement'),
+                reportRow('عملیات اجرایی', latestByOrg, 'status_construction'),
+                reportRow('مالی و صورت‌وضعیت‌ها', latestByOrg, 'status_finance'),
+                reportRow('% پیشرفت برنامه‌ای', latestByOrg, 'planned_progress', '٪'),
+                reportRow('% پیشرفت فیزیکی', latestByOrg, 'physical_progress', '٪'),
+                reportRow('% پیشرفت مالی', latestByOrg, 'financial_progress', '٪'),
+                reportRow('تاریخ پیش‌بینی تکمیل', latestByOrg, 'forecast_completion_date'),
+                reportRow('نیروی انسانی مستقر', latestByOrg, 'manpower_count', ' نفر'),
+                reportRow('نرخ ردی جوش', latestByOrg, 'weld_reject_rate', '٪'),
+                reportRow('شدت ریسک', latestByOrg, 'risk_severity', '/۵'),
+                reportRow('گلوگاه فعلی', latestByOrg, 'main_bottleneck'),
+                reportRow('ریسک پیش‌رو', latestByOrg, 'top_risk'),
+                reportRow('عنوان Quick Win پیشنهادی', latestByOrg, 'quick_win_title'),
+            ].join('');
+        }
+
+        function renderReportKpis(latestByOrg) {
+            const orgs = ['کارفرما', 'مشاور', 'پیمانکار'].filter(o => latestByOrg[o]);
+            const avg = (field) => {
+                const vals = orgs.map(o => latestByOrg[o][field]).filter(v => typeof v === 'number');
+                return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+            };
+            const maxRisk = Math.max(0, ...orgs.map(o => Number(latestByOrg[o].risk_severity) || 0));
+
+            document.getElementById('reportKpiCards').innerHTML =
+                kpiCard('دیدگاه‌های دریافتی', `${orgs.length} / ۳`, 'text-blue-900') +
+                kpiCard('میانگین پیشرفت فیزیکی', avg('physical_progress') !== null ? avg('physical_progress') + '٪' : '-', 'text-blue-900') +
+                kpiCard('میانگین پیشرفت مالی', avg('financial_progress') !== null ? avg('financial_progress') + '٪' : '-', 'text-amber-700') +
+                kpiCard('بیشترین شدت ریسک', maxRisk ? maxRisk + '/۵' : '-', maxRisk >= 4 ? 'text-red-700' : 'text-emerald-700');
+        }
+
+        function renderReportChart(latestByOrg) {
+            const orgs = ['کارفرما', 'مشاور', 'پیمانکار'];
+            const field = (f) => orgs.map(o => latestByOrg[o]?.[f] ?? null);
+
+            if (reportChartInstance) { reportChartInstance.destroy(); reportChartInstance = null; }
+            const ctx = document.getElementById('reportChart').getContext('2d');
+            reportChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: orgs,
+                    datasets: [
+                        { label: 'پیشرفت برنامه‌ای (٪)', data: field('planned_progress'), backgroundColor: '#93c5fd' },
+                        { label: 'پیشرفت فیزیکی (٪)', data: field('physical_progress'), backgroundColor: '#2563eb' },
+                        { label: 'پیشرفت مالی (٪)', data: field('financial_progress'), backgroundColor: '#d97706' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, max: 100, ticks: { callback: (v) => v + '٪' } } },
+                    plugins: { legend: { position: 'bottom', rtl: true, labels: { font: { family: 'Vazirmatn' } } } }
+                }
+            });
+        }
+
+        async function loadAiReport(projectName, provider) {
+            document.getElementById('reportProjectName').textContent = projectName;
+            document.getElementById('reportGeneratedAt').textContent = new Date().toISOString().slice(0, 10);
+            document.getElementById('reportGeneratedBy').textContent = currentUser.email;
+            document.getElementById('reportAiProvider').textContent = provider === 'openai' ? 'ChatGPT' : 'Gemini';
+            document.getElementById('reportAiText').innerHTML = '<p class="text-purple-700 text-xs">🤖 در حال تولید تحلیل...</p>';
+            document.getElementById('reportTableBody').innerHTML = '';
+            document.getElementById('reportKpiCards').innerHTML = '';
+
+            const { data: checkins, error: e1 } = await _supabase.from('check_ins').select('*').eq('project_name', projectName).order('created_at', { ascending: true });
+            if (e1) { document.getElementById('reportAiText').innerHTML = `<p class="text-red-600 text-xs">خطا در دریافت داده‌ها: ${esc(e1.message)}</p>`; return; }
+
+            const latestByOrg = {};
+            (checkins || []).forEach(c => { latestByOrg[c.organization] = c; });
+
+            renderReportKpis(latestByOrg);
+            renderReportTable(latestByOrg);
+            renderReportChart(latestByOrg);
 
             try {
                 const { data, error } = await _supabase.functions.invoke('analyze-project', { body: { project_name: projectName, provider } });
@@ -668,19 +841,18 @@
                     if (error.context && typeof error.context.json === 'function') {
                         try { const body = await error.context.json(); if (body && body.error) message = body.error; } catch (e) {}
                     }
-                    panelEl.innerHTML = `<p class="text-xs text-red-600">خطا: ${esc(message)}</p>`;
+                    document.getElementById('reportAiText').innerHTML = `<p class="text-red-600 text-xs">خطا: ${esc(message)}</p>`;
                     return;
                 }
                 if (data && data.error) {
-                    panelEl.innerHTML = `<p class="text-xs text-red-600">${esc(data.error)}</p>`;
+                    document.getElementById('reportAiText').innerHTML = `<p class="text-red-600 text-xs">${esc(data.error)}</p>`;
                     return;
                 }
 
-                const providerLabel = data.provider === 'openai' ? 'ChatGPT' : 'Gemini';
-                panelEl.innerHTML = `<p class="text-xs text-purple-500 font-bold mb-2">تحلیل توسط ${esc(providerLabel)}:</p><div class="text-xs text-purple-900 whitespace-pre-wrap leading-relaxed">${esc(data.analysis)}</div>`;
-                panelEl.dataset.loaded = '1';
+                document.getElementById('reportAiProvider').textContent = data.provider === 'openai' ? 'ChatGPT' : 'Gemini';
+                document.getElementById('reportAiText').innerHTML = `<div class="whitespace-pre-wrap">${esc(data.analysis)}</div>`;
             } catch (e) {
-                panelEl.innerHTML = `<p class="text-xs text-red-600">خطای غیرمنتظره: ${esc(e.message || String(e))}</p>`;
+                document.getElementById('reportAiText').innerHTML = `<p class="text-red-600 text-xs">خطای غیرمنتظره: ${esc(e.message || String(e))}</p>`;
             }
         }
 
