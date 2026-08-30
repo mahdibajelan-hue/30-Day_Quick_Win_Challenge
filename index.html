@@ -18,10 +18,13 @@
             <div>
                 <h1 class="text-2xl font-bold">سامانه تحول و پایش ۳۰ روزه پروژه‌ها</h1>
                 <p class="text-blue-200 text-sm mt-1">دفتر مجری طرح‌های توسعه شرکت گاز (متصل به Supabase)</p>
+                <p class="text-blue-300/80 text-[11px] mt-1">روند کار: ثبت وضعیت و پیشنهاد ← انتخاب Quick Win برگزیده ← پایش تا نتیجه ← داشبورد پورتفولیو</p>
             </div>
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2 justify-center">
                 <button onclick="switchView('forms')" id="btnForms" class="bg-amber-500 text-blue-950 px-4 py-2 rounded-xl font-bold text-xs shadow hover:bg-amber-400 transition">📝 فرم‌ها</button>
-                <button onclick="switchView('analytics')" id="btnAnalytics" class="bg-blue-800 text-white px-4 py-2 rounded-xl font-bold text-xs border border-blue-700 hover:bg-blue-700 transition">📊 داشبورد تحلیل و دسته‌بندی</button>
+                <button onclick="switchView('selection')" id="btnSelection" class="bg-blue-800 text-white px-4 py-2 rounded-xl font-bold text-xs border border-blue-700 hover:bg-blue-700 transition">🏆 انتخاب Quick Win</button>
+                <button onclick="switchView('tracking')" id="btnTracking" class="bg-blue-800 text-white px-4 py-2 rounded-xl font-bold text-xs border border-blue-700 hover:bg-blue-700 transition">📈 پایش پیشرفت</button>
+                <button onclick="switchView('analytics')" id="btnAnalytics" class="bg-blue-800 text-white px-4 py-2 rounded-xl font-bold text-xs border border-blue-700 hover:bg-blue-700 transition">📊 داشبورد پورتفولیو</button>
             </div>
         </div>
     </header>
@@ -89,16 +92,54 @@
             </form>
         </div>
 
-        <!-- VIEW 2: ANALYTICS DASHBOARD -->
+        <!-- VIEW 2: SELECTION -->
+        <div id="selectionView" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-2">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-blue-900">🏆 تحلیل، مقایسه و انتخاب Quick Win برگزیده</h2>
+                    <button onclick="loadSelectionData()" class="bg-blue-100 text-blue-900 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200">🔄 بروزرسانی</button>
+                </div>
+                <p class="text-xs text-slate-500">پیشنهادهای دریافتی از کارفرما، مشاور و پیمانکار برای هر پروژه را مقایسه کنید، به هرکدام از نظر اثرگذاری/سرعت اجرا/نیاز به منابع امتیاز دهید و بهترین گزینه را به‌عنوان Quick Win ۳۰ روزه برگزینید. این اقدام نیازمند رمز دفتر مجری طرح است.</p>
+            </div>
+            <div id="selectionContainer" class="space-y-6">
+                <p class="text-center text-slate-400 p-4">در حال بارگذاری...</p>
+            </div>
+        </div>
+
+        <!-- VIEW 3: TRACKING -->
+        <div id="trackingView" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-2">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-blue-900">📈 پایش اقدامات تا حصول نتیجه</h2>
+                    <button onclick="loadTrackingData()" class="bg-blue-100 text-blue-900 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200">🔄 بروزرسانی</button>
+                </div>
+                <p class="text-xs text-slate-500">وضعیت اجرای Quick Win برگزیده هر پروژه را گزارش‌گیری و تا رسیدن به نتیجه نهایی پیگیری کنید.</p>
+            </div>
+            <div id="trackingContainer" class="space-y-6">
+                <p class="text-center text-slate-400 p-4">در حال بارگذاری...</p>
+            </div>
+        </div>
+
+        <!-- VIEW 4: ANALYTICS DASHBOARD -->
         <div id="analyticsView" class="hidden space-y-8">
             <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                 <div class="flex justify-between items-center border-b pb-4">
-                    <h2 class="text-xl font-bold text-blue-900">📊 تحلیل متقاطع دیدگاه‌ها (۳ Perspective Matrix)</h2>
+                    <h2 class="text-xl font-bold text-blue-900">📊 داشبورد پورتفولیو</h2>
                     <button onclick="loadAnalyticsData()" class="bg-blue-100 text-blue-900 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200">🔄 بروزرسانی داده‌ها</button>
                 </div>
-                <p class="text-xs text-slate-500">این جدول، تناقض‌ها و اختلاف‌نظرها بین ۳ طرف پروژه را فوراً آشکار می‌کند.</p>
+                <div id="kpiCards" class="grid grid-cols-2 md:grid-cols-5 gap-3"></div>
+            </div>
 
-                <!-- Comparison Table -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                <h2 class="text-lg font-bold text-slate-800">🧭 پیشرفت Quick Winهای برگزیده</h2>
+                <div id="portfolioList"></div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                <div class="border-b pb-4">
+                    <h2 class="text-xl font-bold text-blue-900">🔍 تحلیل متقاطع دیدگاه‌ها (۳ Perspective Matrix)</h2>
+                    <p class="text-xs text-slate-500 mt-1">این جدول، تناقض‌ها و اختلاف‌نظرها بین ۳ طرف پروژه را فوراً آشکار می‌کند.</p>
+                </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-right text-xs">
                         <thead class="bg-slate-100 text-slate-700">
@@ -115,14 +156,6 @@
                     </table>
                 </div>
             </div>
-
-            <!-- Quick Wins Categorization -->
-            <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                <h2 class="text-xl font-bold text-slate-800">🎯 لیست دسته‌بندی‌شده Quick Winها</h2>
-                <div id="quickWinsList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Cards will be populated dynamically -->
-                </div>
-            </div>
         </div>
 
     </main>
@@ -133,17 +166,45 @@
         // --------------------------------------------------
         const SUPABASE_URL = "https://gaympxsebjicpolapgql.supabase.co";
         const SUPABASE_KEY = "sb_publishable_JZq6MiCKxjahUqHZ_dwxDQ_jckIi1y9";
+        // این رمز فقط یک مانع سبک در رابط کاربری برای اقدامات مدیریتی (انتخاب برگزیده/ثبت پیشرفت) است،
+        // نه یک لایه امنیتی واقعی؛ چون کلید بالا anon/public است و طبق طراحی در دسترس همه‌ست.
+        const MANAGER_PASSCODE = "GAS6-PMO";
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        function esc(str) {
+            const d = document.createElement('div');
+            d.textContent = str ?? '';
+            return d.innerHTML;
+        }
+
+        function scoreSelectHtml() {
+            return `<select class="border rounded p-1">${[1, 2, 3, 4, 5].map(n => `<option value="${n}" ${n === 3 ? 'selected' : ''}>${n}</option>`).join('')}</select>`;
+        }
+
+        function checkPasscode() {
+            if (sessionStorage.getItem('pmo_authed') === '1') return true;
+            const input = prompt('این یک اقدام مدیریتی است. رمز دفتر مجری طرح را وارد کنید:');
+            if (input === null) return false;
+            if (input !== MANAGER_PASSCODE) { alert('رمز نادرست است.'); return false; }
+            try { sessionStorage.setItem('pmo_authed', '1'); } catch (e) {}
+            return true;
+        }
+
+        // --------------------------------------------------
+        // VIEW SWITCHING
+        // --------------------------------------------------
+        const ACTIVE_BTN_CLASS = 'bg-amber-500 text-blue-950 px-4 py-2 rounded-xl font-bold text-xs shadow hover:bg-amber-400 transition';
+        const INACTIVE_BTN_CLASS = 'bg-blue-800 text-white px-4 py-2 rounded-xl font-bold text-xs border border-blue-700 hover:bg-blue-700 transition';
+        const VIEW_BTN_IDS = { forms: 'btnForms', selection: 'btnSelection', tracking: 'btnTracking', analytics: 'btnAnalytics' };
+
         function switchView(view) {
-            if (view === 'forms') {
-                document.getElementById('formsView').classList.remove('hidden');
-                document.getElementById('analyticsView').classList.add('hidden');
-            } else {
-                document.getElementById('formsView').classList.add('hidden');
-                document.getElementById('analyticsView').classList.remove('hidden');
-                loadAnalyticsData();
-            }
+            Object.keys(VIEW_BTN_IDS).forEach(v => {
+                document.getElementById(v + 'View').classList.toggle('hidden', v !== view);
+                document.getElementById(VIEW_BTN_IDS[v]).className = v === view ? ACTIVE_BTN_CLASS : INACTIVE_BTN_CLASS;
+            });
+            if (view === 'selection') loadSelectionData();
+            if (view === 'tracking') loadTrackingData();
+            if (view === 'analytics') loadAnalyticsData();
         }
 
         function switchForm(form) {
@@ -156,6 +217,9 @@
             }
         }
 
+        // --------------------------------------------------
+        // FORM SUBMISSION (X-Ray / Quick-Win intake)
+        // --------------------------------------------------
         async function submitToSupabase(e, formType) {
             e.preventDefault();
             const formData = new FormData(e.target);
@@ -172,43 +236,299 @@
             }
         }
 
-        async function loadAnalyticsData() {
-            const { data, error } = await _supabase.from('project_submissions').select('*');
-            if (error) { alert('خطا در دریافت داده‌ها'); return; }
+        // --------------------------------------------------
+        // SELECTION: compare Quick Win proposals per project and pick one
+        // --------------------------------------------------
+        async function loadSelectionData() {
+            const container = document.getElementById('selectionContainer');
+            container.innerHTML = '<p class="text-center text-slate-400 p-4">در حال دریافت پیشنهادها...</p>';
 
-            // 1. Build 3-Perspective Matrix
-            const projects = {};
-            data.forEach(item => {
-                if (!projects[item.project_name]) projects[item.project_name] = {};
-                if (item.form_type === 'X-Ray') {
-                    projects[item.project_name][item.organization] = item.main_bottleneck;
+            const { data: proposals, error: e1 } = await _supabase.from('project_submissions').select('*').eq('form_type', 'Quick-Win').order('created_at', { ascending: true });
+            const { data: decisions, error: e2 } = await _supabase.from('quick_win_decisions').select('*');
+            if (e1 || e2) { container.innerHTML = '<p class="text-red-600 p-4">خطا در دریافت داده‌ها.</p>'; return; }
+
+            const byProject = {};
+            (proposals || []).forEach(p => { (byProject[p.project_name] ??= []).push(p); });
+
+            const decisionByProject = {};
+            (decisions || []).forEach(d => decisionByProject[d.project_name] = d);
+
+            const projectNames = Object.keys(byProject);
+            if (projectNames.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-400 p-4">هنوز هیچ پیشنهاد Quick Win ثبت نشده است.</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            projectNames.forEach(pName => {
+                const decision = decisionByProject[pName];
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4';
+
+                const header = document.createElement('div');
+                header.className = 'flex justify-between items-center border-b pb-3';
+                header.innerHTML = `<h3 class="font-bold text-blue-900">${esc(pName)}</h3><span class="text-xs bg-slate-100 px-2 py-1 rounded-lg">${byProject[pName].length} پیشنهاد</span>`;
+                card.appendChild(header);
+
+                if (decision) {
+                    const banner = document.createElement('div');
+                    banner.className = 'bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm space-y-1';
+                    banner.innerHTML = `
+                        <p class="font-bold text-emerald-800">✅ منتخب نهایی: ${esc(decision.selected_title)} <span class="font-normal text-emerald-700">(${esc(decision.selected_organization)})</span></p>
+                        ${decision.rationale ? `<p class="text-xs text-slate-600">دلیل انتخاب: ${esc(decision.rationale)}</p>` : ''}
+                        <p class="text-xs text-slate-500">امتیاز اولویت: ${decision.priority_score} | مهلت: ${esc(decision.target_date)}</p>
+                        <button type="button" class="clear-btn text-xs text-red-600 underline mt-1">تغییر انتخاب</button>`;
+                    banner.querySelector('.clear-btn').addEventListener('click', () => clearDecision(pName));
+                    card.appendChild(banner);
                 }
-            });
 
-            const matrixBody = document.getElementById('matrixTableBody');
-            matrixBody.innerHTML = '';
-            Object.keys(projects).forEach(pName => {
-                const row = `<tr>
-                    <td class="p-3 border font-bold bg-slate-50">${pName}</td>
-                    <td class="p-3 border text-blue-900">${projects[pName]['کارفرما'] || '---'}</td>
-                    <td class="p-3 border text-amber-900">${projects[pName]['مشاور'] || '---'}</td>
-                    <td class="p-3 border text-emerald-900">${projects[pName]['پیمانکار'] || '---'}</td>
-                </tr>`;
-                matrixBody.innerHTML += row;
-            });
+                const grid = document.createElement('div');
+                grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-3';
 
-            // 2. Build Quick Wins List
-            const qwList = document.getElementById('quickWinsList');
-            qwList.innerHTML = '';
-            data.filter(i => i.form_type === 'Quick-Win').forEach(qw => {
-                const card = `<div class="p-4 border rounded-xl bg-amber-50/50 space-y-2">
-                    <div class="flex justify-between items-center"><span class="font-bold text-slate-800">${qw.quick_win_title}</span><span class="text-xs bg-amber-200 px-2 py-0.5 rounded">${qw.organization} - ${qw.project_name}</span></div>
-                    <p class="text-xs text-slate-600"><b>اقدام:</b> ${qw.action_details}</p>
-                    <p class="text-xs text-emerald-700"><b>نتیجه ۳۰ روزه:</b> ${qw.tangible_result}</p>
-                    <p class="text-xs text-blue-800"><b>حمایت مجری:</b> ${qw.support_needed}</p>
+                byProject[pName].forEach(prop => {
+                    const isSelected = decision && decision.selected_title === prop.quick_win_title && decision.selected_organization === prop.organization;
+                    const wrap = document.createElement('div');
+                    wrap.innerHTML = `<div class="border rounded-xl p-3 space-y-2 text-xs ${isSelected ? 'ring-2 ring-emerald-400' : ''}">
+                        <div class="flex justify-between"><b>${esc(prop.quick_win_title)}</b><span class="bg-slate-100 px-2 rounded">${esc(prop.organization)}</span></div>
+                        <p><b>اقدام:</b> ${esc(prop.action_details)}</p>
+                        <p class="text-emerald-700"><b>نتیجه ۳۰ روزه:</b> ${esc(prop.tangible_result)}</p>
+                        <p class="text-blue-800"><b>حمایت لازم:</b> ${esc(prop.support_needed)}</p>
+                        <div class="grid grid-cols-3 gap-1 pt-2 border-t text-center">
+                            <label class="flex flex-col gap-0.5">اثرگذاری${scoreSelectHtml()}</label>
+                            <label class="flex flex-col gap-0.5">سرعت اجرا${scoreSelectHtml()}</label>
+                            <label class="flex flex-col gap-0.5">نیاز منابع${scoreSelectHtml()}</label>
+                        </div>
+                        <button type="button" class="select-btn w-full bg-blue-900 hover:bg-blue-800 text-white rounded-lg py-1.5 font-bold">انتخاب به‌عنوان Quick Win برگزیده</button>
+                    </div>`;
+                    const propEl = wrap.firstElementChild;
+                    const selects = propEl.querySelectorAll('select');
+                    propEl.querySelector('.select-btn').addEventListener('click', () => {
+                        selectWinner(pName, prop, Number(selects[0].value), Number(selects[1].value), Number(selects[2].value));
+                    });
+                    grid.appendChild(propEl);
+                });
+
+                card.appendChild(grid);
+                container.appendChild(card);
+            });
+        }
+
+        async function selectWinner(projectName, prop, impact, speed, cost) {
+            if (!checkPasscode()) return;
+            const rationale = prompt('دلیل انتخاب این پیشنهاد به‌عنوان Quick Win برگزیده چیست؟ (اختیاری)') || '';
+            const decidedBy = prompt('نام تصمیم‌گیرنده (مجری طرح):') || 'دفتر مجری طرح';
+            const priority = impact + speed - cost;
+            const targetDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+            const { error } = await _supabase.from('quick_win_decisions').upsert([{
+                project_name: projectName,
+                selected_organization: prop.organization,
+                selected_title: prop.quick_win_title,
+                selected_action: prop.action_details,
+                selected_result: prop.tangible_result,
+                selected_support: prop.support_needed,
+                impact_score: impact,
+                feasibility_score: speed,
+                cost_score: cost,
+                priority_score: priority,
+                rationale: rationale,
+                decided_by: decidedBy,
+                target_date: targetDate
+            }], { onConflict: 'project_name' });
+
+            if (error) { alert('خطا در ثبت تصمیم: ' + error.message); return; }
+            alert('Quick Win برگزیده با موفقیت ثبت شد. از تب «پایش پیشرفت» می‌توانید روند اجرا را دنبال کنید.');
+            loadSelectionData();
+        }
+
+        async function clearDecision(projectName) {
+            if (!checkPasscode()) return;
+            if (!confirm('آیا مطمئنید می‌خواهید انتخاب فعلی این پروژه حذف شود؟')) return;
+            const { error } = await _supabase.from('quick_win_decisions').delete().eq('project_name', projectName);
+            if (error) { alert('خطا: ' + error.message); return; }
+            loadSelectionData();
+        }
+
+        // --------------------------------------------------
+        // TRACKING: progress log for the selected Quick Win, until result
+        // --------------------------------------------------
+        const STATUS_OPTIONS = ['شروع نشده', 'در حال انجام', 'با مانع مواجه', 'تکمیل شده'];
+
+        async function loadTrackingData() {
+            const container = document.getElementById('trackingContainer');
+            container.innerHTML = '<p class="text-center text-slate-400 p-4">در حال دریافت اطلاعات پایش...</p>';
+
+            const { data: decisions, error: e1 } = await _supabase.from('quick_win_decisions').select('*').order('target_date', { ascending: true });
+            const { data: logs, error: e2 } = await _supabase.from('quick_win_progress').select('*').order('created_at', { ascending: true });
+            if (e1 || e2) { container.innerHTML = '<p class="text-red-600 p-4">خطا در دریافت داده‌ها.</p>'; return; }
+
+            if (!decisions || decisions.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-400 p-4">هنوز هیچ Quick Win‌ی انتخاب نشده. ابتدا از تب «انتخاب Quick Win» یک پیشنهاد را برگزینید.</p>';
+                return;
+            }
+
+            const logsByProject = {};
+            (logs || []).forEach(l => { (logsByProject[l.project_name] ??= []).push(l); });
+
+            container.innerHTML = '';
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+
+            decisions.forEach(dec => {
+                const projectLogs = logsByProject[dec.project_name] || [];
+                const latest = projectLogs[projectLogs.length - 1];
+                const percent = latest ? latest.progress_percent : 0;
+                const status = latest ? latest.status : 'شروع نشده';
+
+                const target = new Date(dec.target_date);
+                const daysLeft = Math.round((target - today) / 86400000);
+                const isDone = percent >= 100;
+                const isOverdue = !isDone && daysLeft < 0;
+
+                const badge = isDone
+                    ? '<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded-lg text-xs font-bold">✅ تکمیل شده</span>'
+                    : isOverdue
+                        ? `<span class="bg-red-100 text-red-800 px-2 py-1 rounded-lg text-xs font-bold">⏰ ${Math.abs(daysLeft)} روز تأخیر</span>`
+                        : `<span class="bg-amber-100 text-amber-800 px-2 py-1 rounded-lg text-xs font-bold">${daysLeft} روز باقی‌مانده</span>`;
+                const barColor = isDone ? 'bg-emerald-500' : isOverdue ? 'bg-red-500' : 'bg-blue-900';
+
+                const timelineHtml = projectLogs.slice().reverse().map(l => `
+                    <div class="flex gap-2 text-xs border-r-2 border-slate-200 pr-3 py-1 flex-wrap">
+                        <span class="text-slate-400 whitespace-nowrap">${esc(new Date(l.created_at).toISOString().slice(0, 10))}</span>
+                        <span class="font-bold">${esc(l.status)}</span>
+                        <span class="text-slate-500">${l.progress_percent}%</span>
+                        <span class="text-slate-600">${esc(l.note || '')}</span>
+                        <span class="text-slate-400">- ${esc(l.reported_by || '')}</span>
+                    </div>`).join('') || '<p class="text-xs text-slate-400">هنوز بروزرسانی‌ای ثبت نشده.</p>';
+
+                const statusOptionsHtml = STATUS_OPTIONS.map(s => `<option ${s === status ? 'selected' : ''}>${s}</option>`).join('');
+
+                const wrap = document.createElement('div');
+                wrap.innerHTML = `<div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-3">
+                    <div class="flex justify-between items-center flex-wrap gap-2">
+                        <div>
+                            <h3 class="font-bold text-blue-900">${esc(dec.project_name)}</h3>
+                            <p class="text-xs text-slate-500">${esc(dec.selected_title)} (${esc(dec.selected_organization)})</p>
+                        </div>
+                        ${badge}
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2.5">
+                        <div class="${barColor} h-2.5 rounded-full" style="width:${Math.min(percent, 100)}%"></div>
+                    </div>
+                    <p class="text-xs text-slate-500">وضعیت فعلی: <b>${esc(status)}</b> — مهلت: ${esc(dec.target_date)}</p>
+                    <div class="space-y-1 max-h-40 overflow-y-auto">${timelineHtml}</div>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-2 pt-3 border-t text-xs">
+                        <select class="status-select border rounded-lg p-2">${statusOptionsHtml}</select>
+                        <input class="percent-input border rounded-lg p-2" type="number" min="0" max="100" value="${percent}" placeholder="درصد پیشرفت">
+                        <input class="note-input border rounded-lg p-2 md:col-span-2" type="text" placeholder="توضیح بروزرسانی">
+                    </div>
+                    <button type="button" class="update-btn w-full bg-amber-600 hover:bg-amber-500 text-white rounded-lg py-2 font-bold text-xs">ثبت بروزرسانی پیشرفت</button>
                 </div>`;
-                qwList.innerHTML += card;
+
+                const cardEl = wrap.firstElementChild;
+                const statusSel = cardEl.querySelector('.status-select');
+                const percentInput = cardEl.querySelector('.percent-input');
+                const noteInput = cardEl.querySelector('.note-input');
+                cardEl.querySelector('.update-btn').addEventListener('click', () => {
+                    addProgressUpdate(dec.project_name, statusSel.value, percentInput.value, noteInput.value);
+                });
+                container.appendChild(cardEl);
             });
+        }
+
+        async function addProgressUpdate(projectName, status, rawPercent, note) {
+            let percent = Math.max(0, Math.min(100, Number(rawPercent) || 0));
+            if (status === 'تکمیل شده') percent = 100;
+
+            if (!checkPasscode()) return;
+            const reportedBy = prompt('نام گزارش‌دهنده:') || 'دفتر مجری طرح';
+
+            const { error } = await _supabase.from('quick_win_progress').insert([{
+                project_name: projectName, status, progress_percent: percent, note, reported_by: reportedBy
+            }]);
+            if (error) { alert('خطا در ثبت بروزرسانی: ' + error.message); return; }
+            loadTrackingData();
+        }
+
+        // --------------------------------------------------
+        // ANALYTICS: portfolio KPIs + 3-perspective matrix + progress list
+        // --------------------------------------------------
+        function kpiCard(label, value, colorClass) {
+            return `<div class="bg-slate-50 rounded-xl p-4 text-center border">
+                <p class="text-2xl font-bold ${colorClass}">${value}</p>
+                <p class="text-xs text-slate-500 mt-1">${label}</p>
+            </div>`;
+        }
+
+        async function loadAnalyticsData() {
+            const { data: subs, error: e1 } = await _supabase.from('project_submissions').select('*');
+            const { data: decisions, error: e2 } = await _supabase.from('quick_win_decisions').select('*');
+            const { data: logs, error: e3 } = await _supabase.from('quick_win_progress').select('*');
+            if (e1 || e2 || e3) { alert('خطا در دریافت داده‌ها'); return; }
+
+            // 1. 3-Perspective Matrix (X-Ray bottlenecks)
+            const projects = {};
+            (subs || []).forEach(item => {
+                if (!projects[item.project_name]) projects[item.project_name] = {};
+                if (item.form_type === 'X-Ray') projects[item.project_name][item.organization] = item.main_bottleneck;
+            });
+            const matrixBody = document.getElementById('matrixTableBody');
+            const projectKeys = Object.keys(projects);
+            matrixBody.innerHTML = projectKeys.length === 0
+                ? '<tr><td colspan="4" class="p-4 text-center text-slate-400">داده‌ای ثبت نشده است.</td></tr>'
+                : projectKeys.map(pName => `<tr>
+                        <td class="p-3 border font-bold bg-slate-50">${esc(pName)}</td>
+                        <td class="p-3 border text-blue-900">${esc(projects[pName]['کارفرما'] || '---')}</td>
+                        <td class="p-3 border text-amber-900">${esc(projects[pName]['مشاور'] || '---')}</td>
+                        <td class="p-3 border text-emerald-900">${esc(projects[pName]['پیمانکار'] || '---')}</td>
+                    </tr>`).join('');
+
+            // 2. Portfolio KPIs
+            const totalProjects = new Set((subs || []).map(s => s.project_name)).size;
+            const totalProposals = (subs || []).filter(s => s.form_type === 'Quick-Win').length;
+            const totalDecided = (decisions || []).length;
+
+            const logsByProject = {};
+            (logs || []).forEach(l => { (logsByProject[l.project_name] ??= []).push(l); });
+
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            let completed = 0, overdue = 0;
+            (decisions || []).forEach(dec => {
+                const pl = logsByProject[dec.project_name] || [];
+                const latest = pl[pl.length - 1];
+                const percent = latest ? latest.progress_percent : 0;
+                if (percent >= 100) completed++;
+                else if (new Date(dec.target_date) < today) overdue++;
+            });
+
+            document.getElementById('kpiCards').innerHTML =
+                kpiCard('پروژه‌های تحت پایش', totalProjects, 'text-blue-900') +
+                kpiCard('پیشنهادهای Quick Win', totalProposals, 'text-amber-700') +
+                kpiCard('Quick Win برگزیده‌شده', totalDecided, 'text-blue-900') +
+                kpiCard('تکمیل‌شده', completed, 'text-emerald-700') +
+                kpiCard('دارای تأخیر', overdue, 'text-red-700');
+
+            // 3. Portfolio progress list (overdue first, then nearest deadline)
+            const rows = (decisions || []).map(dec => {
+                const pl = logsByProject[dec.project_name] || [];
+                const latest = pl[pl.length - 1];
+                const percent = latest ? latest.progress_percent : 0;
+                const daysLeft = Math.round((new Date(dec.target_date) - today) / 86400000);
+                return { project_name: dec.project_name, percent, daysLeft };
+            }).sort((a, b) => a.daysLeft - b.daysLeft);
+
+            document.getElementById('portfolioList').innerHTML = rows.length === 0
+                ? '<p class="text-xs text-slate-400 text-center py-4">هنوز Quick Win‌ای برای پایش انتخاب نشده است.</p>'
+                : rows.map(r => {
+                    const isDone = r.percent >= 100;
+                    const isOverdue = !isDone && r.daysLeft < 0;
+                    const barColor = isDone ? 'bg-emerald-500' : isOverdue ? 'bg-red-500' : 'bg-blue-900';
+                    const tag = isDone ? 'تکمیل شده' : isOverdue ? `${Math.abs(r.daysLeft)} روز تأخیر` : `${r.daysLeft} روز باقی‌مانده`;
+                    return `<div class="flex items-center gap-3 text-xs py-2 border-b last:border-0">
+                        <span class="w-32 truncate font-bold">${esc(r.project_name)}</span>
+                        <div class="flex-1 bg-slate-100 rounded-full h-2"><div class="${barColor} h-2 rounded-full" style="width:${Math.min(r.percent, 100)}%"></div></div>
+                        <span class="w-24 text-left text-slate-500">${esc(tag)}</span>
+                    </div>`;
+                }).join('');
         }
     </script>
 </body>
