@@ -161,11 +161,11 @@ ${progressText}
         return jsonResponse({ error: "کلید Gemini هنوز در تنظیمات Supabase (Secrets) ثبت نشده است." }, 500);
       }
 
-      // gemini-2.0-flash is a current fast/free-tier-friendly model; check
-      // ai.google.dev/models for the latest recommended free-tier model
-      // name if this one starts returning a "model not found" error.
+      // Check ai.google.dev/models for the current recommended free-tier
+      // model name if this one starts returning a "model not found" error
+      // (Google periodically retires older model versions).
       const aiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`,
         {
           method: "POST",
           headers: { "content-type": "application/json" },
