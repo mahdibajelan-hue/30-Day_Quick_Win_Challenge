@@ -583,19 +583,25 @@
                 header.innerHTML = `<h3 class="font-bold text-blue-900">${esc(pName)}</h3>
                     <div class="flex items-center gap-2">
                         <span class="text-xs bg-slate-100 px-2 py-1 rounded-lg">${byProject[pName].length} پیشنهاد فعال</span>
-                        ${isAdmin ? '<button type="button" class="ai-btn text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-lg font-bold hover:bg-purple-200">🤖 تحلیل هوشمند</button>' : ''}
+                        ${isAdmin ? `
+                        <select class="ai-provider-select text-xs border rounded-lg p-1.5">
+                            <option value="gemini">Gemini (رایگان)</option>
+                            <option value="openai">ChatGPT</option>
+                        </select>
+                        <button type="button" class="ai-btn text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-lg font-bold hover:bg-purple-200">🤖 تحلیل هوشمند</button>` : ''}
                     </div>`;
                 card.appendChild(header);
 
                 if (isAdmin) {
                     const aiPanel = document.createElement('div');
                     aiPanel.className = 'hidden bg-purple-50 border border-purple-200 rounded-xl p-4';
+                    const providerSelect = header.querySelector('.ai-provider-select');
                     header.querySelector('.ai-btn').addEventListener('click', () => {
                         if (aiPanel.dataset.loaded === '1' && !aiPanel.classList.contains('hidden')) {
                             aiPanel.classList.add('hidden');
                             return;
                         }
-                        runAiAnalysis(pName, aiPanel);
+                        runAiAnalysis(pName, providerSelect.value, aiPanel);
                     });
                     card.appendChild(aiPanel);
                 }
@@ -649,13 +655,13 @@
         // --------------------------------------------------
         // AI ANALYSIS: admin-only, runs server-side via a Supabase Edge Function
         // --------------------------------------------------
-        async function runAiAnalysis(projectName, panelEl) {
+        async function runAiAnalysis(projectName, provider, panelEl) {
             panelEl.classList.remove('hidden');
             panelEl.dataset.loaded = '0';
             panelEl.innerHTML = '<p class="text-xs text-purple-700">🤖 در حال تحلیل ۳ دیدگاه با هوش مصنوعی...</p>';
 
             try {
-                const { data, error } = await _supabase.functions.invoke('analyze-project', { body: { project_name: projectName } });
+                const { data, error } = await _supabase.functions.invoke('analyze-project', { body: { project_name: projectName, provider } });
 
                 if (error) {
                     let message = error.message || String(error);
@@ -670,7 +676,8 @@
                     return;
                 }
 
-                panelEl.innerHTML = `<div class="text-xs text-purple-900 whitespace-pre-wrap leading-relaxed">${esc(data.analysis)}</div>`;
+                const providerLabel = data.provider === 'openai' ? 'ChatGPT' : 'Gemini';
+                panelEl.innerHTML = `<p class="text-xs text-purple-500 font-bold mb-2">تحلیل توسط ${esc(providerLabel)}:</p><div class="text-xs text-purple-900 whitespace-pre-wrap leading-relaxed">${esc(data.analysis)}</div>`;
                 panelEl.dataset.loaded = '1';
             } catch (e) {
                 panelEl.innerHTML = `<p class="text-xs text-red-600">خطای غیرمنتظره: ${esc(e.message || String(e))}</p>`;

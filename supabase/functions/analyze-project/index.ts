@@ -1,19 +1,23 @@
 // Supabase Edge Function: analyze-project
 //
 // Called from the app's admin-only "🤖 تحلیل هوشمند" button. Fetches every
-// organization's latest check-in for a project, asks Claude for a short
-// analytical report, and returns it. The Anthropic API key stays server-side
-// (in this function's secrets) and is never exposed to the browser.
+// organization's latest check-in for a project and asks either Gemini or
+// ChatGPT (caller's choice) for a short analytical report. Whichever
+// provider's API key stays server-side (in this function's secrets) and is
+// never exposed to the browser.
 //
 // Deploy: paste this file's content into a new Edge Function named
 // "analyze-project" in the Supabase dashboard (or `supabase functions deploy
-// analyze-project` if using the CLI), then set the ANTHROPIC_API_KEY secret.
+// analyze-project` if using the CLI), then set at least one of the secrets
+// GEMINI_API_KEY / OPENAI_API_KEY (only the one(s) you actually plan to use).
+// Note: Gemini's API has an ongoing free tier (rate-limited); OpenAI's API
+// generally requires a billed account, so "ChatGPT" here is only free if
+// your OpenAI account happens to have free credit.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY")!;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -55,8 +59,9 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "این تحلیل فقط برای ادمین سامانه در دسترس است." }, 403);
     }
 
-    const { project_name } = await req.json();
+    const { project_name, provider } = await req.json();
     if (!project_name) return jsonResponse({ error: "project_name الزامی است." }, 400);
+    const chosenProvider = provider === "openai" ? "openai" : "gemini";
 
     const { data: checkins } = await supabase
       .from("check_ins")
@@ -121,29 +126,65 @@ ${progressText}
 
 خروجی باید مختصر، دقیق، و قابل ارائه مستقیم به مدیر اجرایی طرح باشد.`;
 
-    const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-5",
-        max_tokens: 2000,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
+    let analysisText: string;
 
-    if (!aiRes.ok) {
-      const errText = await aiRes.text();
-      return jsonResponse({ error: "خطا در فراخوانی سرویس هوش مصنوعی: " + errText }, 502);
+    if (chosenProvider === "openai") {
+      const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+      if (!OPENAI_API_KEY) {
+        return jsonResponse({ error: "کلید OpenAI هنوز در تنظیمات Supabase (Secrets) ثبت نشده است." }, 500);
+      }
+
+      const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        },
+        // gpt-4o-mini is a good low-cost default; change if your account uses a different model.
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          max_tokens: 2000,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+
+      if (!aiRes.ok) {
+        const errText = await aiRes.text();
+        return jsonResponse({ error: "خطا در فراخوانی ChatGPT: " + errText }, 502);
+      }
+
+      const aiData = await aiRes.json();
+      analysisText = aiData.choices?.[0]?.message?.content || "پاسخی دریافت نشد.";
+    } else {
+      const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+      if (!GEMINI_API_KEY) {
+        return jsonResponse({ error: "کلید Gemini هنوز در تنظیمات Supabase (Secrets) ثبت نشده است." }, 500);
+      }
+
+      // gemini-2.0-flash is a current fast/free-tier-friendly model; check
+      // ai.google.dev/models for the latest recommended free-tier model
+      // name if this one starts returning a "model not found" error.
+      const aiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+          }),
+        },
+      );
+
+      if (!aiRes.ok) {
+        const errText = await aiRes.text();
+        return jsonResponse({ error: "خطا در فراخوانی Gemini: " + errText }, 502);
+      }
+
+      const aiData = await aiRes.json();
+      analysisText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "پاسخی دریافت نشد.";
     }
 
-    const aiData = await aiRes.json();
-    const analysisText = aiData.content?.[0]?.text || "پاسخی دریافت نشد.";
-
-    return jsonResponse({ analysis: analysisText });
+    return jsonResponse({ analysis: analysisText, provider: chosenProvider });
   } catch (err) {
     return jsonResponse({ error: String(err) }, 500);
   }
