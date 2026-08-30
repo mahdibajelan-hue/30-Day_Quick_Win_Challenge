@@ -462,6 +462,16 @@
                     <div id="reportKpiCards" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
                 </div>
 
+                <div id="reportClientCard" class="hidden print-card bg-white rounded-2xl shadow-sm border p-6 space-y-4">
+                    <h3 class="text-sm font-bold text-slate-800 border-r-4 border-blue-900 pr-3">اطلاعات پایه و پیشرفت پروژه (فرم کارفرما)</h3>
+                    <div id="reportClientKpis" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs">
+                            <tbody id="reportClientTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <div class="print-card bg-white rounded-2xl shadow-sm border p-6 space-y-4">
                     <h3 class="text-sm font-bold text-slate-800 border-r-4 border-blue-900 pr-3">مقایسه پیشرفت گزارش‌شده توسط هر طرف</h3>
                     <div style="max-height:320px">
@@ -1475,6 +1485,42 @@
             });
         }
 
+        function renderClientReportCard(rec) {
+            const card = document.getElementById('reportClientCard');
+            if (!rec) { card.classList.add('hidden'); return; }
+            card.classList.remove('hidden');
+
+            const variance = (typeof rec.progress_physical === 'number' && typeof rec.progress_planned === 'number')
+                ? rec.progress_physical - rec.progress_planned : null;
+            const elapsedPercent = (rec.contract_duration_months && rec.elapsed_months != null)
+                ? Math.round((rec.elapsed_months / rec.contract_duration_months) * 100) : null;
+
+            document.getElementById('reportClientKpis').innerHTML =
+                kpiCard('پیشرفت برنامه‌ای', rec.progress_planned != null ? toPersianDigits(rec.progress_planned) + '٪' : '-', 'text-blue-900') +
+                kpiCard('پیشرفت واقعی', rec.progress_physical != null ? toPersianDigits(rec.progress_physical) + '٪' : '-', 'text-blue-900') +
+                kpiCard('انحراف پیشرفت', variance !== null ? (variance > 0 ? '+' : '') + toPersianDigits(variance) + '٪' : '-', variance !== null && variance < -5 ? 'text-red-700' : 'text-emerald-700') +
+                kpiCard('مدت سپری‌شده از قرارداد', elapsedPercent !== null ? toPersianDigits(elapsedPercent) + '٪' : '-', 'text-amber-700');
+
+            const rows = [
+                ['نام طرح', rec.plan_name],
+                ['شماره قرارداد', rec.contract_number],
+                ['نوع قرارداد', rec.contract_type === 'سایر' ? rec.contract_type_other : rec.contract_type],
+                ['پیمانکار', rec.contractor_name],
+                ['مشاور', rec.consultant_name],
+                ['مدیر پروژه کارفرما', rec.client_pm_name],
+                ['مبلغ اولیه / فعلی قرارداد (ریال)', [rec.contract_initial_amount, rec.contract_current_amount].filter(v => v != null).map(v => toPersianDigits(v)).join(' / ')],
+                ['تاریخ شروع / پایان قرارداد', [formatJalali(rec.contract_start_date), formatJalali(rec.contract_end_date)].filter(Boolean).join(' — ')],
+                ['مدت قرارداد / سپری‌شده (ماه)', [rec.contract_duration_months, rec.elapsed_months].filter(v => v != null).map(v => toPersianDigits(v)).join(' / ')],
+                ['پیشرفت مهندسی / تأمین / اجرا', [rec.progress_engineering, rec.progress_procurement, rec.progress_construction].map(v => v != null ? toPersianDigits(v) + '٪' : '-').join(' / ')],
+                ['مهم‌ترین Milestone پیش‌رو', rec.milestone_name ? `${rec.milestone_name} — ${formatJalali(rec.milestone_planned_date)} — ${rec.milestone_status}${rec.milestone_delay_days ? ' (' + toPersianDigits(rec.milestone_delay_days) + ' روز تأخیر)' : ''}` : null],
+            ];
+
+            document.getElementById('reportClientTableBody').innerHTML = rows
+                .filter(([, v]) => v !== undefined && v !== null && v !== '')
+                .map(([label, v]) => `<tr><td class="p-2 border font-bold bg-slate-50 w-1/3">${esc(label)}</td><td class="p-2 border">${esc(String(v))}</td></tr>`)
+                .join('') || '<tr><td class="p-2 border text-center text-slate-400">-</td></tr>';
+        }
+
         async function loadAiReport(projectName, provider) {
             document.getElementById('reportProjectName').textContent = projectName;
             document.getElementById('reportGeneratedAt').textContent = todayJalali();
@@ -1487,10 +1533,13 @@
             const { data: checkins, error: e1 } = await _supabase.from('check_ins').select('*').eq('project_name', projectName).order('created_at', { ascending: true });
             if (e1) { document.getElementById('reportAiText').innerHTML = `<p class="text-red-600 text-xs">خطا در دریافت داده‌ها: ${esc(e1.message)}</p>`; return; }
 
+            const { data: clientReports } = await _supabase.from('client_reports').select('*').eq('project_name', projectName).order('created_at', { ascending: false }).limit(1);
+
             const latestByOrg = {};
             (checkins || []).forEach(c => { latestByOrg[c.organization] = c; });
 
             renderReportKpis(latestByOrg);
+            renderClientReportCard(clientReports && clientReports[0]);
             renderReportTable(latestByOrg);
             renderReportChart(latestByOrg);
 
