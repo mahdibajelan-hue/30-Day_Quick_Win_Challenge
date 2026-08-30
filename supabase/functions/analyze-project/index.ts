@@ -1,0 +1,191 @@
+// Supabase Edge Function: analyze-project
+//
+// Called from the app's admin-only "🤖 تحلیل هوشمند" button. Fetches every
+// organization's latest check-in for a project and asks either Gemini or
+// ChatGPT (caller's choice) for a short analytical report. Whichever
+// provider's API key stays server-side (in this function's secrets) and is
+// never exposed to the browser.
+//
+// Deploy: paste this file's content into a new Edge Function named
+// "analyze-project" in the Supabase dashboard (or `supabase functions deploy
+// analyze-project` if using the CLI), then set at least one of the secrets
+// GEMINI_API_KEY / OPENAI_API_KEY (only the one(s) you actually plan to use).
+// Note: Gemini's API has an ongoing free tier (rate-limited); OpenAI's API
+// generally requires a billed account, so "ChatGPT" here is only free if
+// your OpenAI account happens to have free credit.
+
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...CORS_HEADERS, "content-type": "application/json" },
+  });
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: CORS_HEADERS });
+  }
+
+  try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return jsonResponse({ error: "Unauthorized" }, 401);
+
+    // Client scoped to the caller's own JWT: identifies who is asking and
+    // lets Postgres RLS decide what they're allowed to read.
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return jsonResponse({ error: "Unauthorized" }, 401);
+
+    const { data: profile } = await supabase
+      .from("app_users")
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!profile || profile.role !== "admin") {
+      return jsonResponse({ error: "این تحلیل فقط برای ادمین سامانه در دسترس است." }, 403);
+    }
+
+    const { project_name, provider } = await req.json();
+    if (!project_name) return jsonResponse({ error: "project_name الزامی است." }, 400);
+    const chosenProvider = provider === "openai" ? "openai" : "gemini";
+
+    const { data: checkins } = await supabase
+      .from("check_ins")
+      .select("*")
+      .eq("project_name", project_name)
+      .order("created_at", { ascending: true });
+
+    if (!checkins || checkins.length === 0) {
+      return jsonResponse({ error: "برای این پروژه هنوز گزارشی ثبت نشده است." }, 404);
+    }
+
+    const { data: decision } = await supabase
+      .from("quick_win_decisions")
+      .select("*")
+      .eq("project_name", project_name)
+      .maybeSingle();
+
+    const { data: progress } = await supabase
+      .from("quick_win_progress")
+      .select("*")
+      .eq("project_name", project_name)
+      .order("created_at", { ascending: true });
+
+    // Keep only the latest check-in per organization (the current perspective).
+    // deno-lint-ignore no-explicit-any
+    const latestByOrg: Record<string, any> = {};
+    for (const c of checkins) latestByOrg[c.organization] = c;
+
+    const perspectiveText = Object.entries(latestByOrg)
+      .map(([org, c]: [string, any]) => `
+### دیدگاه ${org}
+- پاسخ‌دهنده: ${c.respondent || "-"}
+- وضعیت‌ها: ROW=${c.status_row}, تدارکات=${c.status_procurement}, اجرا=${c.status_construction}, مالی=${c.status_finance}
+- پیشرفت برنامه‌ای: ${c.planned_progress ?? "-"}% | پیشرفت فیزیکی واقعی: ${c.physical_progress}% | پیشرفت مالی: ${c.financial_progress}%
+- تاریخ پیش‌بینی فعلی تکمیل: ${c.forecast_completion_date}
+- نیروی انسانی مستقر: ${c.manpower_count ?? "-"} | نرخ ردی جوش: ${c.weld_reject_rate ?? "-"}%
+- رویداد HSE: ${c.hse_incident ? "بله - " + c.hse_incident_note : "خیر"}
+- گلوگاه فعلی: ${c.main_bottleneck}
+- ریسک پیش‌رو (شدت ${c.risk_severity ?? "-"}/۵): ${c.top_risk}
+- پیشنهاد Quick Win: ${c.quick_win_title} — اقدام: ${c.action_details} — نتیجه ۳۰ روزه: ${c.tangible_result} — حمایت لازم: ${c.support_needed}`)
+      .join("\n");
+
+    const decisionText = decision
+      ? `\nQuick Win برگزیده فعلی: ${decision.selected_title} (${decision.selected_organization}) — دلیل: ${decision.rationale || "-"} — مهلت: ${decision.target_date}`
+      : "\nهنوز Quick Win‌ی برای این پروژه انتخاب نشده است.";
+
+    const progressText = progress && progress.length > 0
+      // deno-lint-ignore no-explicit-any
+      ? "\nتاریخچه پایش:\n" + progress.map((p: any) => `- ${String(p.created_at).slice(0, 10)}: ${p.status}, ${p.progress_percent}% — ${p.note || ""}`).join("\n")
+      : "";
+
+    const prompt = `شما یک متخصص مدیریت پورتفولیوی پروژه‌های خط انتقال گاز هستید. اطلاعات زیر گزارش‌های دوره‌ای پروژه «${project_name}» است که توسط کارفرما، مشاور و پیمانکار به‌طور مستقل ثبت شده است:
+${perspectiveText}
+${decisionText}
+${progressText}
+
+یک گزارش تحلیلی مختصر و کاربردی به فارسی، دقیقاً با این ساختار تولید کن:
+۱. **تناقض‌های کلیدی بین دیدگاه‌ها** — اگر عددی یا توصیفی بین ۳ طرف مغایرت دارد، دقیقاً نام ببر.
+۲. **مهم‌ترین ریسک/گلوگاه پروژه در حال حاضر** — با توجیه کوتاه.
+۳. **پیشنهاد اقدام اولویت‌دار برای ۳۰ روز آینده** — مشخص و عملیاتی.
+۴. **جمع‌بندی وضعیت کلی در یک جمله** — سبز/زرد/قرمز و چرا.
+
+خروجی باید مختصر، دقیق، و قابل ارائه مستقیم به مدیر اجرایی طرح باشد.`;
+
+    let analysisText: string;
+
+    if (chosenProvider === "openai") {
+      const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+      if (!OPENAI_API_KEY) {
+        return jsonResponse({ error: "کلید OpenAI هنوز در تنظیمات Supabase (Secrets) ثبت نشده است." }, 500);
+      }
+
+      const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        },
+        // gpt-4o-mini is a good low-cost default; change if your account uses a different model.
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          max_tokens: 2000,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+
+      if (!aiRes.ok) {
+        const errText = await aiRes.text();
+        return jsonResponse({ error: "خطا در فراخوانی ChatGPT: " + errText }, 502);
+      }
+
+      const aiData = await aiRes.json();
+      analysisText = aiData.choices?.[0]?.message?.content || "پاسخی دریافت نشد.";
+    } else {
+      const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+      if (!GEMINI_API_KEY) {
+        return jsonResponse({ error: "کلید Gemini هنوز در تنظیمات Supabase (Secrets) ثبت نشده است." }, 500);
+      }
+
+      // gemini-2.0-flash is a current fast/free-tier-friendly model; check
+      // ai.google.dev/models for the latest recommended free-tier model
+      // name if this one starts returning a "model not found" error.
+      const aiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+          }),
+        },
+      );
+
+      if (!aiRes.ok) {
+        const errText = await aiRes.text();
+        return jsonResponse({ error: "خطا در فراخوانی Gemini: " + errText }, 502);
+      }
+
+      const aiData = await aiRes.json();
+      analysisText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "پاسخی دریافت نشد.";
+    }
+
+    return jsonResponse({ analysis: analysisText, provider: chosenProvider });
+  } catch (err) {
+    return jsonResponse({ error: String(err) }, 500);
+  }
+});
