@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سامانه تحول و پایش پروژه‌ها | شرکت گاز</title>
+    <title>دفتر مجری طرح‌های توسعه گاز | خط انتقال گاز ششم سراسری</title>
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Library -->
@@ -16,8 +16,9 @@
     <header class="bg-blue-900 text-white shadow-lg border-b-4 border-amber-500">
         <div class="max-w-6xl mx-auto px-4 py-5 flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
-                <h1 class="text-2xl font-bold">سامانه تحول و پایش ۳۰ روزه پروژه‌ها</h1>
-                <p class="text-blue-200 text-sm mt-1" id="headerSubtitle">دفتر مجری طرح‌های توسعه شرکت گاز</p>
+                <h1 class="text-2xl font-bold">دفتر مجری طرح‌های توسعه گاز</h1>
+                <p class="text-blue-200 text-sm mt-1">طرح خط انتقال گاز ششم سراسری</p>
+                <p class="text-blue-300/80 text-xs mt-0.5" id="headerSubtitle">سامانه تحول و پایش ۳۰ روزه پروژه‌ها</p>
             </div>
             <div class="flex flex-wrap gap-2 justify-center items-center" id="navButtons"></div>
         </div>
@@ -79,8 +80,9 @@
                         <div class="p-3 bg-slate-50 rounded-xl flex justify-between items-center"><span>مالی و صورت‌وضعیت‌ها</span><select id="ci_status_finance" class="p-1 border rounded text-xs"><option>🟢 سبز</option><option>🟡 زرد</option><option>🔴 قرمز</option></select></div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div><label class="block text-xs font-semibold mb-1">% پیشرفت فیزیکی *</label><input type="number" id="ci_physical_progress" min="0" max="100" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div><label class="block text-xs font-semibold mb-1">% پیشرفت برنامه‌ای *</label><input type="number" id="ci_planned_progress" min="0" max="100" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                        <div><label class="block text-xs font-semibold mb-1">% پیشرفت فیزیکی (واقعی) *</label><input type="number" id="ci_physical_progress" min="0" max="100" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                         <div><label class="block text-xs font-semibold mb-1">% پیشرفت مالی *</label><input type="number" id="ci_financial_progress" min="0" max="100" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                         <div><label class="block text-xs font-semibold mb-1">تاریخ پیش‌بینی فعلی تکمیل پروژه *</label><input type="date" id="ci_forecast_date" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                     </div>
@@ -101,8 +103,23 @@
                         <input type="text" id="ci_hse_note" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500">
                     </div>
 
-                    <div><label class="block text-xs font-semibold mb-1">مهم‌ترین گلوگاه فعلی پروژه *</label><textarea id="ci_bottleneck" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></textarea></div>
-                    <div><label class="block text-xs font-semibold mb-1">مهم‌ترین ریسک پیش‌رو (ماه آینده) *</label><textarea id="ci_top_risk" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></textarea></div>
+                    <div><label class="block text-xs font-semibold mb-1">مهم‌ترین گلوگاه و مشکل فعلی پروژه *</label><textarea id="ci_bottleneck" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></textarea></div>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="md:col-span-3">
+                            <label class="block text-xs font-semibold mb-1">مهم‌ترین ریسک پیش‌رو (ماه آینده) *</label>
+                            <textarea id="ci_top_risk" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">شدت این ریسک *</label>
+                            <select id="ci_risk_severity" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
+                                <option value="1">۱ - کم</option>
+                                <option value="2">۲</option>
+                                <option value="3" selected>۳ - متوسط</option>
+                                <option value="4">۴</option>
+                                <option value="5">۵ - بحرانی</option>
+                            </select>
+                        </div>
+                    </div>
 
                     <h3 class="text-sm font-bold border-r-4 border-amber-500 pr-3">پیشنهاد Quick Win این دوره</h3>
                     <div><label class="block text-xs font-semibold mb-1">عنوان Quick Win *</label><input type="text" id="ci_qw_title" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
@@ -434,9 +451,11 @@
                 status_procurement: document.getElementById('ci_status_procurement').value,
                 status_construction: document.getElementById('ci_status_construction').value,
                 status_finance: document.getElementById('ci_status_finance').value,
+                planned_progress: Number(document.getElementById('ci_planned_progress').value),
                 physical_progress: Number(document.getElementById('ci_physical_progress').value),
                 financial_progress: Number(document.getElementById('ci_financial_progress').value),
                 forecast_completion_date: document.getElementById('ci_forecast_date').value,
+                risk_severity: Number(document.getElementById('ci_risk_severity').value),
                 manpower_count: manpowerVal ? Number(manpowerVal) : null,
                 weld_reject_rate: weldVal ? Number(weldVal) : null,
                 hse_incident: hseIncident,
@@ -766,7 +785,19 @@
             });
             const matrixBody = document.getElementById('matrixTableBody');
             const projectKeys = Object.keys(projects);
-            const cell = (rec) => rec ? `${esc(rec.main_bottleneck)} <span class="text-slate-400">(پیشرفت ${rec.physical_progress}%)</span>` : '---';
+            const cell = (rec) => {
+                if (!rec) return '---';
+                const hasPlanned = typeof rec.planned_progress === 'number';
+                const variance = hasPlanned ? rec.physical_progress - rec.planned_progress : null;
+                const varianceText = hasPlanned ? ` / برنامه ${rec.planned_progress}٪` : '';
+                const varianceTag = variance !== null && variance < -5
+                    ? ' <span class="text-red-600 font-bold">(عقب از برنامه)</span>'
+                    : variance !== null && variance > 5
+                        ? ' <span class="text-emerald-600 font-bold">(جلوتر از برنامه)</span>'
+                        : '';
+                const riskTag = typeof rec.risk_severity === 'number' && rec.risk_severity >= 4 ? ' <span class="text-red-600">⚠️ ریسک بالا</span>' : '';
+                return `${esc(rec.main_bottleneck)} <span class="text-slate-400">(واقعی ${rec.physical_progress}٪${varianceText})</span>${varianceTag}${riskTag}`;
+            };
             matrixBody.innerHTML = projectKeys.length === 0
                 ? '<tr><td colspan="4" class="p-4 text-center text-slate-400">داده‌ای ثبت نشده است.</td></tr>'
                 : projectKeys.map(pName => `<tr>
