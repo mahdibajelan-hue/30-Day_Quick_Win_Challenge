@@ -103,7 +103,7 @@
                         <div><label class="block text-xs font-semibold mb-1">% پیشرفت برنامه‌ای *</label><input type="number" id="ci_planned_progress" min="0" max="100" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                         <div><label class="block text-xs font-semibold mb-1">% پیشرفت فیزیکی (واقعی) *</label><input type="number" id="ci_physical_progress" min="0" max="100" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                         <div><label class="block text-xs font-semibold mb-1">% پیشرفت مالی *</label><input type="number" id="ci_financial_progress" min="0" max="100" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                        <div><label class="block text-xs font-semibold mb-1">تاریخ پیش‌بینی فعلی تکمیل پروژه *</label><input type="date" id="ci_forecast_date" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                        <div><label class="block text-xs font-semibold mb-1">تاریخ پیش‌بینی فعلی تکمیل پروژه (شمسی) *</label><input type="text" id="ci_forecast_date" required dir="ltr" placeholder="۱۴۰۵/۰۶/۰۸" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -334,6 +334,86 @@
             return d.innerHTML;
         }
 
+        // --------------------------------------------------
+        // JALALI (PERSIAN) CALENDAR — dates are stored as Gregorian ISO
+        // (what Postgres `date` columns and <input type="date"> expect) and
+        // only converted at the display/input boundary.
+        // --------------------------------------------------
+        function gregorianToJalali(gy, gm, gd) {
+            const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+            let jy = (gy <= 1600) ? 0 : 979;
+            gy -= (gy <= 1600) ? 621 : 1600;
+            const gy2 = (gm > 2) ? (gy + 1) : gy;
+            let days = (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) - 80 + gd + g_d_m[gm - 1];
+            jy += 33 * Math.floor(days / 12053);
+            days %= 12053;
+            jy += 4 * Math.floor(days / 1461);
+            days %= 1461;
+            if (days > 365) { jy += Math.floor((days - 1) / 365); days = (days - 1) % 365; }
+            const jm = (days < 186) ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
+            const jd = (days < 186) ? 1 + (days % 31) : 1 + ((days - 186) % 30);
+            return [jy, jm, jd];
+        }
+
+        function jalaliToGregorian(jy, jm, jd) {
+            let gy = (jy <= 979) ? 621 : 1600;
+            jy -= (jy <= 979) ? 0 : 979;
+            let days = (365 * jy) + (Math.floor(jy / 33) * 8) + Math.floor(((jy % 33) + 3) / 4) + 78 + jd + ((jm < 7) ? (jm - 1) * 31 : ((jm - 7) * 30) + 186);
+            gy += 400 * Math.floor(days / 146097);
+            days %= 146097;
+            if (days > 36524) {
+                gy += 100 * Math.floor(--days / 36524);
+                days %= 36524;
+                if (days >= 365) days++;
+            }
+            gy += 4 * Math.floor(days / 1461);
+            days %= 1461;
+            if (days > 365) { gy += Math.floor((days - 1) / 365); days = (days - 1) % 365; }
+            let gd = days + 1;
+            const isLeap = (gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0);
+            const sal_a = [0, 31, isLeap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+            let gm = 0;
+            for (gm = 0; gm < 13; gm++) {
+                if (gd <= sal_a[gm]) break;
+                gd -= sal_a[gm];
+            }
+            return [gy, gm, gd];
+        }
+
+        const PERSIAN_DIGITS = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+        function toPersianDigits(str) {
+            return String(str).replace(/[0-9]/g, d => PERSIAN_DIGITS[d]);
+        }
+        function toLatinDigits(str) {
+            return String(str).replace(/[۰-۹]/g, d => String(PERSIAN_DIGITS.indexOf(d)));
+        }
+
+        // "2026-08-30" or an ISO timestamp -> "۱۴۰۵/۰۶/۰۸"
+        function formatJalali(isoDateStr) {
+            if (!isoDateStr) return '';
+            const datePart = String(isoDateStr).slice(0, 10);
+            const [gy, gm, gd] = datePart.split('-').map(Number);
+            if (!gy || !gm || !gd) return '';
+            const [jy, jm, jd] = gregorianToJalali(gy, gm, gd);
+            return toPersianDigits(`${jy}/${String(jm).padStart(2, '0')}/${String(jd).padStart(2, '0')}`);
+        }
+
+        // "۱۴۰۵/۰۶/۰۸" (or with Latin digits/dashes) -> "2026-08-30", or null if invalid
+        function jalaliInputToIso(jalaliStr) {
+            const normalized = toLatinDigits(jalaliStr || '').trim();
+            const parts = normalized.split(/[\/\-]/).map(Number);
+            if (parts.length !== 3 || parts.some(n => isNaN(n))) return null;
+            const [jy, jm, jd] = parts;
+            if (jy < 1300 || jy > 1500 || jm < 1 || jm > 12 || jd < 1 || jd > 31) return null;
+            const [gy, gm, gd] = jalaliToGregorian(jy, jm, jd);
+            return `${gy}-${String(gm).padStart(2, '0')}-${String(gd).padStart(2, '0')}`;
+        }
+
+        function todayJalali() {
+            const now = new Date();
+            return formatJalali(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`);
+        }
+
         function redirectUrl() {
             return window.location.href.split('#')[0].split('?')[0];
         }
@@ -513,6 +593,9 @@
             const hseNote = document.getElementById('ci_hse_note').value.trim();
             if (hseIncident && !hseNote) { alert('لطفاً توضیح رویداد HSE را وارد کنید.'); return; }
 
+            const forecastIso = jalaliInputToIso(document.getElementById('ci_forecast_date').value);
+            if (!forecastIso) { alert('تاریخ پیش‌بینی تکمیل معتبر نیست. لطفاً به‌صورت ۱۴۰۵/۰۶/۰۸ وارد کنید.'); return; }
+
             const manpowerVal = document.getElementById('ci_manpower').value;
             const weldVal = document.getElementById('ci_weld_reject').value;
 
@@ -528,7 +611,7 @@
                 planned_progress: Number(document.getElementById('ci_planned_progress').value),
                 physical_progress: Number(document.getElementById('ci_physical_progress').value),
                 financial_progress: Number(document.getElementById('ci_financial_progress').value),
-                forecast_completion_date: document.getElementById('ci_forecast_date').value,
+                forecast_completion_date: forecastIso,
                 risk_severity: Number(document.getElementById('ci_risk_severity').value),
                 manpower_count: manpowerVal ? Number(manpowerVal) : null,
                 weld_reject_rate: weldVal ? Number(weldVal) : null,
@@ -679,7 +762,7 @@
                     banner.innerHTML = `
                         <p class="font-bold text-emerald-800">✅ منتخب نهایی: ${esc(decision.selected_title)} <span class="font-normal text-emerald-700">(${esc(decision.selected_organization)})</span></p>
                         ${decision.rationale ? `<p class="text-xs text-slate-600">دلیل انتخاب: ${esc(decision.rationale)}</p>` : ''}
-                        <p class="text-xs text-slate-500">امتیاز اولویت: ${decision.priority_score} | مهلت: ${esc(decision.target_date)}</p>
+                        <p class="text-xs text-slate-500">امتیاز اولویت: ${decision.priority_score} | مهلت: ${formatJalali(decision.target_date)}</p>
                         ${isAdmin ? '<button type="button" class="clear-btn text-xs text-red-600 underline mt-1">تغییر انتخاب</button>' : ''}`;
                     if (isAdmin) banner.querySelector('.clear-btn').addEventListener('click', () => clearDecision(pName));
                     card.appendChild(banner);
@@ -741,10 +824,11 @@
             switchView('selection');
         }
 
-        function reportRow(label, latestByOrg, field, suffix) {
+        function reportRow(label, latestByOrg, field, suffix, formatter) {
             const cell = (org) => {
                 const v = latestByOrg[org]?.[field];
-                return v === undefined || v === null || v === '' ? '<span class="text-slate-300">-</span>' : esc(String(v)) + (suffix || '');
+                if (v === undefined || v === null || v === '') return '<span class="text-slate-300">-</span>';
+                return esc(formatter ? formatter(v) : String(v)) + (suffix || '');
             };
             return `<tr>
                 <td class="p-2 border font-bold bg-slate-50">${esc(label)}</td>
@@ -764,7 +848,7 @@
                 reportRow('% پیشرفت برنامه‌ای', latestByOrg, 'planned_progress', '٪'),
                 reportRow('% پیشرفت فیزیکی', latestByOrg, 'physical_progress', '٪'),
                 reportRow('% پیشرفت مالی', latestByOrg, 'financial_progress', '٪'),
-                reportRow('تاریخ پیش‌بینی تکمیل', latestByOrg, 'forecast_completion_date'),
+                reportRow('تاریخ پیش‌بینی تکمیل', latestByOrg, 'forecast_completion_date', '', formatJalali),
                 reportRow('نیروی انسانی مستقر', latestByOrg, 'manpower_count', ' نفر'),
                 reportRow('نرخ ردی جوش', latestByOrg, 'weld_reject_rate', '٪'),
                 reportRow('شدت ریسک', latestByOrg, 'risk_severity', '/۵'),
@@ -816,7 +900,7 @@
 
         async function loadAiReport(projectName, provider) {
             document.getElementById('reportProjectName').textContent = projectName;
-            document.getElementById('reportGeneratedAt').textContent = new Date().toISOString().slice(0, 10);
+            document.getElementById('reportGeneratedAt').textContent = todayJalali();
             document.getElementById('reportGeneratedBy').textContent = currentUser.email;
             document.getElementById('reportAiProvider').textContent = provider === 'openai' ? 'ChatGPT' : 'Gemini';
             document.getElementById('reportAiText').innerHTML = '<p class="text-purple-700 text-xs">🤖 در حال تولید تحلیل...</p>';
@@ -934,7 +1018,7 @@
 
                 const timelineHtml = projectLogs.slice().reverse().map(l => `
                     <div class="flex gap-2 text-xs border-r-2 border-slate-200 pr-3 py-1 flex-wrap">
-                        <span class="text-slate-400 whitespace-nowrap">${esc(new Date(l.created_at).toISOString().slice(0, 10))}</span>
+                        <span class="text-slate-400 whitespace-nowrap">${formatJalali(l.created_at)}</span>
                         <span class="font-bold">${esc(l.status)}</span>
                         <span class="text-slate-500">${l.progress_percent}%</span>
                         <span class="text-slate-600">${esc(l.note || '')}</span>
@@ -953,7 +1037,7 @@
                     <div class="w-full bg-slate-100 rounded-full h-2.5">
                         <div class="${barColor} h-2.5 rounded-full" style="width:${Math.min(percent, 100)}%"></div>
                     </div>
-                    <p class="text-xs text-slate-500">وضعیت فعلی: <b>${esc(status)}</b> — مهلت: ${esc(dec.target_date)}</p>
+                    <p class="text-xs text-slate-500">وضعیت فعلی: <b>${esc(status)}</b> — مهلت: ${formatJalali(dec.target_date)}</p>
                     <div class="space-y-1 max-h-40 overflow-y-auto">${timelineHtml}</div>
                     ${isAdmin ? `
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-2 pt-3 border-t text-xs">
