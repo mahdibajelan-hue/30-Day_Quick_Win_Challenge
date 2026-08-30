@@ -28,9 +28,13 @@
         <!-- AUTH SCREEN -->
         <div id="authScreen" class="hidden max-w-md mx-auto bg-white rounded-2xl shadow-sm border p-8 space-y-4 text-center">
             <h2 class="text-lg font-bold text-blue-900">ورود به سامانه</h2>
-            <p class="text-xs text-slate-500">ایمیلی که ادمین برایتان ثبت کرده را وارد کنید تا لینک ورود برایتان ایمیل شود.</p>
+            <p id="loginHint" class="text-xs text-slate-500">ایمیلی که ادمین برایتان ثبت کرده را وارد کنید تا لینک ورود برایتان ایمیل شود.</p>
             <input id="loginEmail" type="email" placeholder="ایمیل شما" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center">
+            <div id="loginPasswordWrap" class="hidden">
+                <input id="loginPassword" type="password" placeholder="رمز عبور" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center">
+            </div>
             <button id="loginBtn" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-2.5 rounded-xl transition">ارسال لینک ورود</button>
+            <button id="togglePasswordModeBtn" type="button" class="text-xs text-blue-700 underline">رمز عبور تنظیم کرده‌اید؟ اینجا وارد شوید</button>
             <p id="loginMsg" class="text-xs"></p>
         </div>
 
@@ -43,6 +47,16 @@
 
         <!-- APP SHELL -->
         <div id="appShell" class="hidden space-y-8">
+
+            <div class="bg-white rounded-2xl shadow-sm border p-4 flex justify-between items-center flex-wrap gap-2">
+                <p class="text-xs text-slate-500">برای ورود سریع‌تر در دفعات بعد (بدون نیاز به لینک ایمیل)، می‌توانید یک رمز عبور تنظیم کنید.</p>
+                <button id="setPasswordBtn" type="button" class="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg font-bold">🔑 تنظیم/تغییر رمز عبور</button>
+            </div>
+            <div id="setPasswordPanel" class="hidden bg-white rounded-2xl shadow-sm border p-4 space-y-2 max-w-sm">
+                <input id="newPassword" type="password" placeholder="رمز عبور جدید (حداقل ۶ کاراکتر)" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
+                <button id="savePasswordBtn" type="button" class="w-full bg-blue-900 hover:bg-blue-800 text-white text-sm py-2 rounded-xl font-bold">ذخیره رمز عبور</button>
+                <p id="setPasswordMsg" class="text-xs"></p>
+            </div>
 
             <!-- MANAGER: CHECK-IN FORM -->
             <div id="checkinView" class="hidden space-y-6">
@@ -335,10 +349,32 @@
             if (view === 'analytics') loadAnalyticsData();
         }
 
+        let passwordLoginMode = false;
+
+        document.getElementById('togglePasswordModeBtn').addEventListener('click', () => {
+            passwordLoginMode = !passwordLoginMode;
+            document.getElementById('loginPasswordWrap').classList.toggle('hidden', !passwordLoginMode);
+            document.getElementById('loginBtn').textContent = passwordLoginMode ? 'ورود با رمز عبور' : 'ارسال لینک ورود';
+            document.getElementById('togglePasswordModeBtn').textContent = passwordLoginMode ? 'رمز عبور ندارید؟ لینک ورود دریافت کنید' : 'رمز عبور تنظیم کرده‌اید؟ اینجا وارد شوید';
+            document.getElementById('loginHint').textContent = passwordLoginMode ? 'ایمیل و رمز عبوری که قبلاً تنظیم کرده‌اید را وارد کنید.' : 'ایمیلی که ادمین برایتان ثبت کرده را وارد کنید تا لینک ورود برایتان ایمیل شود.';
+            document.getElementById('loginMsg').textContent = '';
+        });
+
         async function login() {
             const email = document.getElementById('loginEmail').value.trim();
             const msg = document.getElementById('loginMsg');
             if (!email) return;
+
+            if (passwordLoginMode) {
+                const password = document.getElementById('loginPassword').value;
+                if (!password) { msg.textContent = 'رمز عبور را وارد کنید.'; msg.className = 'text-xs text-red-600'; return; }
+                msg.textContent = 'در حال ورود...';
+                msg.className = 'text-xs text-slate-500';
+                const { error } = await _supabase.auth.signInWithPassword({ email, password });
+                if (error) { msg.textContent = 'خطا: ' + error.message; msg.className = 'text-xs text-red-600'; return; }
+                return;
+            }
+
             msg.textContent = 'در حال ارسال...';
             msg.className = 'text-xs text-slate-500';
             const { error } = await _supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectUrl() } });
@@ -353,6 +389,20 @@
 
         document.getElementById('loginBtn').addEventListener('click', login);
         document.getElementById('unauthLogoutBtn').addEventListener('click', logout);
+
+        document.getElementById('setPasswordBtn').addEventListener('click', () => {
+            document.getElementById('setPasswordPanel').classList.toggle('hidden');
+        });
+
+        document.getElementById('savePasswordBtn').addEventListener('click', async () => {
+            const password = document.getElementById('newPassword').value;
+            const msg = document.getElementById('setPasswordMsg');
+            if (!password || password.length < 6) { msg.textContent = 'رمز عبور باید حداقل ۶ کاراکتر باشد.'; msg.className = 'text-xs text-red-600'; return; }
+            const { error } = await _supabase.auth.updateUser({ password });
+            msg.textContent = error ? 'خطا: ' + error.message : 'رمز عبور با موفقیت تنظیم شد. از این پس می‌توانید با ایمیل و همین رمز وارد شوید.';
+            msg.className = error ? 'text-xs text-red-600' : 'text-xs text-emerald-700';
+            if (!error) document.getElementById('newPassword').value = '';
+        });
 
         // --------------------------------------------------
         // MANAGER: CHECK-IN FORM (unified status + quick-win report)
