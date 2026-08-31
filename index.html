@@ -529,7 +529,17 @@
                     </div>
                     <p class="text-xs text-slate-500">آخرین پیشنهاد Quick Win هر سازمان برای هر پروژه، برای مقایسه و انتخاب برگزیده.</p>
                 </div>
-                <div id="selectionContainer" class="space-y-6">
+
+                <div class="bg-white p-4 rounded-2xl shadow-sm border space-y-3">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <input id="qwSearchInput" type="text" placeholder="🔍 جستجوی نام پروژه..." class="flex-1 min-w-[180px] p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
+                        <button id="qwExpandAllBtn" type="button" class="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg font-bold">باز کردن همه</button>
+                        <button id="qwCollapseAllBtn" type="button" class="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg font-bold">بستن همه</button>
+                    </div>
+                    <div id="qwSummaryStrip" class="flex flex-wrap gap-4 text-xs text-slate-500"></div>
+                </div>
+
+                <div id="selectionContainer" class="space-y-4">
                     <p class="text-center text-slate-400 p-4">در حال بارگذاری...</p>
                 </div>
 
@@ -1845,6 +1855,71 @@
                     </tr>`).join('');
         }
 
+        const ORG_STYLE = {
+            'کارفرما': { border: 'border-blue-900', badge: 'bg-blue-100 text-blue-900', text: 'text-blue-900' },
+            'مشاور': { border: 'border-amber-500', badge: 'bg-amber-100 text-amber-800', text: 'text-amber-800' },
+            'پیمانکار': { border: 'border-emerald-600', badge: 'bg-emerald-100 text-emerald-800', text: 'text-emerald-800' },
+        };
+
+        function qwImpactChips(prop) {
+            const chips = [];
+            if (prop.time_estimate) chips.push(['clock', prop.time_estimate]);
+            if (prop.impact_delay_days) chips.push(['calendar', `${toPersianDigits(prop.impact_delay_days)} روز کاهش تأخیر`]);
+            if (prop.impact_progress_increase) chips.push(['trendingUp', `${toPersianDigits(prop.impact_progress_increase)}٪ افزایش پیشرفت`]);
+            if (prop.impact_cost_avoided) chips.push(['gauge', fmtRial(prop.impact_cost_avoided) + ' صرفه‌جویی']);
+            if (!chips.length) return '';
+            return `<div class="flex flex-wrap gap-1.5">${chips.map(([icon, text]) => `
+                <span class="inline-flex items-center gap-1 bg-slate-50 text-slate-600 px-2 py-1 rounded-lg text-[11px]">${iconSvg(icon, 'w-3 h-3 shrink-0')}${esc(text)}</span>
+            `).join('')}</div>`;
+        }
+
+        function scoreBarColor(score) {
+            return score >= 4 ? '#22c55e' : score >= 3 ? '#f59e0b' : '#ef4444';
+        }
+
+        function qwProposalCardHtml(prop, isSelected, existingEval, isAdmin) {
+            const style = ORG_STYLE[prop.organization] || ORG_STYLE['کارفرما'];
+            return `<div class="bg-slate-50 rounded-2xl border-r-4 ${style.border} p-4 space-y-3 text-xs ${isSelected ? 'ring-2 ring-emerald-400' : ''} relative">
+                ${isSelected ? '<span class="absolute -top-2 left-3 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">🏆 منتخب</span>' : ''}
+                <div class="flex justify-between items-start gap-2">
+                    <b class="text-sm leading-snug">${esc(prop.quick_win_title)}</b>
+                    <span class="shrink-0 ${style.badge} px-2 py-1 rounded-lg font-bold">${esc(prop.organization)}</span>
+                </div>
+                <div class="space-y-1.5">
+                    <p class="flex gap-1.5"><span class="font-bold shrink-0">⚡ اقدام:</span><span class="text-slate-600">${esc(prop.action_details)}</span></p>
+                    <p class="flex gap-1.5"><span class="font-bold shrink-0 text-emerald-700">🎯 نتیجه ۳۰ روزه:</span><span class="text-slate-600">${esc(prop.tangible_result)}</span></p>
+                    <p class="flex gap-1.5"><span class="font-bold shrink-0 ${style.text}">🤝 حمایت لازم:</span><span class="text-slate-600">${esc(prop.support_needed)}</span></p>
+                </div>
+                ${qwImpactChips(prop)}
+                ${isAdmin ? `
+                <div class="pt-3 border-t space-y-2">
+                    ${evalCriteriaHtml()}
+                    <div class="space-y-1 pt-1">
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-500">امتیاز نهایی</span>
+                            <span class="eval-final-score font-extrabold text-sm">۳٫۰۰ / ۵</span>
+                        </div>
+                        <div class="w-full bg-slate-200 rounded-full h-1.5">
+                            <div class="eval-score-bar h-1.5 rounded-full transition-all" style="width:60%;background:#f59e0b"></div>
+                        </div>
+                    </div>
+                    <select class="eval-decision w-full border rounded-lg p-1.5 text-xs mt-1">
+                        ${QW_DECISION_OPTIONS.map(o => `<option value="${esc(o)}" ${existingEval && existingEval.decision === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
+                    </select>
+                    <button type="button" class="eval-save-btn w-full bg-blue-900 hover:bg-blue-800 text-white rounded-lg py-1.5 font-bold mt-1">ثبت ارزیابی</button>
+                </div>` : ''}
+            </div>`;
+        }
+
+        function updateQwSummaryStrip(projectNames, decisionByProject) {
+            const decided = projectNames.filter(p => decisionByProject[p]).length;
+            document.getElementById('qwSummaryStrip').innerHTML = [
+                `<span>📁 <b class="text-slate-700">${toPersianDigits(projectNames.length)}</b> پروژه</span>`,
+                `<span class="text-emerald-700">✅ <b>${toPersianDigits(decided)}</b> تصمیم‌گیری‌شده</span>`,
+                `<span class="text-amber-700">⏳ <b>${toPersianDigits(projectNames.length - decided)}</b> در انتظار تصمیم</span>`,
+            ].join('');
+        }
+
         async function loadSelectionData() {
             const container = document.getElementById('selectionContainer');
             container.innerHTML = '<p class="text-center text-slate-400 p-4">در حال دریافت پیشنهادها...</p>';
@@ -1870,37 +1945,54 @@
             (decisions || []).forEach(d => decisionByProject[d.project_name] = d);
 
             const projectNames = Object.keys(byProject);
+            document.getElementById('qwSummaryStrip').innerHTML = '';
             if (projectNames.length === 0) {
                 container.innerHTML = '<p class="text-center text-slate-400 p-4">هنوز هیچ گزارشی ثبت نشده است.</p>';
                 return;
             }
+            updateQwSummaryStrip(projectNames, decisionByProject);
 
             const isAdmin = currentProfile.role === 'admin';
             container.innerHTML = '';
             projectNames.forEach(pName => {
                 const decision = decisionByProject[pName];
                 const card = document.createElement('div');
-                card.className = 'bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4';
+                card.className = 'bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4 qw-project-card';
+                card.dataset.projectName = pName;
 
-                const header = document.createElement('div');
-                header.className = 'flex justify-between items-center border-b pb-3 flex-wrap gap-2';
-                header.innerHTML = `<h3 class="font-bold text-blue-900">${esc(pName)}</h3>
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs bg-slate-100 px-2 py-1 rounded-lg">${byProject[pName].length} پیشنهاد فعال</span>
-                        ${isAdmin ? `
-                        <select class="ai-provider-select text-xs border rounded-lg p-1.5">
+                const header = document.createElement('button');
+                header.type = 'button';
+                header.className = 'w-full flex justify-between items-center border-b pb-3 flex-wrap gap-2 text-right';
+                header.innerHTML = `<span class="flex items-center gap-2">
+                        <svg class="qw-chevron w-4 h-4 shrink-0 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        <b class="text-blue-900">${esc(pName)}</b>
+                        ${decision ? '<span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">تصمیم‌گیری‌شده</span>' : '<span class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">در انتظار تصمیم</span>'}
+                    </span>
+                    <span class="text-xs bg-slate-100 px-2 py-1 rounded-lg shrink-0">${byProject[pName].length} پیشنهاد فعال</span>`;
+                card.appendChild(header);
+
+                const body = document.createElement('div');
+                body.className = 'qw-project-body space-y-4';
+                body.style.display = decision ? 'none' : '';
+                header.querySelector('.qw-chevron').style.transform = decision ? 'rotate(-90deg)' : '';
+
+                header.addEventListener('click', () => {
+                    const isOpen = body.style.display !== 'none';
+                    body.style.display = isOpen ? 'none' : '';
+                    header.querySelector('.qw-chevron').style.transform = isOpen ? 'rotate(-90deg)' : '';
+                });
+
+                if (isAdmin) {
+                    const aiRow = document.createElement('div');
+                    aiRow.className = 'flex items-center gap-2 flex-wrap';
+                    aiRow.innerHTML = `<select class="ai-provider-select text-xs border rounded-lg p-1.5">
                             <option value="gemini">Gemini (رایگان)</option>
                             <option value="openai">ChatGPT</option>
                         </select>
-                        <button type="button" class="ai-btn text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-lg font-bold hover:bg-purple-200">🤖 تحلیل هوشمند</button>` : ''}
-                    </div>`;
-                card.appendChild(header);
-
-                if (isAdmin) {
-                    const providerSelect = header.querySelector('.ai-provider-select');
-                    header.querySelector('.ai-btn').addEventListener('click', () => {
-                        showAiReport(pName, providerSelect.value);
-                    });
+                        <button type="button" class="ai-btn text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-lg font-bold hover:bg-purple-200">🤖 تحلیل هوشمند</button>`;
+                    const providerSelect = aiRow.querySelector('.ai-provider-select');
+                    aiRow.querySelector('.ai-btn').addEventListener('click', () => showAiReport(pName, providerSelect.value));
+                    body.appendChild(aiRow);
                 }
 
                 if (decision) {
@@ -1912,7 +2004,7 @@
                         <p class="text-xs text-slate-500">امتیاز اولویت: ${decision.priority_score} | مهلت: ${formatJalali(decision.target_date)}</p>
                         ${isAdmin ? '<button type="button" class="clear-btn text-xs text-red-600 underline mt-1">تغییر انتخاب</button>' : ''}`;
                     if (isAdmin) banner.querySelector('.clear-btn').addEventListener('click', () => clearDecision(pName));
-                    card.appendChild(banner);
+                    body.appendChild(banner);
                 }
 
                 const grid = document.createElement('div');
@@ -1922,31 +2014,23 @@
                     const isSelected = decision && decision.selected_title === prop.quick_win_title && decision.selected_organization === prop.organization;
                     const existingEval = evalByKey[pName + '||' + prop.organization + '||' + prop.created_at];
                     const wrap = document.createElement('div');
-                    wrap.innerHTML = `<div class="border rounded-xl p-3 space-y-2 text-xs ${isSelected ? 'ring-2 ring-emerald-400' : ''}">
-                        <div class="flex justify-between"><b>${esc(prop.quick_win_title)}</b><span class="bg-slate-100 px-2 rounded">${esc(prop.organization)}</span></div>
-                        <p><b>اقدام:</b> ${esc(prop.action_details)}</p>
-                        <p class="text-emerald-700"><b>نتیجه ۳۰ روزه:</b> ${esc(prop.tangible_result)}</p>
-                        <p class="text-blue-800"><b>حمایت لازم:</b> ${esc(prop.support_needed)}</p>
-                        ${isAdmin ? `
-                        <div class="pt-2 border-t space-y-1">
-                            ${evalCriteriaHtml()}
-                            <p class="text-xs font-bold text-left">امتیاز نهایی: <span class="eval-final-score">۳٫۰۰</span> / ۵</p>
-                            <select class="eval-decision w-full border rounded-lg p-1.5 text-xs mt-1">
-                                ${QW_DECISION_OPTIONS.map(o => `<option value="${esc(o)}" ${existingEval && existingEval.decision === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
-                            </select>
-                            <button type="button" class="eval-save-btn w-full bg-blue-900 hover:bg-blue-800 text-white rounded-lg py-1.5 font-bold mt-1">ثبت ارزیابی</button>
-                        </div>` : ''}
-                    </div>`;
+                    wrap.innerHTML = qwProposalCardHtml(prop, isSelected, existingEval, isAdmin);
                     const propEl = wrap.firstElementChild;
                     if (isAdmin) {
                         const scoreSelects = Array.from(propEl.querySelectorAll('.eval-score'));
                         const finalScoreEl = propEl.querySelector('.eval-final-score');
+                        const scoreBarEl = propEl.querySelector('.eval-score-bar');
                         const decisionSelect = propEl.querySelector('.eval-decision');
 
                         if (existingEval) {
                             scoreSelects.forEach(s => { if (existingEval[s.dataset.key] != null) s.value = existingEval[s.dataset.key]; });
                         }
-                        const refreshScore = () => { finalScoreEl.textContent = toPersianDigits(computeWeightedScore(scoreSelects).toFixed(2)); };
+                        const refreshScore = () => {
+                            const score = computeWeightedScore(scoreSelects);
+                            finalScoreEl.textContent = toPersianDigits(score.toFixed(2)) + ' / ۵';
+                            scoreBarEl.style.width = Math.round((score / 5) * 100) + '%';
+                            scoreBarEl.style.background = scoreBarColor(score);
+                        };
                         scoreSelects.forEach(s => s.addEventListener('change', refreshScore));
                         refreshScore();
 
@@ -1959,10 +2043,30 @@
                     grid.appendChild(propEl);
                 });
 
-                card.appendChild(grid);
+                body.appendChild(grid);
+                card.appendChild(body);
                 container.appendChild(card);
             });
         }
+
+        document.getElementById('qwSearchInput').addEventListener('input', (e) => {
+            const q = e.target.value.trim();
+            document.querySelectorAll('.qw-project-card').forEach(card => {
+                card.classList.toggle('hidden', q.length > 0 && !card.dataset.projectName.includes(q));
+            });
+        });
+        document.getElementById('qwExpandAllBtn').addEventListener('click', () => {
+            document.querySelectorAll('.qw-project-card').forEach(card => {
+                card.querySelector('.qw-project-body').style.display = '';
+                card.querySelector('.qw-chevron').style.transform = '';
+            });
+        });
+        document.getElementById('qwCollapseAllBtn').addEventListener('click', () => {
+            document.querySelectorAll('.qw-project-card').forEach(card => {
+                card.querySelector('.qw-project-body').style.display = 'none';
+                card.querySelector('.qw-chevron').style.transform = 'rotate(-90deg)';
+            });
+        });
 
         // --------------------------------------------------
         // AI ANALYSIS REPORT: admin-only, full printable page
