@@ -901,20 +901,167 @@
             document.getElementById('crProjectName').textContent = effectiveProfile().project_name;
         }
 
-        document.getElementById('admOpenCheckinBtn').addEventListener('click', () => {
-            adminPreviewContext = {
-                project_name: document.getElementById('admPreviewProject').value,
-                organization: document.getElementById('admPreviewOrg').value
-            };
+        function setDynamicStatusGroup(containerId, dataObj) {
+            document.querySelectorAll(`#${containerId} > [data-key]`).forEach(el => {
+                const entry = (dataObj && dataObj[el.dataset.key]) || {};
+                if (entry.status) el.querySelector('.status-select').value = entry.status;
+                el.querySelector('.issue-input').value = entry.issue || '';
+            });
+        }
+
+        function populateCheckinForm(row) {
+            document.getElementById('ci_respondent').value = row.respondent || '';
+            document.getElementById('ci_position').value = row.respondent_position || '';
+            document.getElementById('ci_contact').value = row.respondent_contact || '';
+
+            setDynamicStatusGroup('ci_area_status', row.area_status);
+            setDynamicStatusGroup('ci_work_fronts', row.work_fronts);
+
+            document.getElementById('ci_planned_progress').value = row.planned_progress ?? '';
+            document.getElementById('ci_physical_progress').value = row.physical_progress ?? '';
+            document.getElementById('ci_financial_progress').value = row.financial_progress ?? '';
+            document.getElementById('ci_forecast_date').value = formatJalali(row.forecast_completion_date);
+            document.getElementById('ci_manpower').value = row.manpower_count ?? '';
+            document.getElementById('ci_weld_reject').value = row.weld_reject_rate ?? '';
+            document.getElementById('ci_hse_incident').value = row.hse_incident ? 'true' : 'false';
+            document.getElementById('ci_hse_note_wrap').classList.toggle('hidden', !row.hse_incident);
+            document.getElementById('ci_hse_note').value = row.hse_incident_note || '';
+
+            const issueEls = document.querySelectorAll('#ci_issues [data-issue]');
+            (row.issues || []).forEach((issue, i) => {
+                const el = issueEls[i];
+                if (!el) return;
+                el.querySelector('.issue-desc').value = issue.description || '';
+                const impactSet = new Set(issue.impact || []);
+                el.querySelectorAll('.issue-impact-cb').forEach(cb => { cb.checked = impactSet.has(cb.value); });
+                if (issue.severity) el.querySelector('.issue-severity').value = issue.severity;
+            });
+
+            const riskEls = document.querySelectorAll('#ci_risks [data-risk]');
+            (row.risks || []).forEach((risk, i) => {
+                const el = riskEls[i];
+                if (!el) return;
+                el.querySelector('.risk-desc').value = risk.risk || '';
+                if (risk.probability) el.querySelector('.risk-probability').value = risk.probability;
+                if (risk.impact) el.querySelector('.risk-impact').value = risk.impact;
+                if (risk.level) el.querySelector('.risk-level').value = risk.level;
+                el.querySelector('.risk-action').value = risk.current_action || '';
+            });
+
+            document.getElementById('ci_negative_event').value = row.q_negative_event || '';
+            document.getElementById('ci_bottleneck').value = row.main_bottleneck || '';
+            document.getElementById('ci_bottleneck_root_cause').value = row.bottleneck_root_cause || '';
+            document.getElementById('ci_bottleneck_unlock').value = row.bottleneck_unlock_action || '';
+            document.getElementById('ci_senior_decision').value = row.senior_decision_needed || '';
+            if (row.senior_decision_priority) document.getElementById('ci_senior_priority').value = row.senior_decision_priority;
+            document.getElementById('ci_one_thing').value = row.one_thing_to_change || '';
+            document.getElementById('ci_top_risk').value = row.top_risk || '';
+            if (row.risk_severity) document.getElementById('ci_risk_severity').value = String(row.risk_severity);
+
+            if (row.qw_bottleneck_area) document.getElementById('ci_qw_area').value = row.qw_bottleneck_area;
+            document.getElementById('ci_qw_area_other').value = row.qw_bottleneck_area_other || '';
+            document.getElementById('ci_qw_area_other').classList.toggle('hidden', row.qw_bottleneck_area !== 'سایر');
+
+            const consequenceSet = new Set(row.qw_consequences || []);
+            document.querySelectorAll('.qw_conseq-cb').forEach(cb => { cb.checked = consequenceSet.has(cb.value); });
+            document.getElementById('ci_qw_consequence_other').value = row.qw_consequence_other || '';
+            document.getElementById('ci_qw_consequence_other').classList.toggle('hidden', !consequenceSet.has('سایر'));
+            document.getElementById('ci_qw_consequence_desc').value = row.qw_consequence_description || '';
+
+            document.getElementById('ci_qw_title').value = row.quick_win_title || '';
+            document.getElementById('ci_qw_action').value = row.action_details || '';
+            document.getElementById('ci_qw_rationale').value = row.qw_rationale || '';
+            document.getElementById('ci_qw_result').value = row.tangible_result || '';
+
+            document.getElementById('ci_plan_action').value = row.plan_main_action || '';
+            document.getElementById('ci_plan_responsible').value = row.plan_responsible || '';
+            document.getElementById('ci_plan_units').value = row.plan_units_involved || '';
+            document.getElementById('ci_plan_start_date').value = formatJalali(row.plan_start_date);
+            document.getElementById('ci_plan_target_date').value = formatJalali(row.plan_target_date);
+            document.getElementById('ci_plan_prerequisite').value = row.plan_prerequisite || '';
+            document.getElementById('ci_plan_decision').value = row.plan_decision_needed || '';
+            document.getElementById('ci_plan_deliverable').value = row.plan_deliverable || '';
+
+            document.getElementById('ci_kpi_name').value = row.kpi_name || '';
+            document.getElementById('ci_kpi_current').value = row.kpi_current || '';
+            document.getElementById('ci_kpi_target').value = row.kpi_target_30d || '';
+            document.getElementById('ci_impact_delay').value = row.impact_delay_days ?? '';
+            document.getElementById('ci_impact_progress').value = row.impact_progress_increase ?? '';
+            document.getElementById('ci_impact_cost').value = row.impact_cost_avoided ?? '';
+            document.getElementById('ci_impact_issues').value = row.impact_issues_closed ?? '';
+            document.getElementById('ci_impact_docs').value = row.impact_docs_resolved ?? '';
+            document.getElementById('ci_impact_fronts').value = row.impact_fronts_freed || '';
+            document.getElementById('ci_impact_other').value = row.impact_other || '';
+
+            const supportSet = new Set(row.support_types || []);
+            document.querySelectorAll('.support-cb').forEach(cb => { cb.checked = supportSet.has(cb.value); });
+            document.getElementById('ci_support_other').value = row.support_other_text || '';
+            document.getElementById('ci_support_other').classList.toggle('hidden', !supportSet.has('سایر'));
+            document.getElementById('ci_qw_support').value = row.support_needed || '';
+
+            if (row.time_estimate) document.getElementById('ci_time_estimate').value = row.time_estimate;
+            document.getElementById('ci_final_reflection').value = row.final_reflection || '';
+        }
+
+        function populateClientReportForm(row) {
+            document.getElementById('cr_plan_name').value = row.plan_name || '';
+            document.getElementById('cr_contract_number').value = row.contract_number || '';
+            if (row.contract_type) document.getElementById('cr_contract_type').value = row.contract_type;
+            document.getElementById('cr_contract_type_other').value = row.contract_type_other || '';
+            document.getElementById('cr_contract_type_other').classList.toggle('hidden', row.contract_type !== 'سایر');
+            document.getElementById('cr_contractor').value = row.contractor_name || '';
+            document.getElementById('cr_consultant').value = row.consultant_name || '';
+            document.getElementById('cr_client_pm').value = row.client_pm_name || '';
+            document.getElementById('cr_contractor_pm').value = row.contractor_pm_name || '';
+            document.getElementById('cr_consultant_pm').value = row.consultant_pm_name || '';
+            document.getElementById('cr_amount_initial').value = row.contract_initial_amount ?? '';
+            document.getElementById('cr_amount_current').value = row.contract_current_amount ?? '';
+            document.getElementById('cr_start_date').value = formatJalali(row.contract_start_date);
+            document.getElementById('cr_end_date').value = formatJalali(row.contract_end_date);
+            document.getElementById('cr_duration').value = row.contract_duration_months ?? '';
+            document.getElementById('cr_elapsed').value = row.elapsed_months ?? '';
+            document.getElementById('cr_progress_planned').value = row.progress_planned ?? '';
+            document.getElementById('cr_progress_physical').value = row.progress_physical ?? '';
+            document.getElementById('cr_progress_eng').value = row.progress_engineering ?? '';
+            document.getElementById('cr_progress_proc').value = row.progress_procurement ?? '';
+            document.getElementById('cr_progress_constr').value = row.progress_construction ?? '';
+            document.getElementById('cr_milestone_name').value = row.milestone_name || '';
+            document.getElementById('cr_milestone_date').value = formatJalali(row.milestone_planned_date);
+            if (row.milestone_status) document.getElementById('cr_milestone_status').value = row.milestone_status;
+            document.getElementById('cr_milestone_delay').value = row.milestone_delay_days ?? '';
+        }
+
+        document.getElementById('admOpenCheckinBtn').addEventListener('click', async () => {
+            const project_name = document.getElementById('admPreviewProject').value;
+            const organization = document.getElementById('admPreviewOrg').value;
+            adminPreviewContext = { project_name, organization };
             switchView('checkin');
+
+            document.getElementById('checkinForm').reset();
+            document.getElementById('ci_hse_note_wrap').classList.add('hidden');
+            document.getElementById('ci_qw_area_other').classList.add('hidden');
+            document.getElementById('ci_qw_consequence_other').classList.add('hidden');
+            document.getElementById('ci_support_other').classList.add('hidden');
+
+            const { data } = await _supabase.from('check_ins').select('*')
+                .eq('project_name', project_name).eq('organization', organization)
+                .order('created_at', { ascending: false }).limit(1).maybeSingle();
+            if (data) populateCheckinForm(data);
         });
 
-        document.getElementById('admOpenClientReportBtn').addEventListener('click', () => {
-            adminPreviewContext = {
-                project_name: document.getElementById('admPreviewProject').value,
-                organization: document.getElementById('admPreviewOrg').value
-            };
+        document.getElementById('admOpenClientReportBtn').addEventListener('click', async () => {
+            const project_name = document.getElementById('admPreviewProject').value;
+            const organization = document.getElementById('admPreviewOrg').value;
+            adminPreviewContext = { project_name, organization };
             switchView('clientReport');
+
+            document.getElementById('clientReportForm').reset();
+            document.getElementById('cr_contract_type_other').classList.add('hidden');
+
+            const { data } = await _supabase.from('client_reports').select('*')
+                .eq('project_name', project_name)
+                .order('created_at', { ascending: false }).limit(1).maybeSingle();
+            if (data) populateClientReportForm(data);
         });
 
         document.getElementById('ci_hse_incident').addEventListener('change', (e) => {
