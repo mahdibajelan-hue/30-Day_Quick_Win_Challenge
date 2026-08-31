@@ -1035,9 +1035,9 @@
             mobileNav.innerHTML = '';
 
             const buttons = currentProfile.role === 'admin'
-                ? [['overview', 'نمای کلی'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب Quick Win'], ['execReport', 'گزارش اجرایی'], ['admin', 'مدیریت کاربران'], ['checkin', 'اطلاعات تکمیلی'], ['clientReport', 'اطلاعات پایه پروژه (کارفرما)'], ['qwProposal', 'پیشنهاد Quick Win']]
+                ? [['overview', 'نمای کلی'], ['clientReport', 'اطلاعات پایه پروژه (کارفرما)'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب Quick Win'], ['execReport', 'گزارش اجرایی'], ['admin', 'مدیریت کاربران']]
                 : currentProfile.organization === 'کارفرما'
-                    ? [['overview', 'وضعیت پروژه'], ['selection', 'پیشنهادها'], ['checkin', 'اطلاعات تکمیلی'], ['clientReport', 'اطلاعات پایه پروژه'], ['qwProposal', 'پیشنهاد Quick Win']]
+                    ? [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win'], ['selection', 'پیشنهادها']]
                     : [['overview', 'وضعیت پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win']];
 
             buttons.forEach(([view, label], i) => {
