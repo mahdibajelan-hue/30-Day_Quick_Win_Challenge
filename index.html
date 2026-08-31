@@ -568,11 +568,12 @@
 
             <!-- OVERVIEW (landing dashboard for admin + managers, scoped by RLS) -->
             <div id="overviewView" class="hidden space-y-4">
-                <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3" id="ovStatCards"></div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="ovStatCards"></div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
                     <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
-                        <h3 class="text-sm font-bold">وضعیت پیشرفت پروژه‌ها</h3>
+                        <h3 class="text-sm font-bold">وضعیت زمان‌بندی پروژه‌ها</h3>
+                        <p class="text-[11px] text-slate-400 leading-relaxed">بر اساس مقایسه «پیشرفت فیزیکی» با «پیشرفت برنامه‌ای»، میانگین سه رکن — از فرم اطلاعات تکمیلی</p>
                         <div class="relative h-36 mx-auto" style="max-width:170px">
                             <canvas id="ovProgressDonut"></canvas>
                             <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -584,7 +585,8 @@
                     </div>
 
                     <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border p-5 space-y-3">
-                        <h3 class="text-sm font-bold">پیشرفت پروژه‌ها</h3>
+                        <h3 class="text-sm font-bold">پیشرفت فیزیکی پروژه‌ها</h3>
+                        <p class="text-[11px] text-slate-400 leading-relaxed">میانگین % پیشرفت فیزیکی خود پروژه (نه Quick Win)، گزارش‌شده توسط کارفرما، مشاور و پیمانکار در فرم اطلاعات تکمیلی</p>
                         <div id="ovProjectProgressList" class="space-y-3 max-h-52 overflow-y-auto scroll-thin pl-1"></div>
                         <button type="button" onclick="document.getElementById('trackingContainer').scrollIntoView({behavior:'smooth'})" class="text-xs text-blue-900 font-bold hover:underline">‹ مشاهده پیشرفت Quick Win ها</button>
                     </div>
@@ -2725,12 +2727,12 @@
             return `${toPersianDigits(Math.floor(hours / 24))} روز پیش`;
         }
 
-        function statCard(iconName, colorClasses, value, label) {
+        function statCard(iconName, colorClasses, value, label, hint) {
             return `<div class="bg-white rounded-2xl shadow-sm border p-4 flex items-center gap-3">
                 <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${colorClasses}">${iconSvg(iconName, 'w-5 h-5')}</div>
                 <div class="min-w-0">
                     <p class="text-xl font-extrabold text-slate-800 leading-tight">${value}</p>
-                    <p class="text-[11px] text-slate-500 truncate">${esc(label)}</p>
+                    <p class="text-xs text-slate-500 leading-snug${hint ? ' border-b border-dotted border-slate-300 cursor-help w-fit' : ''}"${hint ? ` title="${esc(hint)}"` : ''}>${esc(label)}</p>
                 </div>
             </div>`;
         }
@@ -2813,14 +2815,22 @@
             const overdueCount = (decisions || []).filter(d => latestPercent(d.project_name) < 100 && new Date(d.target_date) < todayStart).length;
 
             document.getElementById('ovStatCards').innerHTML = [
-                statCard('grid', 'bg-blue-900/15 text-blue-900', toPersianDigits(projectNames.length), 'تعداد پروژه‌ها'),
-                statCard('gauge', 'bg-emerald-100 text-emerald-700', toPersianDigits(avgPhysical) + '٪', 'میانگین پیشرفت وزنی'),
-                statCard('calendar', 'bg-amber-100 text-amber-700', (avgDeviation > 0 ? '+' : '') + toPersianDigits(avgDeviation), 'میانگین انحراف زمانی (روز)'),
-                statCard('fileText', 'bg-slate-100 text-slate-700', toPersianDigits((checkins || []).length), 'گزارش‌های دریافتی'),
-                statCard('zap', 'bg-purple-100 text-purple-700', toPersianDigits(qwDefined), 'Quick Win های تعریف‌شده'),
-                statCard('checkCircle', 'bg-blue-900/15 text-blue-900', toPersianDigits(qwInProgress), 'Quick Win های در حال اجرا'),
-                statCard('target', 'bg-emerald-100 text-emerald-700', toPersianDigits(qwAchieved), 'Quick Win های محقق‌شده'),
-                statCard('alertTriangle', 'bg-red-100 text-red-700', toPersianDigits(overdueCount), 'دارای تأخیر'),
+                statCard('grid', 'bg-blue-900/15 text-blue-900', toPersianDigits(projectNames.length), 'تعداد پروژه‌ها',
+                    'تعداد پروژه‌هایی که حداقل یک گزارش برایشان ثبت شده است.'),
+                statCard('gauge', 'bg-emerald-100 text-emerald-700', toPersianDigits(avgPhysical) + '٪', 'میانگین پیشرفت فیزیکی پروژه‌ها',
+                    'میانگین % «پیشرفت فیزیکی» خود پروژه (نه Quick Win) از فرم اطلاعات تکمیلی: ابتدا بین سه رکن هر پروژه، سپس بین همه پروژه‌ها.'),
+                statCard('calendar', 'bg-amber-100 text-amber-700', (avgDeviation > 0 ? '+' : '') + toPersianDigits(avgDeviation) + ' روز', 'میانگین انحراف زمان‌بندی',
+                    'میانگین تفاوت (روز) بین «تاریخ پیش‌بینی تکمیل» گزارش‌شده و «تاریخ پایان قراردادی» رسمی؛ عدد مثبت یعنی تأخیر نسبت به قرارداد.'),
+                statCard('fileText', 'bg-slate-100 text-slate-700', toPersianDigits((checkins || []).length), 'گزارش‌های دریافتی',
+                    'مجموع تعداد فرم‌های اطلاعات تکمیلی و پیشنهاد Quick Win ثبت‌شده توسط همه سازمان‌ها.'),
+                statCard('zap', 'bg-purple-100 text-purple-700', toPersianDigits(qwDefined), 'پیشنهادهای Quick Win ثبت‌شده',
+                    'تعداد کل پیشنهادهای Quick Win ثبت‌شده توسط همه سازمان‌ها، پیش از هرگونه انتخاب برگزیده.'),
+                statCard('checkCircle', 'bg-blue-900/15 text-blue-900', toPersianDigits(qwInProgress), 'Quick Win های برگزیده در حال اجرا',
+                    'تعداد Quick Win هایی که به‌عنوان برگزیده انتخاب شده‌اند و هنوز به ۱۰۰٪ پیشرفت اجرا نرسیده‌اند.'),
+                statCard('target', 'bg-emerald-100 text-emerald-700', toPersianDigits(qwAchieved), 'Quick Win های محقق‌شده',
+                    'تعداد Quick Win های برگزیده‌ای که اجرای آن‌ها به ۱۰۰٪ پیشرفت رسیده است.'),
+                statCard('alertTriangle', 'bg-red-100 text-red-700', toPersianDigits(overdueCount), 'Quick Win های دارای تأخیر',
+                    'تعداد Quick Win های برگزیده‌ای که از مهلت تعیین‌شده گذشته‌اند و هنوز به ۱۰۰٪ نرسیده‌اند.'),
             ].join('');
 
             // ---- Project schedule status donut ----
