@@ -166,6 +166,17 @@
                     <p class="text-xs text-slate-500">پروژه: <b id="ciProjectName"></b> — سازمان: <b id="ciOrganization"></b></p>
                 </div>
 
+                <div id="ci_adminPicker" class="hidden bg-white p-4 rounded-2xl shadow-sm border space-y-2">
+                    <p class="text-xs text-slate-500">به‌عنوان ادمین، پروژه و سازمانی که می‌خواهید این فرم را برایش باز/ثبت کنید انتخاب کنید.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <select id="ci_adm_project" class="p-2.5 border rounded-xl text-xs md:col-span-2"></select>
+                        <select id="ci_adm_org" class="p-2.5 border rounded-xl text-xs">
+                            <option value="کارفرما">کارفرما</option><option value="مشاور">مشاور</option><option value="پیمانکار">پیمانکار</option>
+                        </select>
+                    </div>
+                    <button id="ci_adm_load_btn" type="button" class="w-full bg-blue-900 hover:bg-blue-800 text-white text-sm py-2 rounded-xl font-bold">بارگذاری فرم</button>
+                </div>
+
                 <form id="checkinForm" class="space-y-6">
                     <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                         <h3 class="text-sm font-bold border-r-4 border-blue-900 pr-3">مشخصات پاسخ‌دهنده</h3>
@@ -276,6 +287,17 @@
                     <p class="text-xs text-slate-500">پروژه: <b id="qwpProjectName"></b> — سازمان: <b id="qwpOrganization"></b></p>
                 </div>
 
+                <div id="qwp_adminPicker" class="hidden bg-white p-4 rounded-2xl shadow-sm border space-y-2">
+                    <p class="text-xs text-slate-500">به‌عنوان ادمین، پروژه و سازمانی که می‌خواهید این فرم را برایش باز/ثبت کنید انتخاب کنید.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <select id="qwp_adm_project" class="p-2.5 border rounded-xl text-xs md:col-span-2"></select>
+                        <select id="qwp_adm_org" class="p-2.5 border rounded-xl text-xs">
+                            <option value="کارفرما">کارفرما</option><option value="مشاور">مشاور</option><option value="پیمانکار">پیمانکار</option>
+                        </select>
+                    </div>
+                    <button id="qwp_adm_load_btn" type="button" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm py-2 rounded-xl font-bold">بارگذاری فرم</button>
+                </div>
+
                 <form id="qwProposalForm" class="space-y-6">
                     <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                         <h3 class="text-sm font-bold border-r-4 border-emerald-600 pr-3">🎯 فرم پیشنهاد Quick Win سی‌روزه</h3>
@@ -355,6 +377,14 @@
                 <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-1">
                     <h2 class="text-xl font-bold text-blue-900">📋 اطلاعات پایه و پیشرفت پروژه</h2>
                     <p class="text-xs text-slate-500">فرم اول — تکمیل توسط برنامه‌ریزی و کنترل پروژه کارفرما، هر دوره. پروژه: <b id="crProjectName"></b></p>
+                </div>
+
+                <div id="cr_adminPicker" class="hidden bg-white p-4 rounded-2xl shadow-sm border space-y-2">
+                    <p class="text-xs text-slate-500">به‌عنوان ادمین، پروژه‌ای که می‌خواهید این فرم (مخصوص کارفرما) را برایش باز/ثبت کنید انتخاب کنید.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <select id="cr_adm_project" class="p-2.5 border rounded-xl text-xs md:col-span-2"></select>
+                        <button id="cr_adm_load_btn" type="button" class="bg-blue-900 hover:bg-blue-800 text-white text-xs px-4 rounded-xl font-bold">بارگذاری فرم</button>
+                    </div>
                 </div>
                 <form id="clientReportForm" class="space-y-6">
                     <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
@@ -451,18 +481,12 @@
                 </div>
 
                 <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-3">
-                    <h3 class="text-sm font-bold">پیش‌نمایش فرم‌های ورود اطلاعات</h3>
-                    <p class="text-xs text-slate-500">برای دیدن یا آزمایش فرم‌ها، یک پروژه و سازمان انتخاب کن. ثبت گزارش از این‌جا به‌جای همان پروژه/سازمان ذخیره می‌شود.</p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <select id="admPreviewProject" class="p-2.5 border rounded-xl text-xs"></select>
-                        <select id="admPreviewOrg" class="p-2.5 border rounded-xl text-xs">
-                            <option value="کارفرما">کارفرما</option><option value="مشاور">مشاور</option><option value="پیمانکار">پیمانکار</option>
-                        </select>
-                    </div>
+                    <h3 class="text-sm font-bold">فرم‌های ورود اطلاعات</h3>
+                    <p class="text-xs text-slate-500">هرکدام از این فرم‌ها اکنون منوی مستقل خودشان را دارند (در پایین همین نوار کناری) — از همان صفحه، پروژه و سازمان دلخواه را انتخاب کنید.</p>
                     <div class="flex flex-wrap gap-2">
-                        <button id="admOpenCheckinBtn" type="button" class="bg-blue-900 hover:bg-blue-800 text-white text-sm px-4 py-2 rounded-xl font-bold">📝 باز کردن فرم اطلاعات تکمیلی</button>
-                        <button id="admOpenClientReportBtn" type="button" class="bg-blue-100 hover:bg-blue-200 text-blue-900 text-sm px-4 py-2 rounded-xl font-bold">📋 باز کردن فرم اطلاعات پایه پروژه (کارفرما)</button>
-                        <button id="admOpenQwProposalBtn" type="button" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-sm px-4 py-2 rounded-xl font-bold">🎯 باز کردن فرم پیشنهاد Quick Win</button>
+                        <button type="button" onclick="switchView('checkin')" class="bg-blue-900 hover:bg-blue-800 text-white text-sm px-4 py-2 rounded-xl font-bold">📝 اطلاعات تکمیلی</button>
+                        <button type="button" onclick="switchView('clientReport')" class="bg-blue-100 hover:bg-blue-200 text-blue-900 text-sm px-4 py-2 rounded-xl font-bold">📋 اطلاعات پایه پروژه (کارفرما)</button>
+                        <button type="button" onclick="switchView('qwProposal')" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-sm px-4 py-2 rounded-xl font-bold">🎯 پیشنهاد Quick Win</button>
                     </div>
                 </div>
 
@@ -1011,7 +1035,7 @@
             mobileNav.innerHTML = '';
 
             const buttons = currentProfile.role === 'admin'
-                ? [['overview', 'نمای کلی'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب Quick Win'], ['execReport', 'گزارش اجرایی'], ['admin', 'مدیریت کاربران']]
+                ? [['overview', 'نمای کلی'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب Quick Win'], ['execReport', 'گزارش اجرایی'], ['admin', 'مدیریت کاربران'], ['checkin', 'اطلاعات تکمیلی'], ['clientReport', 'اطلاعات پایه پروژه (کارفرما)'], ['qwProposal', 'پیشنهاد Quick Win']]
                 : currentProfile.organization === 'کارفرما'
                     ? [['overview', 'وضعیت پروژه'], ['selection', 'پیشنهادها'], ['checkin', 'اطلاعات تکمیلی'], ['clientReport', 'اطلاعات پایه پروژه'], ['qwProposal', 'پیشنهاد Quick Win']]
                     : [['overview', 'وضعیت پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win']];
@@ -1144,20 +1168,52 @@
         // --------------------------------------------------
         // MANAGER: CHECK-IN FORM (unified status + quick-win report)
         // --------------------------------------------------
-        function prefillCheckinForm() {
-            const p = effectiveProfile();
-            document.getElementById('ciProjectName').textContent = p.project_name;
-            document.getElementById('ciOrganization').textContent = p.organization;
+        async function populateProjectSelect(selectId) {
+            const { data: projects } = await _supabase.from('projects').select('*').order('name');
+            document.getElementById(selectId).innerHTML = (projects || []).length
+                ? projects.map(p => `<option value="${esc(p.name)}">${esc(p.name)}</option>`).join('')
+                : '<option value="">-- ابتدا در «مدیریت کاربران» یک پروژه بسازید --</option>';
         }
 
-        function prefillClientReportForm() {
-            document.getElementById('crProjectName').textContent = effectiveProfile().project_name;
+        async function prefillCheckinForm() {
+            const isAdmin = currentProfile.role === 'admin';
+            document.getElementById('ci_adminPicker').classList.toggle('hidden', !isAdmin);
+            if (isAdmin) {
+                await populateProjectSelect('ci_adm_project');
+                if (adminPreviewContext) {
+                    document.getElementById('ci_adm_project').value = adminPreviewContext.project_name;
+                    document.getElementById('ci_adm_org').value = adminPreviewContext.organization;
+                }
+            }
+            const p = isAdmin ? adminPreviewContext : currentProfile;
+            document.getElementById('ciProjectName').textContent = p ? p.project_name : '—';
+            document.getElementById('ciOrganization').textContent = p ? p.organization : '—';
         }
 
-        function prefillQwProposalForm() {
-            const p = effectiveProfile();
-            document.getElementById('qwpProjectName').textContent = p.project_name;
-            document.getElementById('qwpOrganization').textContent = p.organization;
+        async function prefillClientReportForm() {
+            const isAdmin = currentProfile.role === 'admin';
+            document.getElementById('cr_adminPicker').classList.toggle('hidden', !isAdmin);
+            if (isAdmin) {
+                await populateProjectSelect('cr_adm_project');
+                if (adminPreviewContext) document.getElementById('cr_adm_project').value = adminPreviewContext.project_name;
+            }
+            const p = isAdmin ? adminPreviewContext : currentProfile;
+            document.getElementById('crProjectName').textContent = p ? p.project_name : '—';
+        }
+
+        async function prefillQwProposalForm() {
+            const isAdmin = currentProfile.role === 'admin';
+            document.getElementById('qwp_adminPicker').classList.toggle('hidden', !isAdmin);
+            if (isAdmin) {
+                await populateProjectSelect('qwp_adm_project');
+                if (adminPreviewContext) {
+                    document.getElementById('qwp_adm_project').value = adminPreviewContext.project_name;
+                    document.getElementById('qwp_adm_org').value = adminPreviewContext.organization;
+                }
+            }
+            const p = isAdmin ? adminPreviewContext : currentProfile;
+            document.getElementById('qwpProjectName').textContent = p ? p.project_name : '—';
+            document.getElementById('qwpOrganization').textContent = p ? p.organization : '—';
         }
 
         function setDynamicStatusGroup(containerId, dataObj) {
@@ -1292,30 +1348,31 @@
             document.getElementById('cr_milestone_delay').value = row.milestone_delay_days ?? '';
         }
 
-        document.getElementById('admOpenCheckinBtn').addEventListener('click', async () => {
-            const project_name = document.getElementById('admPreviewProject').value;
-            const organization = document.getElementById('admPreviewOrg').value;
+        // --------------------------------------------------
+        // ADMIN: open/prefill any project+org's forms — used by the inline
+        // picker at the top of each of the three form views (reached
+        // directly from the sidebar) as well as from مدیریت کاربران.
+        // --------------------------------------------------
+        async function openCheckinPreview(project_name, organization) {
+            if (!project_name || !organization) { alert('لطفاً ابتدا پروژه و سازمان را انتخاب کنید.'); return; }
             adminPreviewContext = { project_name, organization };
-            switchView('checkin');
+            document.getElementById('ciProjectName').textContent = project_name;
+            document.getElementById('ciOrganization').textContent = organization;
 
             document.getElementById('checkinForm').reset();
             document.getElementById('ci_hse_note_wrap').classList.add('hidden');
-            document.getElementById('ci_qw_area_other').classList.add('hidden');
-            document.getElementById('ci_qw_consequence_other').classList.add('hidden');
-            document.getElementById('ci_support_other').classList.add('hidden');
 
             const { data } = await _supabase.from('check_ins').select('*')
                 .eq('project_name', project_name).eq('organization', organization)
                 .not('main_bottleneck', 'is', null)
                 .order('created_at', { ascending: false }).limit(1).maybeSingle();
             if (data) populateCheckinForm(data);
-        });
+        }
 
-        document.getElementById('admOpenClientReportBtn').addEventListener('click', async () => {
-            const project_name = document.getElementById('admPreviewProject').value;
-            const organization = document.getElementById('admPreviewOrg').value;
-            adminPreviewContext = { project_name, organization };
-            switchView('clientReport');
+        async function openClientReportPreview(project_name) {
+            if (!project_name) { alert('لطفاً ابتدا پروژه را انتخاب کنید.'); return; }
+            adminPreviewContext = { project_name, organization: 'کارفرما' };
+            document.getElementById('crProjectName').textContent = project_name;
 
             document.getElementById('clientReportForm').reset();
             document.getElementById('cr_contract_type_other').classList.add('hidden');
@@ -1324,13 +1381,13 @@
                 .eq('project_name', project_name)
                 .order('created_at', { ascending: false }).limit(1).maybeSingle();
             if (data) populateClientReportForm(data);
-        });
+        }
 
-        document.getElementById('admOpenQwProposalBtn').addEventListener('click', async () => {
-            const project_name = document.getElementById('admPreviewProject').value;
-            const organization = document.getElementById('admPreviewOrg').value;
+        async function openQwProposalPreview(project_name, organization) {
+            if (!project_name || !organization) { alert('لطفاً ابتدا پروژه و سازمان را انتخاب کنید.'); return; }
             adminPreviewContext = { project_name, organization };
-            switchView('qwProposal');
+            document.getElementById('qwpProjectName').textContent = project_name;
+            document.getElementById('qwpOrganization').textContent = organization;
 
             document.getElementById('qwProposalForm').reset();
             document.getElementById('ci_qw_area_other').classList.add('hidden');
@@ -1342,6 +1399,16 @@
                 .not('quick_win_title', 'is', null)
                 .order('created_at', { ascending: false }).limit(1).maybeSingle();
             if (data) populateQwProposalForm(data);
+        }
+
+        document.getElementById('ci_adm_load_btn').addEventListener('click', () => {
+            openCheckinPreview(document.getElementById('ci_adm_project').value, document.getElementById('ci_adm_org').value);
+        });
+        document.getElementById('cr_adm_load_btn').addEventListener('click', () => {
+            openClientReportPreview(document.getElementById('cr_adm_project').value);
+        });
+        document.getElementById('qwp_adm_load_btn').addEventListener('click', () => {
+            openQwProposalPreview(document.getElementById('qwp_adm_project').value, document.getElementById('qwp_adm_org').value);
         });
 
         document.getElementById('ci_hse_incident').addEventListener('change', (e) => {
@@ -1465,6 +1532,7 @@
 
         document.getElementById('checkinForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (currentProfile.role === 'admin' && !adminPreviewContext) { alert('ابتدا از بالای صفحه پروژه و سازمان را انتخاب و «بارگذاری فرم» را بزنید.'); return; }
             const hseIncident = document.getElementById('ci_hse_incident').value === 'true';
             const hseNote = document.getElementById('ci_hse_note').value.trim();
             if (hseIncident && !hseNote) { alert('لطفاً توضیح رویداد HSE را وارد کنید.'); return; }
@@ -1523,6 +1591,7 @@
         // --------------------------------------------------
         document.getElementById('qwProposalForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (currentProfile.role === 'admin' && !adminPreviewContext) { alert('ابتدا از بالای صفحه پروژه و سازمان را انتخاب و «بارگذاری فرم» را بزنید.'); return; }
             const planStartIso = jalaliInputToIso(document.getElementById('ci_plan_start_date').value);
             const planTargetIso = jalaliInputToIso(document.getElementById('ci_plan_target_date').value);
             if (!planStartIso || !planTargetIso) { alert('تاریخ شروع/هدف برنامه Quick Win معتبر نیست. لطفاً به‌صورت ۱۴۰۵/۰۶/۰۱ وارد کنید.'); return; }
@@ -1591,6 +1660,7 @@
         // --------------------------------------------------
         document.getElementById('clientReportForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (currentProfile.role === 'admin' && !adminPreviewContext) { alert('ابتدا از بالای صفحه پروژه را انتخاب و «بارگذاری فرم» را بزنید.'); return; }
             const startIso = jalaliInputToIso(document.getElementById('cr_start_date').value);
             const endIso = jalaliInputToIso(document.getElementById('cr_end_date').value);
             const milestoneIso = jalaliInputToIso(document.getElementById('cr_milestone_date').value);
@@ -1644,7 +1714,6 @@
                 ? projects.map(p => `<option value="${esc(p.name)}">${esc(p.name)}</option>`).join('')
                 : '<option value="">-- ابتدا پروژه بسازید --</option>';
             projSelect.innerHTML = projOptionsHtml;
-            document.getElementById('admPreviewProject').innerHTML = projOptionsHtml;
 
             document.getElementById('admProjectsList').innerHTML = (projects || []).length
                 ? projects.map(p => `<div class="p-2 bg-slate-50 rounded-lg text-center">${esc(p.name)}</div>`).join('')
