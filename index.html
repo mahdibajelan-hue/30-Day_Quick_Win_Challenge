@@ -1039,6 +1039,12 @@
             logoutBtn.addEventListener('click', logout);
             nav.appendChild(logoutBtn);
 
+            const mobileLogoutBtn = document.createElement('button');
+            mobileLogoutBtn.innerHTML = `${iconSvg('logOut', 'w-5 h-5')}<span class="text-[10px] font-bold">خروج</span>`;
+            mobileLogoutBtn.className = 'flex flex-col items-center gap-0.5 px-3 py-2 shrink-0 text-red-600';
+            mobileLogoutBtn.addEventListener('click', logout);
+            mobileNav.appendChild(mobileLogoutBtn);
+
             switchView(buttons[0][0]);
         }
 
