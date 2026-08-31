@@ -6,6 +6,54 @@
     <title>دفتر مجری طرح‌های توسعه گاز | خط انتقال گاز ششم سراسری</title>
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Dark "control-room" theme applied by remapping the Tailwind palette itself
+        // (rather than touching every one of the ~150 existing card/form elements):
+        // every bg-white / text-slate-800 / border etc. used throughout the app already
+        // carries a consistent semantic role (card surface, body text, hairline border...),
+        // so redefining what those tokens resolve to reskins the whole app from one place.
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        white: '#101a30',      // card / panel surface
+                        slate: {
+                            50: '#18213c',      // subtle in-card panel (kpi tiles, table head)
+                            100: '#1f2944',      // secondary button / hover panel
+                            200: '#293356',      // button hover / stronger hairline
+                            300: '#8b96ad',
+                            400: '#8b96ad',
+                            500: '#8b96ad',      // most-used secondary text tone
+                            600: '#c7cede',
+                            700: '#dde1ec',
+                            800: '#f2f4f8',      // headings / emphasis text
+                            900: '#0a0f1e',
+                            950: '#080d18',      // page background
+                        },
+                        blue: {
+                            100: 'rgba(59,130,246,.16)', 200: 'rgba(59,130,246,.16)',
+                            700: '#60a5fa', 800: '#2563eb', 900: '#3b82f6',
+                        },
+                        emerald: {
+                            50: 'rgba(16,185,129,.12)', 100: 'rgba(16,185,129,.16)', 200: 'rgba(16,185,129,.35)',
+                            600: '#34d399', 700: '#34d399', 800: '#34d399', 900: '#34d399',
+                        },
+                        amber: {
+                            100: 'rgba(245,158,11,.16)', 500: '#f59e0b', 600: '#fbbf24',
+                            700: '#fbbf24', 800: '#fbbf24', 900: '#fbbf24',
+                        },
+                        red: {
+                            100: 'rgba(239,68,68,.16)', 600: '#f87171', 700: '#f87171', 800: '#f87171',
+                        },
+                        purple: {
+                            100: 'rgba(168,85,247,.16)', 200: 'rgba(168,85,247,.16)',
+                            700: '#c084fc', 800: '#c084fc',
+                        },
+                    },
+                },
+            },
+        };
+    </script>
     <!-- Supabase JS Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Chart.js (for the AI analysis report's charts) -->
@@ -13,45 +61,79 @@
     <style>
         body { font-family: 'Vazirmatn', sans-serif; }
         .brand-title { letter-spacing: 0.02em; }
+        ::selection { background: #3b82f6; color: #fff; }
+        *:focus-visible { outline: 2px solid #3b82f6; outline-offset: 1px; }
+        .border { border-color: #22304f; }
+        input:not([type=checkbox]):not([type=radio]), select, textarea {
+            background-color: #18213c; color: #f2f4f8; color-scheme: dark;
+        }
+        input::placeholder, textarea::placeholder { color: #64748b; }
+        select option { background-color: #101a30; color: #f2f4f8; }
+        #sidebar::-webkit-scrollbar, .scroll-thin::-webkit-scrollbar { width: 6px; }
+        #sidebar::-webkit-scrollbar-thumb, .scroll-thin::-webkit-scrollbar-thumb { background: #22304f; border-radius: 3px; }
         @media print {
+            body { background: #fff !important; }
             body * { visibility: hidden; }
             #aiReportView, #aiReportView * { visibility: visible; }
-            #aiReportView { position: absolute; inset: 0; padding: 0; margin: 0; }
+            #aiReportView { position: absolute; inset: 0; padding: 0; margin: 0; background: #fff; }
             .no-print { display: none !important; }
+            #aiReportView, #aiReportView .print-card { background: #fff !important; color: #111 !important; border-color: #ccc !important; }
+            #aiReportView h1, #aiReportView h2, #aiReportView h3, #aiReportView p, #aiReportView span, #aiReportView td, #aiReportView th, #aiReportView b { color: #111 !important; }
             .print-card { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: avoid; }
         }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 antialiased min-h-screen">
+<body class="bg-slate-950 text-slate-800 antialiased min-h-screen">
 
-    <!-- Header / Letterhead -->
-    <header class="bg-white shadow-md border-b-4 border-amber-500">
-        <div class="max-w-6xl mx-auto px-4 pt-5 pb-4 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="text-center md:text-right order-2 md:order-1">
-                <h1 class="brand-title text-lg md:text-2xl font-extrabold text-blue-900">30-DAY PROJECT TRANSFORMATION PROGRAM</h1>
-                <p class="text-slate-500 text-xs mt-1" id="headerSubtitle">سامانه تحول و پایش ۳۰ روزه پروژه‌ها</p>
-            </div>
-            <div class="flex flex-col items-center text-center gap-1 order-1 md:order-2">
-                <img src="logo.png" alt="لوگوی شرکت" class="h-12 w-12 object-contain" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
-                <p class="font-bold text-sm text-slate-800">شرکت مهندسی و توسعه گاز ایران</p>
-                <p class="text-xs text-slate-500">طرح خط لوله ششم سراسری</p>
-            </div>
-        </div>
-        <div class="bg-slate-50 border-t border-slate-200">
-            <div class="max-w-6xl mx-auto px-4 flex flex-wrap gap-2 justify-center items-center py-3" id="navButtons"></div>
-        </div>
-    </header>
-    <template id="logoFallbackTpl"><div class="h-12 w-12 rounded-full bg-blue-900 text-white flex items-center justify-center font-bold text-sm mx-auto">گاز</div></template>
+    <template id="logoFallbackTpl"><div class="h-9 w-9 rounded-xl bg-blue-900 text-white flex items-center justify-center font-bold text-xs mx-auto shrink-0">گاز</div></template>
 
-    <main class="max-w-6xl mx-auto px-4 py-8 space-y-8">
+    <div class="flex flex-row-reverse min-h-screen">
+
+        <!-- SIDEBAR (desktop) -->
+        <aside id="sidebar" class="hidden md:flex md:flex-col w-64 shrink-0 bg-white border-l border-slate-800 h-screen sticky top-0 overflow-y-auto scroll-thin">
+            <div class="flex items-center gap-3 p-5 border-b border-slate-800">
+                <img src="logo.png" alt="لوگوی شرکت" class="h-9 w-9 object-contain shrink-0" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
+                <div class="min-w-0">
+                    <p class="font-bold text-sm text-slate-800 truncate">شرکت ملی گاز ایران</p>
+                    <p class="text-[11px] text-slate-500 truncate">مجری طرح‌های خطوط انتقال گاز</p>
+                </div>
+            </div>
+            <nav id="navButtons" class="flex-1 p-3 space-y-1"></nav>
+            <div class="p-3">
+                <div class="relative rounded-2xl overflow-hidden p-4 text-white" style="background: linear-gradient(155deg, #1e3a8a 0%, #0c1a3d 70%);">
+                    <p class="text-[11px] font-bold text-blue-300 mb-1">🎯 هدف ما</p>
+                    <p class="text-xs leading-relaxed text-slate-200">تحقق پروژه‌ها، به‌موقع، با کیفیت و با کمترین هزینه</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MOBILE TOP NAV (icon strip, sidebar collapses to this below md) -->
+        <nav id="mobileNav" class="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-800 flex overflow-x-auto scroll-thin"></nav>
+
+        <!-- MAIN COLUMN -->
+        <div class="flex-1 min-w-0 flex flex-col pb-16 md:pb-0">
+            <!-- TOP BAR -->
+            <header class="bg-white border-b border-slate-800 px-4 md:px-6 py-3 flex items-center justify-between gap-3 sticky top-0 z-20">
+                <div class="flex items-center gap-2 md:hidden">
+                    <img src="logo.png" alt="" class="h-7 w-7 object-contain" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
+                    <span class="font-bold text-xs text-slate-800">دفتر مجری طرح‌های خطوط انتقال گاز</span>
+                </div>
+                <p class="hidden md:block text-xs text-slate-500" id="headerSubtitle">سامانه تحول و پایش ۳۰ روزه پروژه‌ها</p>
+                <div class="flex items-center gap-3 text-slate-400 text-xs">
+                    <span id="topbarDate" class="font-bold text-slate-600"></span>
+                    <span class="flex items-center gap-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="topbarClock"></span></span>
+                </div>
+            </header>
+
+            <main class="flex-1 p-4 md:p-6 space-y-6">
 
         <!-- AUTH SCREEN -->
-        <div id="authScreen" class="hidden max-w-md mx-auto bg-white rounded-2xl shadow-sm border p-8 space-y-4 text-center">
+        <div id="authScreen" class="hidden max-w-md mx-auto bg-white rounded-2xl shadow-sm border p-8 space-y-4 text-center mt-10">
             <h2 class="text-lg font-bold text-blue-900">ورود به سامانه</h2>
             <p id="loginHint" class="text-xs text-slate-500">ایمیلی که ادمین برایتان ثبت کرده را وارد کنید تا لینک ورود برایتان ایمیل شود.</p>
-            <input id="loginEmail" type="email" placeholder="ایمیل شما" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center">
+            <input id="loginEmail" type="email" placeholder="ایمیل شما" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center bg-slate-50">
             <div id="loginPasswordWrap" class="hidden">
-                <input id="loginPassword" type="password" placeholder="رمز عبور" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center">
+                <input id="loginPassword" type="password" placeholder="رمز عبور" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center bg-slate-50">
             </div>
             <button id="loginBtn" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-2.5 rounded-xl transition">ارسال لینک ورود</button>
             <button id="togglePasswordModeBtn" type="button" class="text-xs text-blue-700 underline">رمز عبور تنظیم کرده‌اید؟ اینجا وارد شوید</button>
@@ -59,7 +141,7 @@
         </div>
 
         <!-- NOT AUTHORIZED SCREEN -->
-        <div id="notAuthorizedScreen" class="hidden max-w-md mx-auto bg-white rounded-2xl shadow-sm border p-8 space-y-3 text-center">
+        <div id="notAuthorizedScreen" class="hidden max-w-md mx-auto bg-white rounded-2xl shadow-sm border p-8 space-y-3 text-center mt-10">
             <h2 class="text-lg font-bold text-red-700">دسترسی تعریف نشده</h2>
             <p class="text-sm text-slate-600">ایمیل <b id="unauthEmail" dir="ltr"></b> به هیچ پروژه‌ای متصل نیست. لطفاً با ادمین سامانه تماس بگیرید تا شما را دعوت کند.</p>
             <button id="unauthLogoutBtn" class="text-xs text-blue-700 underline">خروج و ورود با ایمیل دیگر</button>
@@ -415,6 +497,77 @@
                 </div>
             </div>
 
+            <!-- OVERVIEW (admin landing dashboard) -->
+            <div id="overviewView" class="hidden space-y-4">
+                <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3" id="ovStatCards"></div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                    <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <h3 class="text-sm font-bold">وضعیت پیشرفت پروژه‌ها</h3>
+                        <div class="relative h-36 mx-auto" style="max-width:170px">
+                            <canvas id="ovProgressDonut"></canvas>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <p class="text-xl font-extrabold" id="ovProgressDonutCenter">-</p>
+                                <p class="text-[10px] text-slate-500">پروژه</p>
+                            </div>
+                        </div>
+                        <div id="ovProgressLegend" class="space-y-1.5 text-xs"></div>
+                    </div>
+
+                    <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <h3 class="text-sm font-bold">پیشرفت پروژه‌ها</h3>
+                        <div id="ovProjectProgressList" class="space-y-3 max-h-52 overflow-y-auto scroll-thin pl-1"></div>
+                        <button type="button" onclick="switchView('tracking')" class="text-xs text-blue-900 font-bold hover:underline">‹ مشاهده همه پروژه‌ها</button>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <h3 class="text-sm font-bold">وضعیت Quick Win ها</h3>
+                        <div class="relative h-36 mx-auto" style="max-width:170px">
+                            <canvas id="ovQwDonut"></canvas>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <p class="text-xl font-extrabold" id="ovQwDonutCenter">-</p>
+                                <p class="text-[10px] text-slate-500">مورد</p>
+                            </div>
+                        </div>
+                        <div id="ovQwLegend" class="space-y-1.5 text-xs"></div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <h3 class="text-sm font-bold">اهم گلوگاه‌های پروژه‌ها</h3>
+                        <div id="ovBottleneckList" class="space-y-2.5"></div>
+                        <button type="button" onclick="switchView('analytics')" class="text-xs text-blue-900 font-bold hover:underline">‹ مشاهده همه گلوگاه‌ها</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <h3 class="text-sm font-bold">ماتریس اثر Quick Win ها</h3>
+                        <div style="height:220px"><canvas id="ovBubbleChart"></canvas></div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <h3 class="text-sm font-bold">تصمیمات مورد نیاز مدیریت</h3>
+                        <div class="relative h-36 mx-auto" style="max-width:170px">
+                            <canvas id="ovDecisionsDonut"></canvas>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <p class="text-xl font-extrabold" id="ovDecisionsDonutCenter">-</p>
+                                <p class="text-[10px] text-slate-500">تصمیم</p>
+                            </div>
+                        </div>
+                        <div id="ovDecisionsLegend" class="space-y-1.5 text-xs"></div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <h3 class="text-sm font-bold">آخرین فعالیت‌های انجام‌شده</h3>
+                        <div id="ovActivityFeed" class="space-y-2 max-h-48 overflow-y-auto scroll-thin"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border p-4">
+                    <div id="ovMetricsStrip" class="flex flex-wrap items-center justify-around gap-4 text-center"></div>
+                </div>
+            </div>
+
             <!-- ANALYTICS DASHBOARD -->
             <div id="analyticsView" class="hidden space-y-8">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
@@ -584,7 +737,9 @@
             </div>
 
         </div>
-    </main>
+            </main>
+        </div>
+    </div>
 
     <script>
         // --------------------------------------------------
@@ -734,8 +889,36 @@
             return (currentProfile.role === 'admin' && adminPreviewContext) ? adminPreviewContext : currentProfile;
         }
 
-        const ACTIVE_BTN_CLASS = 'bg-amber-500 text-blue-950 px-4 py-2 rounded-xl font-bold text-xs shadow hover:bg-amber-400 transition';
-        const INACTIVE_BTN_CLASS = 'bg-blue-800 text-white px-4 py-2 rounded-xl font-bold text-xs border border-blue-700 hover:bg-blue-700 transition';
+        // --------------------------------------------------
+        // ICONS (inline stroke SVGs — Feather-style, 24x24) for the sidebar/topbar/widgets
+        // --------------------------------------------------
+        const ICON_PATHS = {
+            grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+            tool: '<path d="M14.7 6.3a4 4 0 1 1-5.4 5.4L3 18v3h3l6.3-6.3"/><path d="M14.7 6.3 18 3l3 3-3.3 3.3"/>',
+            zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+            trendingUp: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
+            barChart: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+            fileText: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/>',
+            edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+            clipboard: '<path d="M9 2h6a1 1 0 0 1 1 1v2H8V3a1 1 0 0 1 1-1z"/><rect x="5" y="4" width="14" height="18" rx="2"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="15" y2="15"/>',
+            logOut: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+            clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+            alertTriangle: '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+            target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+            checkCircle: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+            gauge: '<path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 12 17 7"/>',
+            calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+            activity: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+        };
+        function iconSvg(name, cls) {
+            return `<svg class="${cls || 'w-5 h-5'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name] || ''}</svg>`;
+        }
+
+        const NAV_ICON = { overview: 'grid', admin: 'tool', selection: 'zap', tracking: 'trendingUp', analytics: 'barChart', execReport: 'fileText', checkin: 'edit', clientReport: 'clipboard' };
+        const SIDEBAR_ACTIVE_CLASS = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold bg-blue-900/10 text-blue-900 transition';
+        const SIDEBAR_INACTIVE_CLASS = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition';
+        const MOBILE_ACTIVE_CLASS = 'flex flex-col items-center gap-0.5 px-3 py-2 shrink-0 text-blue-900';
+        const MOBILE_INACTIVE_CLASS = 'flex flex-col items-center gap-0.5 px-3 py-2 shrink-0 text-slate-500';
 
         async function initApp() {
             const { data: { session } } = await _supabase.auth.getSession();
@@ -789,26 +972,36 @@
 
         function renderNav() {
             const nav = document.getElementById('navButtons');
+            const mobileNav = document.getElementById('mobileNav');
             nav.innerHTML = '';
+            mobileNav.innerHTML = '';
 
             const buttons = currentProfile.role === 'admin'
-                ? [['admin', '🛠 مدیریت'], ['selection', '🏆 انتخاب Quick Win'], ['tracking', '📈 پایش پیشرفت'], ['analytics', '📊 داشبورد پورتفولیو'], ['execReport', '📄 گزارش اجرایی']]
+                ? [['overview', 'نمای کلی'], ['admin', 'مدیریت'], ['selection', 'انتخاب Quick Win'], ['tracking', 'پایش پیشرفت'], ['analytics', 'مقایسه دیدگاه‌ها'], ['execReport', 'گزارش اجرایی']]
                 : currentProfile.organization === 'کارفرما'
-                    ? [['checkin', '📝 گزارش دوره‌ای'], ['clientReport', '📋 اطلاعات پایه پروژه'], ['selection', '🏆 پیشنهادها'], ['tracking', '📈 پایش پیشرفت'], ['analytics', '📊 وضعیت پروژه']]
-                    : [['checkin', '📝 گزارش دوره‌ای'], ['selection', '🏆 پیشنهادها'], ['tracking', '📈 پایش پیشرفت'], ['analytics', '📊 وضعیت پروژه']];
+                    ? [['checkin', 'گزارش دوره‌ای'], ['clientReport', 'اطلاعات پایه پروژه'], ['selection', 'پیشنهادها'], ['tracking', 'پایش پیشرفت'], ['analytics', 'وضعیت پروژه']]
+                    : [['checkin', 'گزارش دوره‌ای'], ['selection', 'پیشنهادها'], ['tracking', 'پایش پیشرفت'], ['analytics', 'وضعیت پروژه']];
 
             buttons.forEach(([view, label], i) => {
+                const iconName = NAV_ICON[view] || 'grid';
                 const btn = document.createElement('button');
-                btn.textContent = label;
-                btn.className = i === 0 ? ACTIVE_BTN_CLASS : INACTIVE_BTN_CLASS;
+                btn.innerHTML = `${iconSvg(iconName, 'w-5 h-5 shrink-0')}<span>${esc(label)}</span>`;
+                btn.className = i === 0 ? SIDEBAR_ACTIVE_CLASS : SIDEBAR_INACTIVE_CLASS;
                 btn.dataset.view = view;
                 btn.addEventListener('click', () => switchView(view));
                 nav.appendChild(btn);
+
+                const mbtn = document.createElement('button');
+                mbtn.innerHTML = `${iconSvg(iconName, 'w-5 h-5')}<span class="text-[10px] font-bold">${esc(label)}</span>`;
+                mbtn.className = i === 0 ? MOBILE_ACTIVE_CLASS : MOBILE_INACTIVE_CLASS;
+                mbtn.dataset.view = view;
+                mbtn.addEventListener('click', () => switchView(view));
+                mobileNav.appendChild(mbtn);
             });
 
             const logoutBtn = document.createElement('button');
-            logoutBtn.textContent = '🚪 خروج';
-            logoutBtn.className = 'bg-red-800 text-white px-4 py-2 rounded-xl font-bold text-xs border border-red-700 hover:bg-red-700 transition';
+            logoutBtn.innerHTML = `${iconSvg('logOut', 'w-5 h-5 shrink-0')}<span>خروج</span>`;
+            logoutBtn.className = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-700 hover:bg-red-100 transition mt-2 border-t border-slate-800 pt-4';
             logoutBtn.addEventListener('click', logout);
             nav.appendChild(logoutBtn);
 
@@ -816,14 +1009,18 @@
         }
 
         function switchView(view) {
-            ['checkin', 'clientReport', 'admin', 'selection', 'tracking', 'analytics', 'execReport'].forEach(v => {
+            ['overview', 'checkin', 'clientReport', 'admin', 'selection', 'tracking', 'analytics', 'execReport'].forEach(v => {
                 const el = document.getElementById(v + 'View');
                 if (el) el.classList.toggle('hidden', v !== view);
             });
             document.getElementById('aiReportView').classList.add('hidden');
             document.querySelectorAll('#navButtons button[data-view]').forEach(b => {
-                b.className = b.dataset.view === view ? ACTIVE_BTN_CLASS : INACTIVE_BTN_CLASS;
+                b.className = b.dataset.view === view ? SIDEBAR_ACTIVE_CLASS : SIDEBAR_INACTIVE_CLASS;
             });
+            document.querySelectorAll('#mobileNav button[data-view]').forEach(b => {
+                b.className = b.dataset.view === view ? MOBILE_ACTIVE_CLASS : MOBILE_INACTIVE_CLASS;
+            });
+            if (view === 'overview') loadOverview();
             if (view === 'checkin') prefillCheckinForm();
             if (view === 'clientReport') prefillClientReportForm();
             if (view === 'admin') loadAdminData();
@@ -832,6 +1029,20 @@
             if (view === 'analytics') loadAnalyticsData();
             if (view === 'execReport') loadExecReport();
         }
+
+        function startTopbarClock() {
+            const dateEl = document.getElementById('topbarDate');
+            const clockEl = document.getElementById('topbarClock');
+            const WEEKDAYS = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه'];
+            function tick() {
+                const now = new Date();
+                dateEl.textContent = `${WEEKDAYS[now.getDay()]} ${todayJalali()}`;
+                clockEl.textContent = toPersianDigits(now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+            }
+            tick();
+            setInterval(tick, 30000);
+        }
+        startTopbarClock();
 
         let passwordLoginMode = false;
 
@@ -2130,6 +2341,238 @@
                         <td class="p-2 border">${esc(status)}</td>
                     </tr>`;
                 }).join('');
+        }
+
+        // --------------------------------------------------
+        // OVERVIEW: admin landing dashboard (نمای کلی)
+        // --------------------------------------------------
+        const QW_AREA_FA = {
+            'Engineering': 'مهندسی', 'Procurement': 'تأمین', 'Construction': 'اجرا',
+            'Contract / Commercial': 'قرارداد', 'Finance': 'مالی', 'HSE': 'HSE', 'Quality': 'کیفیت',
+            'Management / Decision Making': 'مدیریت/تصمیم‌گیری', 'سایر': 'سایر'
+        };
+        const overviewCharts = {};
+
+        function relativeTimeFa(isoStr) {
+            const mins = Math.floor((Date.now() - new Date(isoStr).getTime()) / 60000);
+            if (mins < 60) return `${toPersianDigits(Math.max(mins, 1))} دقیقه پیش`;
+            const hours = Math.floor(mins / 60);
+            if (hours < 24) return `${toPersianDigits(hours)} ساعت پیش`;
+            return `${toPersianDigits(Math.floor(hours / 24))} روز پیش`;
+        }
+
+        function statCard(iconName, colorClasses, value, label) {
+            return `<div class="bg-white rounded-2xl shadow-sm border p-4 flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${colorClasses}">${iconSvg(iconName, 'w-5 h-5')}</div>
+                <div class="min-w-0">
+                    <p class="text-xl font-extrabold text-slate-800 leading-tight">${value}</p>
+                    <p class="text-[11px] text-slate-500 truncate">${esc(label)}</p>
+                </div>
+            </div>`;
+        }
+
+        function renderStatusDonut(canvasId, centerId, legendId, segments) {
+            const total = segments.reduce((a, s) => a + s.value, 0);
+            document.getElementById(centerId).textContent = toPersianDigits(total);
+            if (overviewCharts[canvasId]) overviewCharts[canvasId].destroy();
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            overviewCharts[canvasId] = new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels: segments.map(s => s.label), datasets: [{ data: segments.map(s => s.value), backgroundColor: segments.map(s => s.color), borderWidth: 0 }] },
+                options: { cutout: '72%', plugins: { legend: { display: false } } }
+            });
+            document.getElementById(legendId).innerHTML = segments.map(s => {
+                const pct = total ? Math.round((s.value / total) * 100) : 0;
+                return `<div class="flex items-center justify-between">
+                    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full inline-block shrink-0" style="background:${s.color}"></span>${esc(s.label)}</span>
+                    <span class="text-slate-500 shrink-0">${toPersianDigits(s.value)} (${toPersianDigits(pct)}%)</span>
+                </div>`;
+            }).join('');
+        }
+
+        function computeScheduleBucket(variance) {
+            if (variance === null) return null;
+            if (variance > 5) return 'ahead';
+            if (variance < -5) return 'behind';
+            return 'onTrack';
+        }
+
+        async function loadOverview() {
+            const [{ data: checkins }, { data: decisions }, { data: logs }, { data: clientReports }] = await Promise.all([
+                _supabase.from('check_ins').select('*').order('created_at', { ascending: true }),
+                _supabase.from('quick_win_decisions').select('*'),
+                _supabase.from('quick_win_progress').select('*').order('created_at', { ascending: true }),
+                _supabase.from('client_reports').select('*').order('created_at', { ascending: true }),
+            ]);
+
+            const byProject = {};
+            (checkins || []).forEach(c => { (byProject[c.project_name] ??= {})[c.organization] = c; });
+            const projectNames = Object.keys(byProject);
+
+            const clientReportByProject = {};
+            (clientReports || []).forEach(cr => { clientReportByProject[cr.project_name] = cr; });
+
+            const logsByProject = {};
+            (logs || []).forEach(l => { (logsByProject[l.project_name] ??= []).push(l); });
+
+            const latestPercent = (projectName) => {
+                const pl = logsByProject[projectName] || [];
+                return pl.length ? pl[pl.length - 1].progress_percent : 0;
+            };
+
+            // ---- Stat cards ----
+            const avgPhysical = projectNames.length
+                ? Math.round(projectNames.reduce((sum, p) => {
+                    const orgs = Object.values(byProject[p]);
+                    const avg = orgs.reduce((a, c) => a + (Number(c.physical_progress) || 0), 0) / orgs.length;
+                    return sum + avg;
+                }, 0) / projectNames.length)
+                : 0;
+
+            const deviations = projectNames
+                .map(p => {
+                    const cr = clientReportByProject[p];
+                    if (!cr || !cr.contract_end_date) return null;
+                    const orgs = Object.values(byProject[p]).filter(c => c.forecast_completion_date);
+                    if (!orgs.length) return null;
+                    const avgForecastMs = orgs.reduce((a, c) => a + new Date(c.forecast_completion_date).getTime(), 0) / orgs.length;
+                    return Math.round((avgForecastMs - new Date(cr.contract_end_date).getTime()) / 86400000);
+                })
+                .filter(v => v !== null);
+            const avgDeviation = deviations.length ? Math.round(deviations.reduce((a, b) => a + b, 0) / deviations.length) : 0;
+
+            const allCheckinsWithQw = (checkins || []).filter(c => c.quick_win_title);
+            const qwDefined = allCheckinsWithQw.length;
+            const qwAchieved = (decisions || []).filter(d => latestPercent(d.project_name) >= 100).length;
+            const qwInProgress = (decisions || []).length - qwAchieved;
+
+            document.getElementById('ovStatCards').innerHTML = [
+                statCard('grid', 'bg-blue-900/15 text-blue-900', toPersianDigits(projectNames.length), 'تعداد پروژه‌ها'),
+                statCard('gauge', 'bg-emerald-100 text-emerald-700', toPersianDigits(avgPhysical) + '٪', 'میانگین پیشرفت وزنی'),
+                statCard('calendar', 'bg-amber-100 text-amber-700', (avgDeviation > 0 ? '+' : '') + toPersianDigits(avgDeviation), 'میانگین انحراف زمانی (روز)'),
+                statCard('zap', 'bg-purple-100 text-purple-700', toPersianDigits(qwDefined), 'Quick Win های تعریف‌شده'),
+                statCard('checkCircle', 'bg-blue-900/15 text-blue-900', toPersianDigits(qwInProgress), 'Quick Win های در حال اجرا'),
+                statCard('target', 'bg-emerald-100 text-emerald-700', toPersianDigits(qwAchieved), 'Quick Win های محقق‌شده'),
+            ].join('');
+
+            // ---- Project schedule status donut ----
+            const scheduleBuckets = { ahead: 0, onTrack: 0, behind: 0 };
+            projectNames.forEach(p => {
+                const orgs = Object.values(byProject[p]);
+                const avgVariance = orgs.reduce((a, c) => a + ((Number(c.physical_progress) || 0) - (Number(c.planned_progress) || 0)), 0) / orgs.length;
+                const bucket = computeScheduleBucket(avgVariance) || 'onTrack';
+                scheduleBuckets[bucket]++;
+            });
+            renderStatusDonut('ovProgressDonut', 'ovProgressDonutCenter', 'ovProgressLegend', [
+                { label: 'بالاتر از برنامه', value: scheduleBuckets.ahead, color: '#22c55e' },
+                { label: 'مطابق برنامه', value: scheduleBuckets.onTrack, color: '#3b82f6' },
+                { label: 'پایین‌تر از برنامه', value: scheduleBuckets.behind, color: '#ef4444' },
+            ]);
+
+            // ---- Project progress list ----
+            const progressRows = projectNames.map(p => {
+                const orgs = Object.values(byProject[p]);
+                const avg = Math.round(orgs.reduce((a, c) => a + (Number(c.physical_progress) || 0), 0) / orgs.length);
+                return { name: p, percent: avg };
+            }).sort((a, b) => b.percent - a.percent).slice(0, 6);
+            document.getElementById('ovProjectProgressList').innerHTML = progressRows.length ? progressRows.map(r => `
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs"><span class="font-bold truncate">${esc(r.name)}</span><span class="text-slate-500 shrink-0">${toPersianDigits(r.percent)}٪</span></div>
+                    <div class="w-full bg-slate-50 rounded-full h-2"><div class="bg-blue-900 h-2 rounded-full" style="width:${Math.min(r.percent, 100)}%"></div></div>
+                </div>`).join('') : '<p class="text-xs text-slate-400 text-center py-4">داده‌ای ثبت نشده است.</p>';
+
+            // ---- Quick Win status donut ----
+            renderStatusDonut('ovQwDonut', 'ovQwDonutCenter', 'ovQwLegend', [
+                { label: 'محقق شده', value: qwAchieved, color: '#22c55e' },
+                { label: 'در حال اجرا', value: qwInProgress, color: '#3b82f6' },
+                { label: 'تعریف شده', value: Math.max(qwDefined - (decisions || []).length, 0), color: '#f59e0b' },
+            ]);
+
+            // ---- Top bottlenecks (by qw_bottleneck_area across latest check-ins) ----
+            const areaTally = {};
+            Object.values(byProject).forEach(orgs => {
+                Object.values(orgs).forEach(c => {
+                    if (!c.qw_bottleneck_area) return;
+                    const label = QW_AREA_FA[c.qw_bottleneck_area] || c.qw_bottleneck_area;
+                    areaTally[label] = (areaTally[label] || 0) + 1;
+                });
+            });
+            const bottleneckRows = Object.entries(areaTally).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            const maxBottleneck = bottleneckRows.length ? bottleneckRows[0][1] : 1;
+            const BOTTLENECK_COLORS = ['#ef4444', '#f59e0b', '#f59e0b', '#3b82f6', '#3b82f6'];
+            document.getElementById('ovBottleneckList').innerHTML = bottleneckRows.length ? bottleneckRows.map(([label, count], i) => `
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs"><span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full inline-block" style="background:${BOTTLENECK_COLORS[i]}"></span>${esc(label)}</span><span class="text-slate-500">${toPersianDigits(count)}</span></div>
+                    <div class="w-full bg-slate-50 rounded-full h-1.5"><div class="h-1.5 rounded-full" style="width:${(count / maxBottleneck) * 100}%;background:${BOTTLENECK_COLORS[i]}"></div></div>
+                </div>`).join('') : '<p class="text-xs text-slate-400 text-center py-4">داده‌ای ثبت نشده است.</p>';
+
+            // ---- Quick Win impact bubble matrix ----
+            const TIME_BUCKET = { 'کمتر از ۷ روز': 1, '۷ تا ۱۴ روز': 2, '۱۵ تا ۳۰ روز': 2, 'بیش از ۳۰ روز': 3 };
+            const bubblePoints = allCheckinsWithQw.filter(c => c.time_estimate).map(c => {
+                const x = (TIME_BUCKET[c.time_estimate] || 2) + (Math.random() - 0.5) * 0.4;
+                const delayDays = Number(c.impact_delay_days) || 0;
+                const y = (delayDays > 25 ? 3 : delayDays >= 10 ? 2 : 1) + (Math.random() - 0.5) * 0.4;
+                const r = Math.min(20, Math.max(6, Math.sqrt((Number(c.impact_cost_avoided) || 0) / 2e9) + 6));
+                return { x, y, r, backgroundColor: (ORG_COLORS[c.organization] || '#3b82f6') + 'cc' };
+            });
+            if (overviewCharts.ovBubbleChart) overviewCharts.ovBubbleChart.destroy();
+            overviewCharts.ovBubbleChart = new Chart(document.getElementById('ovBubbleChart').getContext('2d'), {
+                type: 'bubble',
+                data: { datasets: [{ data: bubblePoints, backgroundColor: bubblePoints.map(p => p.backgroundColor) }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        x: { min: 0.5, max: 3.5, ticks: { stepSize: 1, callback: v => ({ 1: 'کم', 2: 'متوسط', 3: 'زیاد' })[v] || '' }, title: { display: true, text: 'قابلیت تحقق در ۳۰ روز', color: '#8b96ad' }, grid: { color: '#22304f' } },
+                        y: { min: 0.5, max: 3.5, ticks: { stepSize: 1, callback: v => ({ 1: 'کم', 2: 'متوسط', 3: 'زیاد' })[v] || '' }, title: { display: true, text: 'اثر زمانی', color: '#8b96ad' }, grid: { color: '#22304f' } },
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // ---- Decisions-needed donut ----
+            const priorityTally = { 'فوری – کمتر از ۷ روز': 0, 'مهم – کمتر از ۱۴ روز': 0, 'عادی – کمتر از ۳۰ روز': 0 };
+            Object.values(byProject).forEach(orgs => Object.values(orgs).forEach(c => {
+                if (c.senior_decision_needed && priorityTally[c.senior_decision_priority] !== undefined) priorityTally[c.senior_decision_priority]++;
+            }));
+            renderStatusDonut('ovDecisionsDonut', 'ovDecisionsDonutCenter', 'ovDecisionsLegend', [
+                { label: 'فوری', value: priorityTally['فوری – کمتر از ۷ روز'], color: '#ef4444' },
+                { label: 'مهم', value: priorityTally['مهم – کمتر از ۱۴ روز'], color: '#f59e0b' },
+                { label: 'عادی', value: priorityTally['عادی – کمتر از ۳۰ روز'], color: '#3b82f6' },
+            ]);
+
+            // ---- Recent activity feed ----
+            const activity = [];
+            (checkins || []).slice(-8).forEach(c => activity.push({ ts: c.created_at, color: '#3b82f6', text: `ثبت گزارش دوره‌ای جدید — ${c.project_name} (${c.organization})` }));
+            (logs || []).slice(-8).forEach(l => activity.push({ ts: l.created_at, color: '#f59e0b', text: `بروزرسانی پیشرفت Quick Win — ${l.project_name}: ${l.status} (${l.progress_percent}٪)` }));
+            (decisions || []).forEach(d => activity.push({ ts: d.created_at, color: '#22c55e', text: `Quick Win «${d.selected_title}» برای ${d.project_name} انتخاب شد` }));
+            activity.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+            document.getElementById('ovActivityFeed').innerHTML = activity.length ? activity.slice(0, 8).map(a => `
+                <div class="flex items-start gap-2 text-xs">
+                    <span class="w-2 h-2 rounded-full mt-1 shrink-0" style="background:${a.color}"></span>
+                    <span class="flex-1">${esc(a.text)}</span>
+                    <span class="text-slate-400 shrink-0">${relativeTimeFa(a.ts)}</span>
+                </div>`).join('') : '<p class="text-xs text-slate-400 text-center py-4">فعالیتی ثبت نشده است.</p>';
+
+            // ---- Bottom metrics strip ----
+            const selectedCheckinByProject = {};
+            (decisions || []).forEach(d => { const rec = byProject[d.project_name]?.[d.selected_organization]; if (rec) selectedCheckinByProject[d.project_name] = rec; });
+            const sumSelected = (field) => Object.values(selectedCheckinByProject).reduce((a, r) => a + (Number(r[field]) || 0), 0);
+            const riskFollowUp = Object.values(byProject).reduce((total, orgs) => total + Object.values(orgs).reduce((t, c) =>
+                t + ((c.risks || []).filter(r => (r.level === 'بحرانی' || r.level === 'زیاد') && r.current_action).length), 0), 0);
+
+            function metricItem(iconName, value, label) {
+                return `<div class="flex items-center gap-2">
+                    <div class="w-9 h-9 rounded-lg bg-slate-50 text-blue-900 flex items-center justify-center shrink-0">${iconSvg(iconName, 'w-4 h-4')}</div>
+                    <div class="text-right"><p class="text-sm font-extrabold">${value}</p><p class="text-[10px] text-slate-500">${esc(label)}</p></div>
+                </div>`;
+            }
+            document.getElementById('ovMetricsStrip').innerHTML = [
+                metricItem('clock', toPersianDigits(sumSelected('impact_delay_days')) + ' روز', 'جمع صرفه‌جویی زمانی'),
+                metricItem('gauge', fmtRial(sumSelected('impact_cost_avoided')), 'جمع صرفه‌جویی مالی'),
+                metricItem('trendingUp', '+' + toPersianDigits(sumSelected('impact_progress_increase')) + '٪', 'افزایش پیشرفت تجمعی'),
+                metricItem('shield', toPersianDigits(riskFollowUp) + ' مورد', 'ریسک‌های تحت پیگیری'),
+                metricItem('fileText', toPersianDigits((checkins || []).length) + ' گزارش', 'تعداد گزارش‌های ثبت‌شده'),
+            ].join('');
         }
 
         initApp();
