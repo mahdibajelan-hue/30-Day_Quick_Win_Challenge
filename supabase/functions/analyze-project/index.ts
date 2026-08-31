@@ -85,6 +85,14 @@ Deno.serve(async (req) => {
       .eq("project_name", project_name)
       .order("created_at", { ascending: true });
 
+    const { data: clientReport } = await supabase
+      .from("client_reports")
+      .select("*")
+      .eq("project_name", project_name)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
     // Keep only the latest check-in per organization (the current perspective).
     // deno-lint-ignore no-explicit-any
     const latestByOrg: Record<string, any> = {};
@@ -142,18 +150,47 @@ Deno.serve(async (req) => {
       ? "\nتاریخچه پایش:\n" + progress.map((p: any) => `- ${String(p.created_at).slice(0, 10)}: ${p.status}, ${p.progress_percent}% — ${p.note || ""}`).join("\n")
       : "";
 
-    const prompt = `شما یک متخصص مدیریت پورتفولیوی پروژه‌های خط انتقال گاز هستید. اطلاعات زیر گزارش‌های دوره‌ای پروژه «${project_name}» است که توسط کارفرما، مشاور و پیمانکار به‌طور مستقل ثبت شده است:
+    // deno-lint-ignore no-explicit-any
+    function buildClientReportText(cr: any): string {
+      if (!cr) return "\nفرم اول (اطلاعات پایه پروژه) هنوز توسط کارفرما ثبت نشده است.";
+      const variance = (typeof cr.progress_physical === "number" && typeof cr.progress_planned === "number")
+        ? cr.progress_physical - cr.progress_planned
+        : null;
+      const elapsedPercent = (cr.contract_duration_months && cr.elapsed_months != null)
+        ? Math.round((cr.elapsed_months / cr.contract_duration_months) * 100)
+        : null;
+      return `
+### اطلاعات پایه و پیشرفت رسمی پروژه (فرم اول کارفرما)
+- نام طرح: ${cr.plan_name || "-"} | شماره قرارداد: ${cr.contract_number || "-"} | نوع قرارداد: ${cr.contract_type === "سایر" ? cr.contract_type_other : cr.contract_type || "-"}
+- پیمانکار: ${cr.contractor_name || "-"} | مشاور: ${cr.consultant_name || "-"} | مدیر پروژه کارفرما: ${cr.client_pm_name || "-"}
+- مبلغ اولیه/فعلی قرارداد: ${cr.contract_initial_amount ?? "-"} / ${cr.contract_current_amount ?? "-"} ریال
+- تاریخ شروع/پایان قراردادی: ${cr.contract_start_date || "-"} تا ${cr.contract_end_date || "-"}
+- مدت قرارداد: ${cr.contract_duration_months ?? "-"} ماه | مدت سپری‌شده: ${cr.elapsed_months ?? "-"} ماه${elapsedPercent !== null ? ` (${elapsedPercent}% از مدت قرارداد)` : ""}
+- پیشرفت برنامه‌ای رسمی: ${cr.progress_planned ?? "-"}% | پیشرفت واقعی رسمی: ${cr.progress_physical ?? "-"}%${variance !== null ? ` (انحراف ${variance > 0 ? "+" : ""}${variance}%)` : ""}
+- پیشرفت مهندسی: ${cr.progress_engineering ?? "-"}% | پیشرفت تأمین: ${cr.progress_procurement ?? "-"}% | پیشرفت اجرا: ${cr.progress_construction ?? "-"}%
+- مهم‌ترین Milestone پیش‌رو: ${cr.milestone_name || "-"} — تاریخ برنامه‌ای ${cr.milestone_planned_date || "-"} — وضعیت: ${cr.milestone_status || "-"}${cr.milestone_delay_days ? ` (برآورد تأخیر ${cr.milestone_delay_days} روز)` : ""}`;
+    }
+
+    const clientReportText = buildClientReportText(clientReport);
+
+    const prompt = `شما یک متخصص ارشد مدیریت پورتفولیوی پروژه‌های خط انتقال گاز هستید. اطلاعات زیر مربوط به پروژه «${project_name}» است: هم اطلاعات رسمی قرارداد و پیشرفت که توسط برنامه‌ریزی و کنترل پروژه کارفرما ثبت شده، و هم گزارش‌های دوره‌ای که کارفرما، مشاور و پیمانکار هرکدام به‌طور مستقل از دیدگاه خودشان ثبت کرده‌اند:
+${clientReportText}
 ${perspectiveText}
 ${decisionText}
 ${progressText}
 
-یک گزارش تحلیلی مختصر و کاربردی به فارسی، دقیقاً با این ساختار تولید کن:
-۱. **تناقض‌های کلیدی بین دیدگاه‌ها** — اگر عددی یا توصیفی بین ۳ طرف مغایرت دارد، دقیقاً نام ببر.
-۲. **مهم‌ترین ریسک/گلوگاه پروژه در حال حاضر** — با توجیه کوتاه.
-۳. **پیشنهاد اقدام اولویت‌دار برای ۳۰ روز آینده** — مشخص و عملیاتی.
-۴. **جمع‌بندی وضعیت کلی در یک جمله** — سبز/زرد/قرمز و چرا.
+با استفاده از تمام اطلاعات بالا (اطلاعات قراردادی/رسمی + هر سه دیدگاه)، یک گزارش تحلیلی جامع و کامل به فارسی تولید کن، دقیقاً با این ساختار:
 
-خروجی باید مختصر، دقیق، و قابل ارائه مستقیم به مدیر اجرایی طرح باشد.`;
+۱. **خلاصه مدیریتی** — وضعیت کلی پروژه در ۲ تا ۳ جمله (سبز/زرد/قرمز و چرا).
+۲. **وضعیت قراردادی و زمان‌بندی** — مقایسه پیشرفت رسمی (فرم کارفرما) با پیشرفت گزارش‌شده توسط هر سه رکن، انحراف از برنامه، درصد مدت سپری‌شده نسبت به پیشرفت واقعی، و ریسک Milestone پیش‌رو.
+۳. **تناقض‌های کلیدی بین دیدگاه‌ها** — هر عدد یا برداشتی که بین کارفرما، مشاور و پیمانکار (یا بین گزارش رسمی کارفرما و ادعای خودشان) مغایرت دارد را دقیقاً با اسم و عدد ذکر کن.
+۴. **گلوگاه‌ها و جبهه‌های بحرانی** — بر اساس وضعیت حوزه‌ها (X-Ray) و جبهه‌های کاری هر سه رکن، کدام حوزه‌ها/جبهه‌ها در بیش از یک دیدگاه قرمز یا زرد گزارش شده‌اند.
+۵. **مهم‌ترین ریسک‌ها و مسائل باز** — از میان ریسک‌ها و مسائل سه‌گانه‌ی هر رکن، مهم‌ترین‌ها را دسته‌بندی و اولویت‌بندی کن (تکراری‌ها را یکی کن).
+۶. **ارزیابی مقایسه‌ای پیشنهادهای Quick Win** — سه پیشنهاد Quick Win را با هم مقایسه کن و مشخص کن کدام بیشترین اثر/کمترین زمان را دارد و چرا (مستقل از اینکه فعلاً کدام برگزیده شده).
+۷. **پیشنهاد اقدام اولویت‌دار برای ۳۰ روز آینده** — مشخص، عملیاتی، و با ذکر مسئول پیشنهادی.
+۸. **جمع‌بندی و توصیه به مدیریت ارشد** — چه تصمیمی از مدیریت ارشد لازم است و چرا فوریت دارد.
+
+خروجی باید دقیق، مستند به اعداد واقعی داده‌شده، و قابل ارائه مستقیم به مدیر اجرایی طرح باشد — از تکرار کلی‌گویی بدون عدد یا مصداق پرهیز کن.`;
 
     let analysisText: string;
 
