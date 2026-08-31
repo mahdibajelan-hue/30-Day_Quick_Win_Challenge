@@ -93,10 +93,27 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    // Keep only the latest check-in per organization (the current perspective).
+    // The app's check-in form was split into two independent forms (a
+    // periodic status report and a Quick Win proposal), so a given
+    // organization's "current perspective" is now spread across two rows
+    // instead of one. Fold the latest row of each kind back into a single
+    // composite record per org — the two forms write disjoint columns, so
+    // overlaying the Quick Win row's non-null fields onto the periodic
+    // row's is a safe, order-independent merge.
     // deno-lint-ignore no-explicit-any
     const latestByOrg: Record<string, any> = {};
-    for (const c of checkins) latestByOrg[c.organization] = c;
+    // deno-lint-ignore no-explicit-any
+    const rowsByOrg: Record<string, any[]> = {};
+    for (const c of checkins) (rowsByOrg[c.organization] ??= []).push(c);
+    for (const [org, rows] of Object.entries(rowsByOrg)) {
+      const periodic = [...rows].reverse().find((r) => r.main_bottleneck != null);
+      const qw = [...rows].reverse().find((r) => r.quick_win_title != null);
+      if (!periodic) { latestByOrg[org] = qw; continue; }
+      if (!qw) { latestByOrg[org] = periodic; continue; }
+      const merged = { ...periodic };
+      for (const [k, v] of Object.entries(qw)) if (v !== null && v !== undefined) merged[k] = v;
+      latestByOrg[org] = merged;
+    }
 
     // deno-lint-ignore no-explicit-any
     function summarizeStatusGroup(group: any): string {

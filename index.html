@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>دفتر مجری طرح‌های توسعه گاز | خط انتقال گاز ششم سراسری</title>
+    <title>مجری طرح خط لوله ششم سراسری | 30Day Project Transformation Program</title>
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -95,7 +95,7 @@
                 <img src="logo.png" alt="لوگوی شرکت" class="h-9 w-9 object-contain shrink-0" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
                 <div class="min-w-0">
                     <p class="font-bold text-sm text-slate-800 truncate">شرکت ملی گاز ایران</p>
-                    <p class="text-[11px] text-slate-500 truncate">مجری طرح‌های خطوط انتقال گاز</p>
+                    <p class="text-[11px] text-slate-500 truncate">مجری طرح خط لوله ششم سراسری</p>
                 </div>
             </div>
             <nav id="navButtons" class="flex-1 p-3 space-y-1"></nav>
@@ -103,6 +103,7 @@
                 <div class="relative rounded-2xl overflow-hidden p-4 text-white" style="background: linear-gradient(155deg, #1e3a8a 0%, #0c1a3d 70%);">
                     <p class="text-[11px] font-bold text-blue-300 mb-1">🎯 هدف ما</p>
                     <p class="text-xs leading-relaxed text-slate-200">تحقق پروژه‌ها، به‌موقع، با کیفیت و با کمترین هزینه</p>
+                    <p class="text-[11px] leading-relaxed text-blue-300 mt-2 pt-2 border-t border-white/10">هر پروژه، یک مسئله؛ هر مسئله، یک اقدام؛ هر اقدام، یک نتیجه.</p>
                 </div>
             </div>
         </aside>
@@ -116,12 +117,19 @@
             <header class="bg-white border-b border-slate-800 px-4 md:px-6 py-3 flex items-center justify-between gap-3 sticky top-0 z-20">
                 <div class="flex items-center gap-2 md:hidden">
                     <img src="logo.png" alt="" class="h-7 w-7 object-contain" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
-                    <span class="font-bold text-xs text-slate-800">دفتر مجری طرح‌های خطوط انتقال گاز</span>
+                    <span class="font-bold text-xs text-slate-800">مجری طرح خط لوله ششم سراسری</span>
                 </div>
                 <p class="hidden md:block text-xs text-slate-500" id="headerSubtitle">سامانه تحول و پایش ۳۰ روزه پروژه‌ها</p>
-                <div class="flex items-center gap-3 text-slate-400 text-xs">
+                <div class="flex items-center gap-3 text-slate-400 text-xs relative">
                     <span id="topbarDate" class="font-bold text-slate-600"></span>
                     <span class="flex items-center gap-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="topbarClock"></span></span>
+                    <button id="setPasswordBtn" type="button" title="تنظیم/تغییر رمز عبور" class="text-base leading-none hover:opacity-70">🔑</button>
+                    <div id="setPasswordPanel" class="hidden absolute left-0 top-full mt-2 z-30 bg-white rounded-2xl shadow-sm border p-4 space-y-2 w-64">
+                        <p class="text-xs text-slate-500">برای ورود سریع‌تر در دفعات بعد (بدون نیاز به لینک ایمیل)، یک رمز عبور تنظیم کنید.</p>
+                        <input id="newPassword" type="password" placeholder="رمز عبور جدید (حداقل ۶ کاراکتر)" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
+                        <button id="savePasswordBtn" type="button" class="w-full bg-blue-900 hover:bg-blue-800 text-white text-sm py-2 rounded-xl font-bold">ذخیره رمز عبور</button>
+                        <p id="setPasswordMsg" class="text-xs"></p>
+                    </div>
                 </div>
             </header>
 
@@ -130,6 +138,7 @@
         <!-- AUTH SCREEN -->
         <div id="authScreen" class="hidden max-w-md mx-auto bg-white rounded-2xl shadow-sm border p-8 space-y-4 text-center mt-10">
             <h2 class="text-lg font-bold text-blue-900">ورود به سامانه</h2>
+            <p class="text-xs text-slate-400 italic">«هر پروژه، یک مسئله؛ هر مسئله، یک اقدام؛ هر اقدام، یک نتیجه.»</p>
             <p id="loginHint" class="text-xs text-slate-500">ایمیلی که ادمین برایتان ثبت کرده را وارد کنید تا لینک ورود برایتان ایمیل شود.</p>
             <input id="loginEmail" type="email" placeholder="ایمیل شما" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center bg-slate-50">
             <div id="loginPasswordWrap" class="hidden">
@@ -150,20 +159,10 @@
         <!-- APP SHELL -->
         <div id="appShell" class="hidden space-y-8">
 
-            <div class="bg-white rounded-2xl shadow-sm border p-4 flex justify-between items-center flex-wrap gap-2">
-                <p class="text-xs text-slate-500">برای ورود سریع‌تر در دفعات بعد (بدون نیاز به لینک ایمیل)، می‌توانید یک رمز عبور تنظیم کنید.</p>
-                <button id="setPasswordBtn" type="button" class="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg font-bold">🔑 تنظیم/تغییر رمز عبور</button>
-            </div>
-            <div id="setPasswordPanel" class="hidden bg-white rounded-2xl shadow-sm border p-4 space-y-2 max-w-sm">
-                <input id="newPassword" type="password" placeholder="رمز عبور جدید (حداقل ۶ کاراکتر)" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
-                <button id="savePasswordBtn" type="button" class="w-full bg-blue-900 hover:bg-blue-800 text-white text-sm py-2 rounded-xl font-bold">ذخیره رمز عبور</button>
-                <p id="setPasswordMsg" class="text-xs"></p>
-            </div>
-
             <!-- MANAGER: CHECK-IN FORM -->
             <div id="checkinView" class="hidden space-y-6">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-1">
-                    <h2 class="text-xl font-bold text-blue-900">📝 گزارش دوره‌ای پروژه</h2>
+                    <h2 class="text-xl font-bold text-blue-900">📝 اطلاعات تکمیلی پروژه</h2>
                     <p class="text-xs text-slate-500">پروژه: <b id="ciProjectName"></b> — سازمان: <b id="ciOrganization"></b></p>
                 </div>
 
@@ -266,6 +265,18 @@
                         </div>
                     </div>
 
+                    <button type="submit" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-3 rounded-xl transition shadow">ثبت اطلاعات تکمیلی</button>
+                </form>
+            </div>
+
+            <!-- QUICK WIN PROPOSAL FORM (independent menu, all organizations) -->
+            <div id="qwProposalView" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-1">
+                    <h2 class="text-xl font-bold text-blue-900">🎯 پیشنهاد Quick Win</h2>
+                    <p class="text-xs text-slate-500">پروژه: <b id="qwpProjectName"></b> — سازمان: <b id="qwpOrganization"></b></p>
+                </div>
+
+                <form id="qwProposalForm" class="space-y-6">
                     <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                         <h3 class="text-sm font-bold border-r-4 border-emerald-600 pr-3">🎯 فرم پیشنهاد Quick Win سی‌روزه</h3>
                         <p class="text-xs text-slate-500">هدف: یک اقدام محدود، مشخص و قابل‌اجرا که حداکثر طی ۳۰ روز اثر ملموس بر زمان، هزینه، پیشرفت، کیفیت، ریسک یا تصمیم‌گیری پروژه ایجاد کند.</p>
@@ -335,7 +346,7 @@
                         <div><label class="block text-xs font-semibold mb-1">اگر این Quick Win محقق شود، مهم‌ترین تغییری که در پروژه ایجاد خواهد شد چیست؟ *</label><textarea id="ci_final_reflection" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></textarea></div>
                     </div>
 
-                    <button type="submit" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-3 rounded-xl transition shadow">ثبت گزارش دوره‌ای</button>
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow">ثبت پیشنهاد Quick Win</button>
                 </form>
             </div>
 
@@ -412,7 +423,10 @@
             <!-- ADMIN PANEL -->
             <div id="adminView" class="hidden space-y-6">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                    <h2 class="text-xl font-bold text-blue-900">🛠 مدیریت پروژه‌ها و کاربران</h2>
+                    <div class="flex justify-between items-center flex-wrap gap-2">
+                        <h2 class="text-xl font-bold text-blue-900">🛠 مدیریت پروژه‌ها و کاربران</h2>
+                        <button type="button" onclick="document.getElementById('setPasswordBtn').click()" class="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg font-bold">🔑 تنظیم/تغییر رمز عبور من</button>
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="space-y-2">
                             <h3 class="text-sm font-bold">تعریف پروژه جدید</h3>
@@ -446,8 +460,9 @@
                         </select>
                     </div>
                     <div class="flex flex-wrap gap-2">
-                        <button id="admOpenCheckinBtn" type="button" class="bg-blue-900 hover:bg-blue-800 text-white text-sm px-4 py-2 rounded-xl font-bold">📝 باز کردن فرم گزارش دوره‌ای</button>
+                        <button id="admOpenCheckinBtn" type="button" class="bg-blue-900 hover:bg-blue-800 text-white text-sm px-4 py-2 rounded-xl font-bold">📝 باز کردن فرم اطلاعات تکمیلی</button>
                         <button id="admOpenClientReportBtn" type="button" class="bg-blue-100 hover:bg-blue-200 text-blue-900 text-sm px-4 py-2 rounded-xl font-bold">📋 باز کردن فرم اطلاعات پایه پروژه (کارفرما)</button>
+                        <button id="admOpenQwProposalBtn" type="button" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-sm px-4 py-2 rounded-xl font-bold">🎯 باز کردن فرم پیشنهاد Quick Win</button>
                     </div>
                 </div>
 
@@ -469,6 +484,28 @@
                 </div>
             </div>
 
+            <!-- AI ANALYSIS (independent menu, admin-only) -->
+            <div id="aiAnalysisView" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                    <h2 class="text-xl font-bold text-purple-700">🤖 تحلیل هوشمند پروژه‌ها</h2>
+                    <p class="text-xs text-slate-500">یک پروژه و ابزار تحلیل را انتخاب کنید تا هوش مصنوعی، با استفاده از تمام گزارش‌های ثبت‌شده (فرم اطلاعات پایه، اطلاعات تکمیلی و پیشنهادهای Quick Win هر سه رکن)، یک گزارش تحلیلی جامع تهیه کند.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <select id="aiaProjectSelect" class="p-2.5 border rounded-xl text-sm md:col-span-2"></select>
+                        <select id="aiaProviderSelect" class="p-2.5 border rounded-xl text-sm">
+                            <option value="gemini">Gemini (رایگان)</option>
+                            <option value="openai">ChatGPT</option>
+                        </select>
+                    </div>
+                    <button id="aiaGenerateBtn" type="button" class="w-full bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold py-2.5 rounded-xl transition">🤖 تولید تحلیل هوشمند</button>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-3">
+                    <h3 class="text-sm font-bold">وضعیت کلی پروژه‌ها</h3>
+                    <div id="aiaProjectList" class="space-y-1.5 text-xs">
+                        <p class="text-center text-slate-400 p-4">در حال بارگذاری...</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- SELECTION -->
             <div id="selectionView" class="hidden space-y-6">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-2">
@@ -481,23 +518,31 @@
                 <div id="selectionContainer" class="space-y-6">
                     <p class="text-center text-slate-400 p-4">در حال بارگذاری...</p>
                 </div>
-            </div>
 
-            <!-- TRACKING -->
-            <div id="trackingView" class="hidden space-y-6">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-2">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-xl font-bold text-blue-900">📈 پایش اقدامات تا حصول نتیجه</h2>
-                        <button onclick="loadTrackingData()" class="bg-blue-100 text-blue-900 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200">🔄 بروزرسانی</button>
+                <div id="matrixCard" class="hidden bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                    <div class="border-b pb-4">
+                        <h2 class="text-xl font-bold text-blue-900">🔍 تحلیل متقاطع دیدگاه‌ها (۳ Perspective Matrix)</h2>
+                        <p class="text-xs text-slate-500 mt-1">گلوگاه و درصد پیشرفت گزارش‌شده توسط هر طرف — تناقض بین دیدگاه‌ها را فوراً آشکار می‌کند.</p>
                     </div>
-                    <p class="text-xs text-slate-500">وضعیت اجرای Quick Win برگزیده هر پروژه، تا رسیدن به نتیجه نهایی.</p>
-                </div>
-                <div id="trackingContainer" class="space-y-6">
-                    <p class="text-center text-slate-400 p-4">در حال بارگذاری...</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs">
+                            <thead class="bg-slate-100 text-slate-700">
+                                <tr>
+                                    <th class="p-3 border">نام پروژه</th>
+                                    <th class="p-3 border text-blue-900">دیدگاه کارفرما</th>
+                                    <th class="p-3 border text-amber-900">دیدگاه مشاور</th>
+                                    <th class="p-3 border text-emerald-900">دیدگاه پیمانکار</th>
+                                </tr>
+                            </thead>
+                            <tbody id="matrixTableBody" class="divide-y">
+                                <tr><td colspan="4" class="p-4 text-center text-slate-400">در حال دریافت داده‌ها از Supabase...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            <!-- OVERVIEW (admin landing dashboard) -->
+            <!-- OVERVIEW (landing dashboard for admin + managers, scoped by RLS) -->
             <div id="overviewView" class="hidden space-y-4">
                 <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3" id="ovStatCards"></div>
 
@@ -517,7 +562,7 @@
                     <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                         <h3 class="text-sm font-bold">پیشرفت پروژه‌ها</h3>
                         <div id="ovProjectProgressList" class="space-y-3 max-h-52 overflow-y-auto scroll-thin pl-1"></div>
-                        <button type="button" onclick="switchView('tracking')" class="text-xs text-blue-900 font-bold hover:underline">‹ مشاهده همه پروژه‌ها</button>
+                        <button type="button" onclick="document.getElementById('trackingContainer').scrollIntoView({behavior:'smooth'})" class="text-xs text-blue-900 font-bold hover:underline">‹ مشاهده پیشرفت Quick Win ها</button>
                     </div>
 
                     <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
@@ -535,7 +580,6 @@
                     <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                         <h3 class="text-sm font-bold">اهم گلوگاه‌های پروژه‌ها</h3>
                         <div id="ovBottleneckList" class="space-y-2.5"></div>
-                        <button type="button" onclick="switchView('analytics')" class="text-xs text-blue-900 font-bold hover:underline">‹ مشاهده همه گلوگاه‌ها</button>
                     </div>
                 </div>
 
@@ -563,46 +607,19 @@
                     </div>
                 </div>
 
+                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-3">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-bold text-slate-800">🧭 پیشرفت Quick Winهای برگزیده</h2>
+                        <button onclick="loadTrackingData()" class="bg-blue-100 text-blue-900 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200">🔄 بروزرسانی</button>
+                    </div>
+                    <p class="text-xs text-slate-500">وضعیت اجرای Quick Win برگزیده هر پروژه، تا رسیدن به نتیجه نهایی.</p>
+                    <div id="trackingContainer" class="space-y-6 pt-2">
+                        <p class="text-center text-slate-400 p-4">در حال بارگذاری...</p>
+                    </div>
+                </div>
+
                 <div class="bg-white rounded-2xl shadow-sm border p-4">
                     <div id="ovMetricsStrip" class="flex flex-wrap items-center justify-around gap-4 text-center"></div>
-                </div>
-            </div>
-
-            <!-- ANALYTICS DASHBOARD -->
-            <div id="analyticsView" class="hidden space-y-8">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                    <div class="flex justify-between items-center border-b pb-4">
-                        <h2 class="text-xl font-bold text-blue-900">📊 داشبورد پورتفولیو</h2>
-                        <button onclick="loadAnalyticsData()" class="bg-blue-100 text-blue-900 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200">🔄 بروزرسانی داده‌ها</button>
-                    </div>
-                    <div id="kpiCards" class="grid grid-cols-2 md:grid-cols-5 gap-3"></div>
-                </div>
-
-                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                    <h2 class="text-lg font-bold text-slate-800">🧭 پیشرفت Quick Winهای برگزیده</h2>
-                    <div id="portfolioList"></div>
-                </div>
-
-                <div id="matrixCard" class="hidden bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                    <div class="border-b pb-4">
-                        <h2 class="text-xl font-bold text-blue-900">🔍 تحلیل متقاطع دیدگاه‌ها (۳ Perspective Matrix)</h2>
-                        <p class="text-xs text-slate-500 mt-1">گلوگاه و درصد پیشرفت گزارش‌شده توسط هر طرف — تناقض بین دیدگاه‌ها را فوراً آشکار می‌کند.</p>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-right text-xs">
-                            <thead class="bg-slate-100 text-slate-700">
-                                <tr>
-                                    <th class="p-3 border">نام پروژه</th>
-                                    <th class="p-3 border text-blue-900">دیدگاه کارفرما</th>
-                                    <th class="p-3 border text-amber-900">دیدگاه مشاور</th>
-                                    <th class="p-3 border text-emerald-900">دیدگاه پیمانکار</th>
-                                </tr>
-                            </thead>
-                            <tbody id="matrixTableBody" class="divide-y">
-                                <tr><td colspan="4" class="p-4 text-center text-slate-400">در حال دریافت داده‌ها از Supabase...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
                 </div>
             </div>
 
@@ -640,10 +657,23 @@
                     </div>
                 </div>
 
-                <div class="print-card bg-white rounded-2xl shadow-sm border p-6 space-y-4">
-                    <h3 class="text-sm font-bold text-slate-800 border-r-4 border-blue-900 pr-3">مقایسه پیشرفت گزارش‌شده توسط هر طرف</h3>
-                    <div style="max-height:320px">
-                        <canvas id="reportChart"></canvas>
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="md:col-span-2 space-y-4">
+                        <h3 class="text-sm font-bold text-slate-800 border-r-4 border-blue-900 pr-3">مقایسه پیشرفت گزارش‌شده توسط هر طرف</h3>
+                        <div style="max-height:320px">
+                            <canvas id="reportChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <h3 class="text-sm font-bold text-slate-800 border-r-4 border-amber-500 pr-3">وضعیت حوزه‌ها (X-Ray)</h3>
+                        <div class="relative h-32 mx-auto" style="max-width:150px">
+                            <canvas id="reportXrayDonut"></canvas>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <p class="text-lg font-extrabold" id="reportXrayDonutCenter">-</p>
+                                <p class="text-[10px] text-slate-500">حوزه</p>
+                            </div>
+                        </div>
+                        <div id="reportXrayLegend" class="space-y-1 text-xs"></div>
                     </div>
                 </div>
 
@@ -664,9 +694,10 @@
                     </div>
                 </div>
 
-                <div class="print-card bg-white rounded-2xl shadow-sm border p-6 space-y-3">
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-6 space-y-4">
                     <h3 class="text-sm font-bold text-slate-800 border-r-4 border-purple-600 pr-3">🤖 تحلیل و پیشنهاد هوش مصنوعی</h3>
-                    <div id="reportAiText" class="text-sm leading-loose"></div>
+                    <div id="reportAiHealthStrip" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+                    <div id="reportAiText" class="text-sm leading-loose space-y-3"></div>
                 </div>
             </div>
 
@@ -680,8 +711,9 @@
                 <div class="print-card bg-white rounded-2xl shadow-sm border p-8 space-y-6">
                     <div class="flex flex-col md:flex-row justify-between items-center gap-4 border-b pb-4">
                         <div class="text-center md:text-right">
-                            <h2 class="text-2xl font-extrabold text-blue-900 brand-title">30 DAYS — TRANSFORMATION REPORT</h2>
+                            <h2 class="text-2xl font-extrabold text-blue-900 brand-title">30Day Project Transformation Program</h2>
                             <p class="text-sm text-slate-500 mt-1">وضعیت کل طرح‌های خطوط انتقال — <span id="execGeneratedAt"></span></p>
+                            <p class="text-xs text-slate-400 italic mt-1">«هر پروژه، یک مسئله؛ هر مسئله، یک اقدام؛ هر اقدام، یک نتیجه.»</p>
                         </div>
                         <div class="flex flex-col items-center text-center gap-1">
                             <img src="logo.png" alt="لوگوی شرکت" class="h-10 w-10 object-contain" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
@@ -909,12 +941,13 @@
             gauge: '<path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 12 17 7"/>',
             calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
             activity: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+            shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
         };
         function iconSvg(name, cls) {
             return `<svg class="${cls || 'w-5 h-5'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name] || ''}</svg>`;
         }
 
-        const NAV_ICON = { overview: 'grid', admin: 'tool', selection: 'zap', tracking: 'trendingUp', analytics: 'barChart', execReport: 'fileText', checkin: 'edit', clientReport: 'clipboard' };
+        const NAV_ICON = { overview: 'grid', aiAnalysis: 'activity', admin: 'tool', selection: 'zap', execReport: 'fileText', checkin: 'edit', clientReport: 'clipboard', qwProposal: 'target' };
         const SIDEBAR_ACTIVE_CLASS = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold bg-blue-900/10 text-blue-900 transition';
         const SIDEBAR_INACTIVE_CLASS = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition';
         const MOBILE_ACTIVE_CLASS = 'flex flex-col items-center gap-0.5 px-3 py-2 shrink-0 text-blue-900';
@@ -958,14 +991,15 @@
             document.getElementById('authScreen').classList.toggle('hidden', !!currentUser);
             document.getElementById('notAuthorizedScreen').classList.toggle('hidden', !currentUser || !!currentProfile);
             document.getElementById('appShell').classList.toggle('hidden', !currentProfile);
+            document.getElementById('setPasswordBtn').classList.toggle('hidden', !currentProfile);
 
             if (currentUser && !currentProfile) {
                 document.getElementById('unauthEmail').textContent = currentUser.email;
             }
 
             document.getElementById('headerSubtitle').textContent = currentProfile
-                ? (currentProfile.role === 'admin' ? 'دفتر مجری طرح (ادمین)' : `مدیر پروژه — ${currentProfile.project_name} (${currentProfile.organization})`)
-                : 'دفتر مجری طرح‌های توسعه شرکت گاز';
+                ? (currentProfile.role === 'admin' ? 'پنل مدیریت سامانه' : `مدیر پروژه — ${currentProfile.project_name} (${currentProfile.organization})`)
+                : 'سامانه تحول و پایش ۳۰ روزه پروژه‌ها';
 
             if (currentProfile) renderNav();
         }
@@ -977,10 +1011,10 @@
             mobileNav.innerHTML = '';
 
             const buttons = currentProfile.role === 'admin'
-                ? [['overview', 'نمای کلی'], ['admin', 'مدیریت'], ['selection', 'انتخاب Quick Win'], ['tracking', 'پایش پیشرفت'], ['analytics', 'مقایسه دیدگاه‌ها'], ['execReport', 'گزارش اجرایی']]
+                ? [['overview', 'نمای کلی'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب Quick Win'], ['execReport', 'گزارش اجرایی'], ['admin', 'مدیریت کاربران']]
                 : currentProfile.organization === 'کارفرما'
-                    ? [['checkin', 'گزارش دوره‌ای'], ['clientReport', 'اطلاعات پایه پروژه'], ['selection', 'پیشنهادها'], ['tracking', 'پایش پیشرفت'], ['analytics', 'وضعیت پروژه']]
-                    : [['checkin', 'گزارش دوره‌ای'], ['selection', 'پیشنهادها'], ['tracking', 'پایش پیشرفت'], ['analytics', 'وضعیت پروژه']];
+                    ? [['overview', 'وضعیت پروژه'], ['selection', 'پیشنهادها'], ['checkin', 'اطلاعات تکمیلی'], ['clientReport', 'اطلاعات پایه پروژه'], ['qwProposal', 'پیشنهاد Quick Win']]
+                    : [['overview', 'وضعیت پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win']];
 
             buttons.forEach(([view, label], i) => {
                 const iconName = NAV_ICON[view] || 'grid';
@@ -1008,8 +1042,10 @@
             switchView(buttons[0][0]);
         }
 
+        const ALL_VIEWS = ['overview', 'checkin', 'clientReport', 'qwProposal', 'admin', 'selection', 'aiAnalysis', 'execReport'];
+
         function switchView(view) {
-            ['overview', 'checkin', 'clientReport', 'admin', 'selection', 'tracking', 'analytics', 'execReport'].forEach(v => {
+            ALL_VIEWS.forEach(v => {
                 const el = document.getElementById(v + 'View');
                 if (el) el.classList.toggle('hidden', v !== view);
             });
@@ -1023,10 +1059,10 @@
             if (view === 'overview') loadOverview();
             if (view === 'checkin') prefillCheckinForm();
             if (view === 'clientReport') prefillClientReportForm();
+            if (view === 'qwProposal') prefillQwProposalForm();
             if (view === 'admin') loadAdminData();
             if (view === 'selection') loadSelectionData();
-            if (view === 'tracking') loadTrackingData();
-            if (view === 'analytics') loadAnalyticsData();
+            if (view === 'aiAnalysis') loadAiAnalysisView();
             if (view === 'execReport') loadExecReport();
         }
 
@@ -1112,6 +1148,12 @@
             document.getElementById('crProjectName').textContent = effectiveProfile().project_name;
         }
 
+        function prefillQwProposalForm() {
+            const p = effectiveProfile();
+            document.getElementById('qwpProjectName').textContent = p.project_name;
+            document.getElementById('qwpOrganization').textContent = p.organization;
+        }
+
         function setDynamicStatusGroup(containerId, dataObj) {
             document.querySelectorAll(`#${containerId} > [data-key]`).forEach(el => {
                 const entry = (dataObj && dataObj[el.dataset.key]) || {};
@@ -1168,7 +1210,9 @@
             document.getElementById('ci_one_thing').value = row.one_thing_to_change || '';
             document.getElementById('ci_top_risk').value = row.top_risk || '';
             if (row.risk_severity) document.getElementById('ci_risk_severity').value = String(row.risk_severity);
+        }
 
+        function populateQwProposalForm(row) {
             if (row.qw_bottleneck_area) document.getElementById('ci_qw_area').value = row.qw_bottleneck_area;
             document.getElementById('ci_qw_area_other').value = row.qw_bottleneck_area_other || '';
             document.getElementById('ci_qw_area_other').classList.toggle('hidden', row.qw_bottleneck_area !== 'سایر');
@@ -1256,6 +1300,7 @@
 
             const { data } = await _supabase.from('check_ins').select('*')
                 .eq('project_name', project_name).eq('organization', organization)
+                .not('main_bottleneck', 'is', null)
                 .order('created_at', { ascending: false }).limit(1).maybeSingle();
             if (data) populateCheckinForm(data);
         });
@@ -1273,6 +1318,24 @@
                 .eq('project_name', project_name)
                 .order('created_at', { ascending: false }).limit(1).maybeSingle();
             if (data) populateClientReportForm(data);
+        });
+
+        document.getElementById('admOpenQwProposalBtn').addEventListener('click', async () => {
+            const project_name = document.getElementById('admPreviewProject').value;
+            const organization = document.getElementById('admPreviewOrg').value;
+            adminPreviewContext = { project_name, organization };
+            switchView('qwProposal');
+
+            document.getElementById('qwProposalForm').reset();
+            document.getElementById('ci_qw_area_other').classList.add('hidden');
+            document.getElementById('ci_qw_consequence_other').classList.add('hidden');
+            document.getElementById('ci_support_other').classList.add('hidden');
+
+            const { data } = await _supabase.from('check_ins').select('*')
+                .eq('project_name', project_name).eq('organization', organization)
+                .not('quick_win_title', 'is', null)
+                .order('created_at', { ascending: false }).limit(1).maybeSingle();
+            if (data) populateQwProposalForm(data);
         });
 
         document.getElementById('ci_hse_incident').addEventListener('change', (e) => {
@@ -1403,13 +1466,6 @@
             const forecastIso = jalaliInputToIso(document.getElementById('ci_forecast_date').value);
             if (!forecastIso) { alert('تاریخ پیش‌بینی تکمیل معتبر نیست. لطفاً به‌صورت ۱۴۰۵/۰۶/۰۸ وارد کنید.'); return; }
 
-            const planStartIso = jalaliInputToIso(document.getElementById('ci_plan_start_date').value);
-            const planTargetIso = jalaliInputToIso(document.getElementById('ci_plan_target_date').value);
-            if (!planStartIso || !planTargetIso) { alert('تاریخ شروع/هدف برنامه Quick Win معتبر نیست. لطفاً به‌صورت ۱۴۰۵/۰۶/۰۱ وارد کنید.'); return; }
-
-            const qwArea = document.getElementById('ci_qw_area').value;
-            if (qwArea === 'سایر' && !document.getElementById('ci_qw_area_other').value.trim()) { alert('لطفاً توضیح «سایر» برای حوزه گلوگاه را وارد کنید.'); return; }
-
             const manpowerVal = document.getElementById('ci_manpower').value;
             const weldVal = document.getElementById('ci_weld_reject').value;
             const p = effectiveProfile();
@@ -1446,7 +1502,35 @@
                 senior_decision_priority: document.getElementById('ci_senior_priority').value,
                 one_thing_to_change: document.getElementById('ci_one_thing').value,
                 top_risk: document.getElementById('ci_top_risk').value,
-                risk_severity: Number(document.getElementById('ci_risk_severity').value),
+                risk_severity: Number(document.getElementById('ci_risk_severity').value)
+            };
+
+            const { error } = await _supabase.from('check_ins').insert([row]);
+            if (error) { alert('خطا در ثبت: ' + error.message); return; }
+            alert('اطلاعات تکمیلی با موفقیت ثبت شد!');
+            e.target.reset();
+            document.getElementById('ci_hse_note_wrap').classList.add('hidden');
+        });
+
+        // --------------------------------------------------
+        // QUICK WIN PROPOSAL FORM (independent menu, all organizations)
+        // --------------------------------------------------
+        document.getElementById('qwProposalForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const planStartIso = jalaliInputToIso(document.getElementById('ci_plan_start_date').value);
+            const planTargetIso = jalaliInputToIso(document.getElementById('ci_plan_target_date').value);
+            if (!planStartIso || !planTargetIso) { alert('تاریخ شروع/هدف برنامه Quick Win معتبر نیست. لطفاً به‌صورت ۱۴۰۵/۰۶/۰۱ وارد کنید.'); return; }
+
+            const qwArea = document.getElementById('ci_qw_area').value;
+            if (qwArea === 'سایر' && !document.getElementById('ci_qw_area_other').value.trim()) { alert('لطفاً توضیح «سایر» برای حوزه گلوگاه را وارد کنید.'); return; }
+
+            const p = effectiveProfile();
+
+            const row = {
+                user_id: currentUser.id,
+                project_name: p.project_name,
+                organization: p.organization,
+                qw_form_date: jalaliInputToIso(todayJalali()),
 
                 qw_bottleneck_area: qwArea,
                 qw_bottleneck_area_other: qwArea === 'سایر' ? document.getElementById('ci_qw_area_other').value.trim() : null,
@@ -1489,9 +1573,8 @@
 
             const { error } = await _supabase.from('check_ins').insert([row]);
             if (error) { alert('خطا در ثبت: ' + error.message); return; }
-            alert('گزارش دوره‌ای با موفقیت ثبت شد!');
+            alert('پیشنهاد Quick Win با موفقیت ثبت شد!');
             e.target.reset();
-            document.getElementById('ci_hse_note_wrap').classList.add('hidden');
             document.getElementById('ci_qw_area_other').classList.add('hidden');
             document.getElementById('ci_qw_consequence_other').classList.add('hidden');
             document.getElementById('ci_support_other').classList.add('hidden');
@@ -1631,6 +1714,72 @@
             return total;
         }
 
+        // --------------------------------------------------
+        // check_ins is now filled by two independent forms (اطلاعات تکمیلی
+        // and پیشنهاد Quick Win), so a project+org's "current state" is
+        // spread across two rows instead of one. These helpers fold the
+        // latest periodic row and the latest Quick Win row back into a
+        // single composite record wherever code needs both at once — the
+        // two forms write disjoint sets of columns, so this is a safe,
+        // order-independent merge (never guesses which value is "newer"
+        // field-by-field, just which row of each kind is the latest).
+        // --------------------------------------------------
+        function mergeCheckinPair(periodic, qw) {
+            if (!periodic) return qw;
+            if (!qw) return periodic;
+            const merged = { ...periodic };
+            Object.keys(qw).forEach(k => { if (qw[k] !== null && qw[k] !== undefined) merged[k] = qw[k]; });
+            merged.created_at = new Date(qw.created_at) > new Date(periodic.created_at) ? qw.created_at : periodic.created_at;
+            return merged;
+        }
+
+        function buildMergedByProjectOrg(checkins) {
+            const rowsByKey = {};
+            (checkins || []).forEach(c => { (rowsByKey[c.project_name + '||' + c.organization] ??= []).push(c); });
+            const result = {};
+            Object.entries(rowsByKey).forEach(([key, rows]) => {
+                const [project, org] = key.split('||');
+                const periodic = [...rows].reverse().find(r => r.main_bottleneck != null);
+                const qw = [...rows].reverse().find(r => r.quick_win_title != null);
+                (result[project] ??= {})[org] = mergeCheckinPair(periodic, qw);
+            });
+            return result;
+        }
+
+        // 3-Perspective Matrix (latest bottleneck + physical progress per org) —
+        // admin-only; a manager's read access is scoped to their own
+        // organization (plus the winning proposal once decided), so the
+        // matrix would just show dashes for the other two — hide it instead.
+        function loadMatrixData(checkins) {
+            document.getElementById('matrixCard').classList.toggle('hidden', currentProfile.role !== 'admin');
+            if (currentProfile.role !== 'admin') return;
+
+            const projects = buildMergedByProjectOrg(checkins);
+            const matrixBody = document.getElementById('matrixTableBody');
+            const projectKeys = Object.keys(projects);
+            const cell = (rec) => {
+                if (!rec) return '---';
+                const hasPlanned = typeof rec.planned_progress === 'number';
+                const variance = hasPlanned ? rec.physical_progress - rec.planned_progress : null;
+                const varianceText = hasPlanned ? ` / برنامه ${rec.planned_progress}٪` : '';
+                const varianceTag = variance !== null && variance < -5
+                    ? ' <span class="text-red-600 font-bold">(عقب از برنامه)</span>'
+                    : variance !== null && variance > 5
+                        ? ' <span class="text-emerald-600 font-bold">(جلوتر از برنامه)</span>'
+                        : '';
+                const riskTag = typeof rec.risk_severity === 'number' && rec.risk_severity >= 4 ? ' <span class="text-red-600">⚠️ ریسک بالا</span>' : '';
+                return `${esc(rec.main_bottleneck)} <span class="text-slate-400">(واقعی ${rec.physical_progress}٪${varianceText})</span>${varianceTag}${riskTag}`;
+            };
+            matrixBody.innerHTML = projectKeys.length === 0
+                ? '<tr><td colspan="4" class="p-4 text-center text-slate-400">داده‌ای ثبت نشده است.</td></tr>'
+                : projectKeys.map(pName => `<tr>
+                        <td class="p-3 border font-bold bg-slate-50">${esc(pName)}</td>
+                        <td class="p-3 border text-blue-900">${cell(projects[pName]['کارفرما'])}</td>
+                        <td class="p-3 border text-amber-900">${cell(projects[pName]['مشاور'])}</td>
+                        <td class="p-3 border text-emerald-900">${cell(projects[pName]['پیمانکار'])}</td>
+                    </tr>`).join('');
+        }
+
         async function loadSelectionData() {
             const container = document.getElementById('selectionContainer');
             container.innerHTML = '<p class="text-center text-slate-400 p-4">در حال دریافت پیشنهادها...</p>';
@@ -1640,11 +1789,14 @@
             const { data: evaluations, error: e4 } = await _supabase.from('quick_win_evaluations').select('*');
             if (e1 || e2) { container.innerHTML = '<p class="text-red-600 p-4">خطا در دریافت داده‌ها.</p>'; return; }
 
+            loadMatrixData(checkins);
+
             const evalByKey = {};
             (evaluations || []).forEach(ev => { evalByKey[ev.project_name + '||' + ev.organization + '||' + ev.proposal_created_at] = ev; });
 
+            // Only rows that actually carry a Quick Win proposal are relevant here.
             const latestByKey = {};
-            (checkins || []).forEach(c => { latestByKey[c.project_name + '||' + c.organization] = c; });
+            (checkins || []).filter(c => c.quick_win_title).forEach(c => { latestByKey[c.project_name + '||' + c.organization] = c; });
 
             const byProject = {};
             Object.values(latestByKey).forEach(c => { (byProject[c.project_name] ??= []).push(c); });
@@ -1758,7 +1910,7 @@
 
         function showAiReport(projectName, provider, returnView) {
             aiReportReturnView = returnView || 'selection';
-            ['checkin', 'clientReport', 'admin', 'selection', 'tracking', 'analytics', 'execReport'].forEach(v => {
+            ALL_VIEWS.forEach(v => {
                 document.getElementById(v + 'View').classList.add('hidden');
             });
             document.getElementById('aiReportView').classList.remove('hidden');
@@ -1770,6 +1922,44 @@
             document.getElementById('aiReportView').classList.add('hidden');
             switchView(aiReportReturnView);
         }
+
+        // --------------------------------------------------
+        // AI ANALYSIS: independent menu — pick a project, generate its report
+        // --------------------------------------------------
+        async function loadAiAnalysisView() {
+            const { data: projects } = await _supabase.from('projects').select('*').order('name');
+            const projOptionsHtml = (projects || []).length
+                ? projects.map(p => `<option value="${esc(p.name)}">${esc(p.name)}</option>`).join('')
+                : '<option value="">-- ابتدا در «مدیریت کاربران» یک پروژه بسازید --</option>';
+            document.getElementById('aiaProjectSelect').innerHTML = projOptionsHtml;
+
+            const { data: checkins } = await _supabase.from('check_ins').select('*').order('created_at', { ascending: true });
+            const byProject = buildMergedByProjectOrg(checkins);
+            const projectNames = (projects || []).map(p => p.name);
+
+            document.getElementById('aiaProjectList').innerHTML = projectNames.length
+                ? projectNames.map(pName => {
+                    const health = computeProjectHealth(byProject[pName] || {});
+                    return `<button type="button" class="aia-row w-full flex items-center justify-between gap-2 p-2.5 rounded-xl hover:bg-slate-50 text-right" data-project="${esc(pName)}">
+                        <span class="font-bold truncate">${esc(pName)}</span>
+                        <span>${health}</span>
+                    </button>`;
+                }).join('')
+                : '<p class="text-center text-slate-400 p-4">هنوز پروژه‌ای تعریف نشده.</p>';
+
+            document.querySelectorAll('#aiaProjectList .aia-row').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.getElementById('aiaProjectSelect').value = btn.dataset.project;
+                    showAiReport(btn.dataset.project, document.getElementById('aiaProviderSelect').value, 'aiAnalysis');
+                });
+            });
+        }
+
+        document.getElementById('aiaGenerateBtn').addEventListener('click', () => {
+            const project = document.getElementById('aiaProjectSelect').value;
+            if (!project) { alert('ابتدا یک پروژه را از فهرست بالا انتخاب کنید.'); return; }
+            showAiReport(project, document.getElementById('aiaProviderSelect').value, 'aiAnalysis');
+        });
 
         function reportRow(label, latestByOrg, field, suffix, formatter) {
             const cell = (org) => {
@@ -1883,6 +2073,104 @@
             });
         }
 
+        function renderReportXrayDonut(latestByOrg) {
+            let red = 0, yellow = 0, green = 0;
+            ['کارفرما', 'مشاور', 'پیمانکار'].forEach(org => {
+                const areaStatus = latestByOrg[org]?.area_status;
+                if (!areaStatus) return;
+                Object.values(areaStatus).forEach(a => {
+                    const s = a && a.status;
+                    if (!s) return;
+                    if (s.includes('🔴')) red++;
+                    else if (s.includes('🟡')) yellow++;
+                    else if (s.includes('🟢')) green++;
+                });
+            });
+            renderStatusDonut('reportXrayDonut', 'reportXrayDonutCenter', 'reportXrayLegend', [
+                { label: 'بحرانی', value: red, color: '#ef4444' },
+                { label: 'نیازمند توجه', value: yellow, color: '#f59e0b' },
+                { label: 'تحت کنترل', value: green, color: '#22c55e' },
+            ]);
+        }
+
+        function renderAiHealthStrip(latestByOrg) {
+            const health = computeProjectHealth(latestByOrg);
+            const orgs = ['کارفرما', 'مشاور', 'پیمانکار'].filter(o => latestByOrg[o]);
+            const maxRisk = Math.max(0, ...orgs.map(o => Number(latestByOrg[o].risk_severity) || 0));
+            const variances = orgs
+                .map(o => {
+                    const r = latestByOrg[o];
+                    return (typeof r.physical_progress === 'number' && typeof r.planned_progress === 'number') ? r.physical_progress - r.planned_progress : null;
+                })
+                .filter(v => v !== null);
+            const avgVariance = variances.length ? Math.round(variances.reduce((a, b) => a + b, 0) / variances.length) : null;
+            const openRisks = orgs.reduce((total, o) => total + ((latestByOrg[o].risks || []).filter(r => r.level === 'بحرانی' || r.level === 'زیاد').length), 0);
+
+            document.getElementById('reportAiHealthStrip').innerHTML = [
+                statCard('gauge', health === '🔴' ? 'bg-red-100 text-red-700' : health === '🟡' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700', health, 'وضعیت کلی پروژه'),
+                statCard('alertTriangle', maxRisk >= 4 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700', toPersianDigits(maxRisk) + '/۵', 'بیشترین شدت ریسک'),
+                statCard('trendingUp', avgVariance !== null && avgVariance < 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700', avgVariance !== null ? (avgVariance > 0 ? '+' : '') + toPersianDigits(avgVariance) + '٪' : '-', 'میانگین انحراف پیشرفت'),
+                statCard('shield', 'bg-purple-100 text-purple-700', toPersianDigits(openRisks), 'ریسک‌های بحرانی/زیاد باز'),
+            ].join('');
+        }
+
+        // Parses the AI's fixed 8-section numbered/bold-headed narrative into
+        // styled, icon-coded cards instead of one flat wall of text. Falls
+        // back to a single generic block if the model drifts from the
+        // requested format, so a format change never breaks the page.
+        const AI_SECTION_STYLE = {
+            1: { icon: 'fileText', border: 'border-blue-900', bg: 'bg-blue-100' },
+            2: { icon: 'calendar', border: 'border-blue-900', bg: 'bg-blue-100' },
+            3: { icon: 'alertTriangle', border: 'border-amber-500', bg: 'bg-amber-100' },
+            4: { icon: 'zap', border: 'border-red-600', bg: 'bg-red-100' },
+            5: { icon: 'shield', border: 'border-red-600', bg: 'bg-red-100' },
+            6: { icon: 'target', border: 'border-emerald-600', bg: 'bg-emerald-100' },
+            7: { icon: 'checkCircle', border: 'border-emerald-600', bg: 'bg-emerald-100' },
+            8: { icon: 'trendingUp', border: 'border-purple-700', bg: 'bg-purple-100' },
+        };
+        const PERSIAN_DIGIT_MAP = { '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4', '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9' };
+
+        function formatAiBody(text) {
+            const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+            let html = '', inList = false;
+            lines.forEach(line => {
+                const isBullet = /^[-•]\s+/.test(line);
+                const content = esc(line.replace(/^[-•]\s+/, '')).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+                if (isBullet) {
+                    if (!inList) { html += '<ul class="list-disc pr-5 space-y-1">'; inList = true; }
+                    html += `<li>${content}</li>`;
+                } else {
+                    if (inList) { html += '</ul>'; inList = false; }
+                    html += `<p>${content}</p>`;
+                }
+            });
+            return html + (inList ? '</ul>' : '');
+        }
+
+        function renderAiAnalysisSections(rawText) {
+            const container = document.getElementById('reportAiText');
+            if (!rawText || !rawText.trim()) { container.innerHTML = '<p class="text-slate-400 text-xs">پاسخی دریافت نشد.</p>'; return; }
+
+            const chunks = rawText.split(/\n(?=\s*[۰-۹0-9]+\.\s*\*\*)/);
+            const sectionRe = /^\s*([۰-۹0-9]+)\.\s*\*\*([^*]+)\*\*\s*[—\-–]?\s*([\s\S]*)$/;
+            let html = '';
+            chunks.forEach(chunk => {
+                const m = chunk.match(sectionRe);
+                if (!m) {
+                    const text = chunk.trim();
+                    if (text) html += `<div class="text-sm">${formatAiBody(text)}</div>`;
+                    return;
+                }
+                const num = parseInt(m[1].split('').map(ch => PERSIAN_DIGIT_MAP[ch] ?? ch).join(''), 10);
+                const style = AI_SECTION_STYLE[num] || { icon: 'fileText', border: 'border-slate-400', bg: 'bg-slate-50' };
+                html += `<div class="rounded-xl border-r-4 ${style.border} ${style.bg} p-4 space-y-2">
+                    <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg(style.icon, 'w-4 h-4 shrink-0')}${esc(m[2].trim())}</h4>
+                    <div class="text-xs leading-relaxed text-slate-700 space-y-1">${formatAiBody(m[3].trim())}</div>
+                </div>`;
+            });
+            container.innerHTML = html || `<div class="whitespace-pre-wrap text-sm">${esc(rawText)}</div>`;
+        }
+
         function renderClientReportCard(rec) {
             const card = document.getElementById('reportClientCard');
             if (!rec) { card.classList.add('hidden'); return; }
@@ -1925,6 +2213,7 @@
             document.getElementById('reportGeneratedBy').textContent = currentUser.email;
             document.getElementById('reportAiProvider').textContent = provider === 'openai' ? 'ChatGPT' : 'Gemini';
             document.getElementById('reportAiText').innerHTML = '<p class="text-purple-700 text-xs">🤖 در حال تولید تحلیل...</p>';
+            document.getElementById('reportAiHealthStrip').innerHTML = '';
             document.getElementById('reportTableBody').innerHTML = '';
             document.getElementById('reportKpiCards').innerHTML = '';
 
@@ -1933,13 +2222,14 @@
 
             const { data: clientReports } = await _supabase.from('client_reports').select('*').eq('project_name', projectName).order('created_at', { ascending: false }).limit(1);
 
-            const latestByOrg = {};
-            (checkins || []).forEach(c => { latestByOrg[c.organization] = c; });
+            const latestByOrg = buildMergedByProjectOrg(checkins)[projectName] || {};
 
             renderReportKpis(latestByOrg);
             renderClientReportCard(clientReports && clientReports[0]);
             renderReportTable(latestByOrg);
             renderReportChart(latestByOrg);
+            renderReportXrayDonut(latestByOrg);
+            renderAiHealthStrip(latestByOrg);
 
             try {
                 const { data, error } = await _supabase.functions.invoke('analyze-project', { body: { project_name: projectName, provider } });
@@ -1958,7 +2248,7 @@
                 }
 
                 document.getElementById('reportAiProvider').textContent = data.provider === 'openai' ? 'ChatGPT' : 'Gemini';
-                document.getElementById('reportAiText').innerHTML = `<div class="whitespace-pre-wrap">${esc(data.analysis)}</div>`;
+                renderAiAnalysisSections(data.analysis);
             } catch (e) {
                 document.getElementById('reportAiText').innerHTML = `<p class="text-red-600 text-xs">خطای غیرمنتظره: ${esc(e.message || String(e))}</p>`;
             }
@@ -2111,105 +2401,11 @@
             loadTrackingData();
         }
 
-        // --------------------------------------------------
-        // ANALYTICS: portfolio KPIs + 3-perspective matrix + progress list
-        // --------------------------------------------------
         function kpiCard(label, value, colorClass) {
             return `<div class="bg-slate-50 rounded-xl p-4 text-center border">
                 <p class="text-2xl font-bold ${colorClass}">${value}</p>
                 <p class="text-xs text-slate-500 mt-1">${label}</p>
             </div>`;
-        }
-
-        async function loadAnalyticsData() {
-            const { data: checkins, error: e1 } = await _supabase.from('check_ins').select('*').order('created_at', { ascending: true });
-            const { data: decisions, error: e2 } = await _supabase.from('quick_win_decisions').select('*');
-            const { data: logs, error: e3 } = await _supabase.from('quick_win_progress').select('*');
-            if (e1 || e2 || e3) { alert('خطا در دریافت داده‌ها'); return; }
-
-            // The cross-org matrix only makes sense for the admin, who can see every
-            // organization's report; a manager's own read access is now scoped to
-            // their own organization (plus the winning proposal once decided), so
-            // the matrix would just show blank dashes for the rest — hide it instead.
-            document.getElementById('matrixCard').classList.toggle('hidden', currentProfile.role !== 'admin');
-
-            // 1. 3-Perspective Matrix (latest bottleneck + physical progress per org)
-            const projects = {};
-            (checkins || []).forEach(item => {
-                if (!projects[item.project_name]) projects[item.project_name] = {};
-                projects[item.project_name][item.organization] = item;
-            });
-            const matrixBody = document.getElementById('matrixTableBody');
-            const projectKeys = Object.keys(projects);
-            const cell = (rec) => {
-                if (!rec) return '---';
-                const hasPlanned = typeof rec.planned_progress === 'number';
-                const variance = hasPlanned ? rec.physical_progress - rec.planned_progress : null;
-                const varianceText = hasPlanned ? ` / برنامه ${rec.planned_progress}٪` : '';
-                const varianceTag = variance !== null && variance < -5
-                    ? ' <span class="text-red-600 font-bold">(عقب از برنامه)</span>'
-                    : variance !== null && variance > 5
-                        ? ' <span class="text-emerald-600 font-bold">(جلوتر از برنامه)</span>'
-                        : '';
-                const riskTag = typeof rec.risk_severity === 'number' && rec.risk_severity >= 4 ? ' <span class="text-red-600">⚠️ ریسک بالا</span>' : '';
-                return `${esc(rec.main_bottleneck)} <span class="text-slate-400">(واقعی ${rec.physical_progress}٪${varianceText})</span>${varianceTag}${riskTag}`;
-            };
-            matrixBody.innerHTML = projectKeys.length === 0
-                ? '<tr><td colspan="4" class="p-4 text-center text-slate-400">داده‌ای ثبت نشده است.</td></tr>'
-                : projectKeys.map(pName => `<tr>
-                        <td class="p-3 border font-bold bg-slate-50">${esc(pName)}</td>
-                        <td class="p-3 border text-blue-900">${cell(projects[pName]['کارفرما'])}</td>
-                        <td class="p-3 border text-amber-900">${cell(projects[pName]['مشاور'])}</td>
-                        <td class="p-3 border text-emerald-900">${cell(projects[pName]['پیمانکار'])}</td>
-                    </tr>`).join('');
-
-            // 2. Portfolio KPIs
-            const totalProjects = new Set((checkins || []).map(s => s.project_name)).size;
-            const totalProposals = (checkins || []).length;
-            const totalDecided = (decisions || []).length;
-
-            const logsByProject = {};
-            (logs || []).forEach(l => { (logsByProject[l.project_name] ??= []).push(l); });
-
-            const today = new Date(); today.setHours(0, 0, 0, 0);
-            let completed = 0, overdue = 0;
-            (decisions || []).forEach(dec => {
-                const pl = logsByProject[dec.project_name] || [];
-                const latest = pl[pl.length - 1];
-                const percent = latest ? latest.progress_percent : 0;
-                if (percent >= 100) completed++;
-                else if (new Date(dec.target_date) < today) overdue++;
-            });
-
-            document.getElementById('kpiCards').innerHTML =
-                kpiCard('پروژه‌های تحت پایش', totalProjects, 'text-blue-900') +
-                kpiCard('گزارش‌های دریافتی', totalProposals, 'text-amber-700') +
-                kpiCard('Quick Win برگزیده‌شده', totalDecided, 'text-blue-900') +
-                kpiCard('تکمیل‌شده', completed, 'text-emerald-700') +
-                kpiCard('دارای تأخیر', overdue, 'text-red-700');
-
-            // 3. Portfolio progress list (overdue first, then nearest deadline)
-            const rows = (decisions || []).map(dec => {
-                const pl = logsByProject[dec.project_name] || [];
-                const latest = pl[pl.length - 1];
-                const percent = latest ? latest.progress_percent : 0;
-                const daysLeft = Math.round((new Date(dec.target_date) - today) / 86400000);
-                return { project_name: dec.project_name, percent, daysLeft };
-            }).sort((a, b) => a.daysLeft - b.daysLeft);
-
-            document.getElementById('portfolioList').innerHTML = rows.length === 0
-                ? '<p class="text-xs text-slate-400 text-center py-4">هنوز Quick Win‌ای برای پایش انتخاب نشده است.</p>'
-                : rows.map(r => {
-                    const isDone = r.percent >= 100;
-                    const isOverdue = !isDone && r.daysLeft < 0;
-                    const barColor = isDone ? 'bg-emerald-500' : isOverdue ? 'bg-red-500' : 'bg-blue-900';
-                    const tag = isDone ? 'تکمیل شده' : isOverdue ? `${Math.abs(r.daysLeft)} روز تأخیر` : `${r.daysLeft} روز باقی‌مانده`;
-                    return `<div class="flex items-center gap-3 text-xs py-2 border-b last:border-0">
-                        <span class="w-32 truncate font-bold">${esc(r.project_name)}</span>
-                        <div class="flex-1 bg-slate-100 rounded-full h-2"><div class="${barColor} h-2 rounded-full" style="width:${Math.min(r.percent, 100)}%"></div></div>
-                        <span class="w-24 text-left text-slate-500">${esc(tag)}</span>
-                    </div>`;
-                }).join('');
         }
 
         // --------------------------------------------------
@@ -2238,8 +2434,7 @@
             const { data: decisions } = await _supabase.from('quick_win_decisions').select('*');
             const { data: logs } = await _supabase.from('quick_win_progress').select('*');
 
-            const byProject = {};
-            (checkins || []).forEach(c => { (byProject[c.project_name] ??= {})[c.organization] = c; });
+            const byProject = buildMergedByProjectOrg(checkins);
             const projectNames = Object.keys(byProject);
 
             let green = 0, yellow = 0, red = 0;
@@ -2398,6 +2593,7 @@
         }
 
         async function loadOverview() {
+            loadTrackingData();
             const [{ data: checkins }, { data: decisions }, { data: logs }, { data: clientReports }] = await Promise.all([
                 _supabase.from('check_ins').select('*').order('created_at', { ascending: true }),
                 _supabase.from('quick_win_decisions').select('*'),
@@ -2405,8 +2601,7 @@
                 _supabase.from('client_reports').select('*').order('created_at', { ascending: true }),
             ]);
 
-            const byProject = {};
-            (checkins || []).forEach(c => { (byProject[c.project_name] ??= {})[c.organization] = c; });
+            const byProject = buildMergedByProjectOrg(checkins);
             const projectNames = Object.keys(byProject);
 
             const clientReportByProject = {};
@@ -2445,14 +2640,18 @@
             const qwDefined = allCheckinsWithQw.length;
             const qwAchieved = (decisions || []).filter(d => latestPercent(d.project_name) >= 100).length;
             const qwInProgress = (decisions || []).length - qwAchieved;
+            const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+            const overdueCount = (decisions || []).filter(d => latestPercent(d.project_name) < 100 && new Date(d.target_date) < todayStart).length;
 
             document.getElementById('ovStatCards').innerHTML = [
                 statCard('grid', 'bg-blue-900/15 text-blue-900', toPersianDigits(projectNames.length), 'تعداد پروژه‌ها'),
                 statCard('gauge', 'bg-emerald-100 text-emerald-700', toPersianDigits(avgPhysical) + '٪', 'میانگین پیشرفت وزنی'),
                 statCard('calendar', 'bg-amber-100 text-amber-700', (avgDeviation > 0 ? '+' : '') + toPersianDigits(avgDeviation), 'میانگین انحراف زمانی (روز)'),
+                statCard('fileText', 'bg-slate-100 text-slate-700', toPersianDigits((checkins || []).length), 'گزارش‌های دریافتی'),
                 statCard('zap', 'bg-purple-100 text-purple-700', toPersianDigits(qwDefined), 'Quick Win های تعریف‌شده'),
                 statCard('checkCircle', 'bg-blue-900/15 text-blue-900', toPersianDigits(qwInProgress), 'Quick Win های در حال اجرا'),
                 statCard('target', 'bg-emerald-100 text-emerald-700', toPersianDigits(qwAchieved), 'Quick Win های محقق‌شده'),
+                statCard('alertTriangle', 'bg-red-100 text-red-700', toPersianDigits(overdueCount), 'دارای تأخیر'),
             ].join('');
 
             // ---- Project schedule status donut ----
@@ -2542,7 +2741,10 @@
 
             // ---- Recent activity feed ----
             const activity = [];
-            (checkins || []).slice(-8).forEach(c => activity.push({ ts: c.created_at, color: '#3b82f6', text: `ثبت گزارش دوره‌ای جدید — ${c.project_name} (${c.organization})` }));
+            (checkins || []).slice(-8).forEach(c => activity.push({
+                ts: c.created_at, color: '#3b82f6',
+                text: `${c.quick_win_title ? 'ثبت پیشنهاد Quick Win جدید' : 'ثبت اطلاعات تکمیلی جدید'} — ${c.project_name} (${c.organization})`
+            }));
             (logs || []).slice(-8).forEach(l => activity.push({ ts: l.created_at, color: '#f59e0b', text: `بروزرسانی پیشرفت Quick Win — ${l.project_name}: ${l.status} (${l.progress_percent}٪)` }));
             (decisions || []).forEach(d => activity.push({ ts: d.created_at, color: '#22c55e', text: `Quick Win «${d.selected_title}» برای ${d.project_name} انتخاب شد` }));
             activity.sort((a, b) => new Date(b.ts) - new Date(a.ts));
