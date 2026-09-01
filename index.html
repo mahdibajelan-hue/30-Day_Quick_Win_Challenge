@@ -486,11 +486,12 @@
                 </div>
 
                 <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-3">
-                    <h3 class="text-sm font-bold">مدیران پروژه (فعال / در انتظار ورود)</h3>
+                    <h3 class="text-sm font-bold">کاربران (فعال / در انتظار ورود)</h3>
+                    <p class="text-xs text-slate-500">نقش، پروژه یا سازمان هر کاربر را تغییر دهید و «ذخیره» بزنید، یا با 🗑 کاربر را حذف کنید.</p>
                     <div class="overflow-x-auto">
                         <table class="w-full text-right text-xs">
                             <thead class="bg-slate-100 text-slate-700"><tr>
-                                <th class="p-2 border">پروژه</th><th class="p-2 border">سازمان</th><th class="p-2 border">ایمیل</th><th class="p-2 border">وضعیت</th>
+                                <th class="p-2 border">پروژه</th><th class="p-2 border">سازمان</th><th class="p-2 border">ایمیل</th><th class="p-2 border">نقش</th><th class="p-2 border">وضعیت</th><th class="p-2 border">عملیات</th>
                             </tr></thead>
                             <tbody id="admUsersTableBody"></tbody>
                         </table>
@@ -1721,22 +1722,116 @@
                 ? projects.map(p => `<div class="p-2 bg-slate-50 rounded-lg text-center">${esc(p.name)}</div>`).join('')
                 : '<p class="text-slate-400 col-span-full">هنوز پروژه‌ای تعریف نشده.</p>';
 
-            const { data: users } = await _supabase.from('app_users').select('*').eq('role', 'manager').order('project_name');
+            const { data: users } = await _supabase.from('app_users').select('*').order('project_name');
             const { data: invites } = await _supabase.from('pending_invites').select('*').eq('consumed', false).order('project_name');
 
-            const rows = [
-                ...(users || []).map(u => ({ project_name: u.project_name, organization: u.organization, email: u.email, status: 'فعال ✅' })),
-                ...(invites || []).map(i => ({ project_name: i.project_name, organization: i.organization, email: i.email, status: 'در انتظار ورود ⏳' }))
-            ];
+            const projOptions = (projects || []).map(p => `<option value="${esc(p.name)}">${esc(p.name)}</option>`).join('');
+            const orgOptionsHtml = ['کارفرما', 'مشاور', 'پیمانکار'].map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
 
-            document.getElementById('admUsersTableBody').innerHTML = rows.length
-                ? rows.map(r => `<tr>
-                    <td class="p-2 border">${esc(r.project_name)}</td>
-                    <td class="p-2 border">${esc(r.organization)}</td>
-                    <td class="p-2 border" dir="ltr">${esc(r.email)}</td>
-                    <td class="p-2 border">${esc(r.status)}</td>
-                </tr>`).join('')
-                : '<tr><td colspan="4" class="p-3 text-center text-slate-400">هنوز کاربری دعوت نشده.</td></tr>';
+            const tbody = document.getElementById('admUsersTableBody');
+            tbody.innerHTML = '';
+
+            if (!(users || []).length && !(invites || []).length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-3 text-center text-slate-400">هنوز کاربری دعوت نشده.</td></tr>';
+                return;
+            }
+
+            (users || []).forEach(u => {
+                const isSelf = u.user_id === currentUser.id;
+                const wrap = document.createElement('tbody');
+                wrap.innerHTML = `<tr>
+                    <td class="p-1 border"><select class="adm-row-project p-1.5 border rounded text-xs w-full">${projOptions}</select></td>
+                    <td class="p-1 border"><select class="adm-row-org p-1.5 border rounded text-xs w-full">${orgOptionsHtml}</select></td>
+                    <td class="p-2 border" dir="ltr">${esc(u.email)}</td>
+                    <td class="p-1 border">
+                        <select class="adm-row-role p-1.5 border rounded text-xs w-full" ${isSelf ? 'disabled' : ''}>
+                            <option value="manager">مدیر پروژه</option>
+                            <option value="admin">ادمین سامانه</option>
+                        </select>
+                    </td>
+                    <td class="p-2 border">فعال ✅</td>
+                    <td class="p-1 border">
+                        ${isSelf
+                            ? '<span class="text-slate-400">حساب شما</span>'
+                            : `<div class="flex gap-1">
+                                <button type="button" class="adm-save-btn bg-blue-100 hover:bg-blue-200 text-blue-900 px-2 py-1 rounded font-bold">💾 ذخیره</button>
+                                <button type="button" class="adm-delete-btn bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded font-bold">🗑 حذف</button>
+                              </div>`}
+                    </td>
+                </tr>`;
+                const row = wrap.firstElementChild;
+                row.querySelector('.adm-row-project').value = u.project_name;
+                row.querySelector('.adm-row-org').value = u.organization;
+                row.querySelector('.adm-row-role').value = u.role;
+
+                if (!isSelf) {
+                    row.querySelector('.adm-save-btn').addEventListener('click', () => {
+                        saveUserChanges(u.user_id, {
+                            project_name: row.querySelector('.adm-row-project').value,
+                            organization: row.querySelector('.adm-row-org').value,
+                            role: row.querySelector('.adm-row-role').value,
+                        });
+                    });
+                    row.querySelector('.adm-delete-btn').addEventListener('click', () => deleteAppUser(u.user_id, u.email));
+                }
+                tbody.appendChild(row);
+            });
+
+            (invites || []).forEach(i => {
+                const wrap = document.createElement('tbody');
+                wrap.innerHTML = `<tr class="bg-amber-50/40">
+                    <td class="p-1 border"><select class="adm-row-project p-1.5 border rounded text-xs w-full">${projOptions}</select></td>
+                    <td class="p-1 border"><select class="adm-row-org p-1.5 border rounded text-xs w-full">${orgOptionsHtml}</select></td>
+                    <td class="p-2 border" dir="ltr">${esc(i.email)}</td>
+                    <td class="p-2 border text-slate-400">—</td>
+                    <td class="p-2 border">در انتظار ورود ⏳</td>
+                    <td class="p-1 border">
+                        <div class="flex gap-1">
+                            <button type="button" class="adm-save-btn bg-blue-100 hover:bg-blue-200 text-blue-900 px-2 py-1 rounded font-bold">💾 ذخیره</button>
+                            <button type="button" class="adm-delete-btn bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded font-bold">🗑 لغو دعوت</button>
+                        </div>
+                    </td>
+                </tr>`;
+                const row = wrap.firstElementChild;
+                row.querySelector('.adm-row-project').value = i.project_name;
+                row.querySelector('.adm-row-org').value = i.organization;
+                row.querySelector('.adm-save-btn').addEventListener('click', () => {
+                    saveInviteChanges(i.id, {
+                        project_name: row.querySelector('.adm-row-project').value,
+                        organization: row.querySelector('.adm-row-org').value,
+                    });
+                });
+                row.querySelector('.adm-delete-btn').addEventListener('click', () => deletePendingInvite(i.id, i.email));
+                tbody.appendChild(row);
+            });
+        }
+
+        async function saveUserChanges(userId, patch) {
+            const { error } = await _supabase.from('app_users').update(patch).eq('user_id', userId);
+            if (error) { alert('خطا در ذخیره تغییرات: ' + error.message); return; }
+            alert('تغییرات کاربر ذخیره شد.');
+            loadAdminData();
+        }
+
+        async function deleteAppUser(userId, email) {
+            if (!confirm(`آیا از حذف دسترسی «${email}» مطمئنید؟ این کار فقط دسترسی او به سامانه را حذف می‌کند؛ گزارش‌های قبلی او حذف نمی‌شود.`)) return;
+            const { error } = await _supabase.from('app_users').delete().eq('user_id', userId);
+            if (error) { alert('خطا در حذف کاربر: ' + error.message); return; }
+            loadAdminData();
+        }
+
+        async function saveInviteChanges(inviteId, patch) {
+            const { error } = await _supabase.from('pending_invites').update(patch).eq('id', inviteId);
+            if (error) { alert('خطا در ذخیره تغییرات: ' + error.message); return; }
+            alert('دعوت به‌روزرسانی شد.');
+            loadAdminData();
+        }
+
+        async function deletePendingInvite(inviteId, email) {
+            if (!confirm(`آیا از لغو دعوت «${email}» مطمئنید؟`)) return;
+            const { error } = await _supabase.from('pending_invites').delete().eq('id', inviteId);
+            if (error) { alert('خطا در لغو دعوت: ' + error.message); return; }
+            loadAdminData();
         }
 
         async function addProject() {
