@@ -152,7 +152,7 @@
         <!-- NOT AUTHORIZED SCREEN -->
         <div id="notAuthorizedScreen" class="hidden max-w-md mx-auto bg-white rounded-2xl shadow-sm border p-8 space-y-3 text-center mt-10">
             <h2 class="text-lg font-bold text-red-700">دسترسی تعریف نشده</h2>
-            <p class="text-sm text-slate-600">ایمیل <b id="unauthEmail" dir="ltr"></b> به هیچ پروژه‌ای متصل نیست. لطفاً با ادمین سامانه تماس بگیرید تا شما را دعوت کند.</p>
+            <p class="text-sm text-slate-600">ایمیل <b id="unauthEmail" dir="ltr"></b> هنوز به هیچ پروژه‌ای دسترسی ندارد. لطفاً با ادمین سامانه تماس بگیرید تا از بخش «مدیریت کاربران» نقش و دسترسی پروژه شما را تعریف کند.</p>
             <button id="unauthLogoutBtn" class="text-xs text-blue-700 underline">خروج و ورود با ایمیل دیگر</button>
         </div>
 
@@ -1051,9 +1051,11 @@
             // project to — becomes a project/org grant, consumed right away.
             const { data: invites } = await _supabase.from('pending_invites').select('*').eq('email', currentUser.email).eq('consumed', false);
 
-            if (!profile && !(invites || []).length) return;
-
             if (!profile) {
+                // Covers both the invite flow above AND a user the admin created directly
+                // in Supabase Authentication (email+password, no invite row at all): either
+                // way, once they can authenticate, they get a minimal profile so they show
+                // up in مدیریت کاربران — the admin assigns role/project access from there.
                 const { data: inserted, error } = await _supabase.from('app_users').insert([{
                     user_id: currentUser.id, email: currentUser.email, role: 'manager'
                 }]).select().maybeSingle();
