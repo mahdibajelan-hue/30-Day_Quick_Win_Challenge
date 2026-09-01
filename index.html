@@ -139,13 +139,10 @@
         <div id="authScreen" class="hidden max-w-md mx-auto bg-white rounded-2xl shadow-sm border p-8 space-y-4 text-center mt-10">
             <h2 class="text-lg font-bold text-blue-900">ورود به سامانه</h2>
             <p class="text-xs text-slate-400 italic">«هر پروژه، یک مسئله؛ هر مسئله، یک اقدام؛ هر اقدام، یک نتیجه.»</p>
-            <p id="loginHint" class="text-xs text-slate-500">ایمیلی که ادمین برایتان ثبت کرده را وارد کنید تا لینک ورود برایتان ایمیل شود.</p>
+            <p id="loginHint" class="text-xs text-slate-500">ایمیل و رمز عبوری که ادمین سامانه برایتان تنظیم کرده را وارد کنید.</p>
             <input id="loginEmail" type="email" placeholder="ایمیل شما" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center bg-slate-50">
-            <div id="loginPasswordWrap" class="hidden">
-                <input id="loginPassword" type="password" placeholder="رمز عبور" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center bg-slate-50">
-            </div>
-            <button id="loginBtn" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-2.5 rounded-xl transition">ارسال لینک ورود</button>
-            <button id="togglePasswordModeBtn" type="button" class="text-xs text-blue-700 underline">رمز عبور تنظیم کرده‌اید؟ اینجا وارد شوید</button>
+            <input id="loginPassword" type="password" placeholder="رمز عبور" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center bg-slate-50">
+            <button id="loginBtn" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-2.5 rounded-xl transition">ورود</button>
             <p id="loginMsg" class="text-xs"></p>
         </div>
 
@@ -490,7 +487,8 @@
                             </div>
                         </div>
                         <div class="space-y-2">
-                            <h3 class="text-sm font-bold">دعوت مدیر پروژه (ارسال لینک ورود به ایمیل)</h3>
+                            <h3 class="text-sm font-bold">پیش‌تعریف دسترسی برای ایمیلی که هنوز حساب ندارد</h3>
+                            <p class="text-xs text-slate-500">ایمیلی وارد کنید؛ بعداً حساب او را خودتان در Supabase (Authentication) با رمز عبور بسازید — در اولین ورود، این دسترسی خودکار فعال می‌شود. هیچ ایمیلی ارسال نمی‌شود.</p>
                             <div class="grid grid-cols-3 gap-2">
                                 <select id="admInviteProject" class="p-2.5 border rounded-xl text-xs"></select>
                                 <select id="admInviteOrg" class="p-2.5 border rounded-xl text-xs">
@@ -498,7 +496,7 @@
                                 </select>
                                 <input id="admInviteEmail" type="email" placeholder="ایمیل" dir="ltr" class="p-2.5 border rounded-xl text-xs">
                             </div>
-                            <button id="admInviteBtn" class="w-full bg-amber-600 hover:bg-amber-500 text-white text-sm py-2 rounded-xl font-bold">ارسال دعوت</button>
+                            <button id="admInviteBtn" class="w-full bg-amber-600 hover:bg-amber-500 text-white text-sm py-2 rounded-xl font-bold">ثبت دسترسی از پیش</button>
                         </div>
                     </div>
                     <p id="admMsg" class="text-xs"></p>
@@ -931,10 +929,6 @@
             return formatJalali(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`);
         }
 
-        function redirectUrl() {
-            return window.location.href.split('#')[0].split('?')[0];
-        }
-
         // --------------------------------------------------
         // FORM VOCABULARY (repeated checklists / dropdown option sets
         // shared between the check-in form and the reports that read it)
@@ -1188,38 +1182,16 @@
         }
         startTopbarClock();
 
-        let passwordLoginMode = false;
-
-        document.getElementById('togglePasswordModeBtn').addEventListener('click', () => {
-            passwordLoginMode = !passwordLoginMode;
-            document.getElementById('loginPasswordWrap').classList.toggle('hidden', !passwordLoginMode);
-            document.getElementById('loginBtn').textContent = passwordLoginMode ? 'ورود با رمز عبور' : 'ارسال لینک ورود';
-            document.getElementById('togglePasswordModeBtn').textContent = passwordLoginMode ? 'رمز عبور ندارید؟ لینک ورود دریافت کنید' : 'رمز عبور تنظیم کرده‌اید؟ اینجا وارد شوید';
-            document.getElementById('loginHint').textContent = passwordLoginMode ? 'ایمیل و رمز عبوری که قبلاً تنظیم کرده‌اید را وارد کنید.' : 'ایمیلی که ادمین برایتان ثبت کرده را وارد کنید تا لینک ورود برایتان ایمیل شود.';
-            document.getElementById('loginMsg').textContent = '';
-        });
-
         async function login() {
             const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
             const msg = document.getElementById('loginMsg');
-            if (!email) return;
+            if (!email || !password) { msg.textContent = 'ایمیل و رمز عبور را وارد کنید.'; msg.className = 'text-xs text-red-600'; return; }
 
-            if (passwordLoginMode) {
-                const password = document.getElementById('loginPassword').value;
-                if (!password) { msg.textContent = 'رمز عبور را وارد کنید.'; msg.className = 'text-xs text-red-600'; return; }
-                msg.textContent = 'در حال ورود...';
-                msg.className = 'text-xs text-slate-500';
-                const { error } = await _supabase.auth.signInWithPassword({ email, password });
-                if (error) { msg.textContent = 'خطا: ' + error.message; msg.className = 'text-xs text-red-600'; return; }
-                return;
-            }
-
-            msg.textContent = 'در حال ارسال...';
+            msg.textContent = 'در حال ورود...';
             msg.className = 'text-xs text-slate-500';
-            const { error } = await _supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectUrl() } });
+            const { error } = await _supabase.auth.signInWithPassword({ email, password });
             if (error) { msg.textContent = 'خطا: ' + error.message; msg.className = 'text-xs text-red-600'; return; }
-            msg.textContent = 'لینک ورود به ایمیلتان ارسال شد. صندوق ورودی (و پوشه اسپم) را بررسی کنید.';
-            msg.className = 'text-xs text-emerald-700';
         }
 
         async function logout() {
@@ -2022,15 +1994,11 @@
             if (!project_name || !email) { msg.textContent = 'پروژه و ایمیل الزامی است.'; msg.className = 'text-xs text-red-600'; return; }
 
             const { error: insertError } = await _supabase.from('pending_invites').insert([{ project_name, organization, email }]);
-            if (insertError) { msg.textContent = 'خطا: ' + insertError.message; msg.className = 'text-xs text-red-600'; return; }
-
-            const { error: otpError } = await _supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectUrl() } });
-            msg.textContent = otpError
-                ? 'دعوت ثبت شد ولی ارسال ایمیل خطا داد: ' + otpError.message
-                : `دعوت برای ${email} ثبت و لینک ورود ایمیل شد.`;
-            msg.className = otpError ? 'text-xs text-amber-700' : 'text-xs text-emerald-700';
-            document.getElementById('admInviteEmail').value = '';
-            loadAdminData();
+            msg.textContent = insertError
+                ? 'خطا: ' + insertError.message
+                : `دسترسی از پیش برای ${email} ثبت شد. حساب او را در Supabase (Authentication) با رمز عبور بسازید — در اولین ورود، این دسترسی خودکار فعال می‌شود.`;
+            msg.className = insertError ? 'text-xs text-red-600' : 'text-xs text-emerald-700';
+            if (!insertError) { document.getElementById('admInviteEmail').value = ''; loadAdminData(); }
         }
 
         document.getElementById('admAddProjectBtn').addEventListener('click', addProject);
