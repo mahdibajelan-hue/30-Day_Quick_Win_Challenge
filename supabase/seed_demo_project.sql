@@ -183,14 +183,15 @@ begin
     insert into client_reports (
         user_id, project_name, plan_name, contract_number, contract_type, contract_type_other,
         contractor_name, consultant_name, client_pm_name, contractor_pm_name, consultant_pm_name,
-        contract_initial_amount, contract_current_amount, contract_start_date, contract_end_date,
+        contract_initial_amount_rial, contract_initial_amount_eur, contract_current_amount_rial, contract_current_amount_eur,
+        contract_start_date, contract_end_date,
         contract_duration_months, elapsed_months,
         progress_planned, progress_physical, progress_engineering, progress_procurement, progress_construction,
         milestone_name, milestone_planned_date, milestone_status, milestone_delay_days
     ) values (
         v_user_id, v_project, 'طرح خط انتقال گاز ششم سراسری', 'GC-6TH-1404-018', 'EPC', null,
         'شرکت پیمانکاری خطوط انتقال پارس', 'مهندسین مشاور طراحان انرژی', 'مهندس علی رضایی', 'مهندس حسین کریمی', 'دکتر سارا احمدی',
-        4200000000000, 4650000000000, '2024-09-22', '2027-03-21',
+        4200, 85, 4650, 92, '2024-09-22', '2027-03-21',
         30, 23,
         62, 54, 92, 68, 51,
         'تکمیل عبور از رودخانه قزل‌اوزن و اتصال جبهه‌های ۱ و ۲', '2026-10-15', 'در معرض تأخیر', 25

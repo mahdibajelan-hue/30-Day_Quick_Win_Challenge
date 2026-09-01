@@ -121,6 +121,7 @@
                 </div>
                 <p class="hidden md:block text-xs text-slate-500" id="headerSubtitle">سامانه تحول و پایش ۳۰ روزه پروژه‌ها</p>
                 <div class="flex items-center gap-3 text-slate-400 text-xs relative">
+                    <span id="topbarUserEmail" class="hidden font-bold text-slate-700 border-l pl-3" dir="ltr"></span>
                     <span id="topbarDate" class="font-bold text-slate-600"></span>
                     <span class="flex items-center gap-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="topbarClock"></span></span>
                     <button id="setPasswordBtn" type="button" title="تنظیم/تغییر رمز عبور" class="text-base leading-none hover:opacity-70">🔑</button>
@@ -206,15 +207,15 @@
                     <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                         <h3 class="text-sm font-bold border-r-4 border-blue-900 pr-3">پیشرفت و زمان‌بندی</h3>
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div><label class="block text-xs font-semibold mb-1">% پیشرفت برنامه‌ای *</label><input type="number" id="ci_planned_progress" min="0" max="100" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">% پیشرفت فیزیکی (واقعی) *</label><input type="number" id="ci_physical_progress" min="0" max="100" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">% پیشرفت مالی *</label><input type="number" id="ci_financial_progress" min="0" max="100" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">% پیشرفت برنامه‌ای *</label><input type="number" step="any" id="ci_planned_progress" min="0" max="100" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">% پیشرفت فیزیکی (واقعی) *</label><input type="number" step="any" id="ci_physical_progress" min="0" max="100" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">% پیشرفت مالی *</label><input type="number" step="any" id="ci_financial_progress" min="0" max="100" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                             <div><label class="block text-xs font-semibold mb-1">تاریخ پیش‌بینی فعلی تکمیل پروژه (شمسی) *</label><input type="text" id="ci_forecast_date" required dir="ltr" placeholder="۱۴۰۵/۰۶/۰۸" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div><label class="block text-xs font-semibold mb-1">نیروی انسانی مستقر در سایت (نفر)</label><input type="number" id="ci_manpower" min="0" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">نرخ ردی جوش (٪) — در صورت مصداق</label><input type="number" id="ci_weld_reject" min="0" max="100" step="0.1" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">نیروی انسانی مستقر در سایت (نفر)</label><input type="number" step="any" id="ci_manpower" min="0" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">نرخ ردی جوش (٪) — در صورت مصداق</label><input type="number" id="ci_weld_reject" min="0" max="100" step="any" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                             <div>
                                 <label class="block text-xs font-semibold mb-1">رویداد HSE در این دوره؟</label>
                                 <select id="ci_hse_incident" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
@@ -354,11 +355,11 @@
                             <div><label class="block text-xs font-semibold mb-1">هدف ۳۰ روزه</label><input type="text" id="ci_kpi_target" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
                         </div>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div><label class="block text-xs font-semibold mb-1">کاهش/جلوگیری تأخیر (روز)</label><input type="number" id="ci_impact_delay" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
-                            <div><label class="block text-xs font-semibold mb-1">افزایش پیشرفت (٪)</label><input type="number" id="ci_impact_progress" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
-                            <div><label class="block text-xs font-semibold mb-1">کاهش/جلوگیری هزینه (ریال)</label><input type="number" id="ci_impact_cost" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
-                            <div><label class="block text-xs font-semibold mb-1">تعداد Issue بسته‌شده</label><input type="number" id="ci_impact_issues" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
-                            <div><label class="block text-xs font-semibold mb-1">تعداد مدارک تعیین‌تکلیف‌شده</label><input type="number" id="ci_impact_docs" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">کاهش/جلوگیری تأخیر (روز)</label><input type="number" step="any" id="ci_impact_delay" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">افزایش پیشرفت (٪)</label><input type="number" step="any" id="ci_impact_progress" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">کاهش/جلوگیری هزینه (ریال)</label><input type="number" step="any" id="ci_impact_cost" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">تعداد Issue بسته‌شده</label><input type="number" step="any" id="ci_impact_issues" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">تعداد مدارک تعیین‌تکلیف‌شده</label><input type="number" step="any" id="ci_impact_docs" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
                             <div class="col-span-2"><label class="block text-xs font-semibold mb-1">جبهه‌های کاری آزادشده</label><input type="text" id="ci_impact_fronts" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
                             <div class="col-span-2"><label class="block text-xs font-semibold mb-1">سایر اثرات</label><input type="text" id="ci_impact_other" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
                         </div>
@@ -428,26 +429,34 @@
                             <div><label class="block text-xs font-semibold mb-1">مدیر پروژه پیمانکار</label><input type="text" id="cr_contractor_pm" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                             <div><label class="block text-xs font-semibold mb-1">مدیر پروژه مشاور</label><input type="text" id="cr_consultant_pm" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div><label class="block text-xs font-semibold mb-1">مبلغ اولیه قرارداد (ریال)</label><input type="number" id="cr_amount_initial" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">مبلغ فعلی قرارداد (ریال)</label><input type="number" id="cr_amount_current" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                        <p class="text-xs font-semibold text-slate-600">مبلغ اولیه قرارداد — بخش ریالی به میلیارد ریال، بخش ارزی به میلیون یورو</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label class="block text-xs font-semibold mb-1">مبلغ اولیه — ریالی (میلیارد ریال)</label><input type="number" step="any" min="0" id="cr_amount_initial_rial" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">مبلغ اولیه — ارزی (میلیون یورو)</label><input type="number" step="any" min="0" id="cr_amount_initial_eur" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                        </div>
+                        <p class="text-xs font-semibold text-slate-600 pt-1">مبلغ فعلی قرارداد — بخش ریالی به میلیارد ریال، بخش ارزی به میلیون یورو</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label class="block text-xs font-semibold mb-1">مبلغ فعلی — ریالی (میلیارد ریال)</label><input type="number" step="any" min="0" id="cr_amount_current_rial" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">مبلغ فعلی — ارزی (میلیون یورو)</label><input type="number" step="any" min="0" id="cr_amount_current_eur" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div><label class="block text-xs font-semibold mb-1">تاریخ شروع قرارداد (شمسی) *</label><input type="text" id="cr_start_date" required dir="ltr" placeholder="۱۴۰۴/۰۱/۰۱" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
                             <div><label class="block text-xs font-semibold mb-1">تاریخ پایان قراردادی (شمسی) *</label><input type="text" id="cr_end_date" required dir="ltr" placeholder="۱۴۰۶/۰۱/۰۱" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label class="block text-xs font-semibold mb-1">مدت قرارداد (ماه) *</label><input type="number" id="cr_duration" required min="0" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">مدت سپری‌شده (ماه) *</label><input type="number" id="cr_elapsed" required min="0" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">مدت قرارداد (ماه) *</label><input type="number" step="any" id="cr_duration" required min="0" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">مدت سپری‌شده (ماه) *</label><input type="number" step="any" id="cr_elapsed" required min="0" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                         </div>
                     </div>
 
                     <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                         <h3 class="text-sm font-bold border-r-4 border-amber-500 pr-3">۲. وضعیت پیشرفت و زمان‌بندی</h3>
                         <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-                            <div><label class="block text-xs font-semibold mb-1">پیشرفت برنامه‌ای (٪) *</label><input type="number" id="cr_progress_planned" required min="0" max="100" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
-                            <div><label class="block text-xs font-semibold mb-1">پیشرفت واقعی (٪) *</label><input type="number" id="cr_progress_physical" required min="0" max="100" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
-                            <div><label class="block text-xs font-semibold mb-1">پیشرفت مهندسی (٪)</label><input type="number" id="cr_progress_eng" min="0" max="100" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
-                            <div><label class="block text-xs font-semibold mb-1">پیشرفت تأمین (٪)</label><input type="number" id="cr_progress_proc" min="0" max="100" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
-                            <div><label class="block text-xs font-semibold mb-1">پیشرفت اجرا (٪)</label><input type="number" id="cr_progress_constr" min="0" max="100" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">پیشرفت برنامه‌ای (٪) *</label><input type="number" step="any" id="cr_progress_planned" required min="0" max="100" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">پیشرفت واقعی (٪) *</label><input type="number" step="any" id="cr_progress_physical" required min="0" max="100" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">پیشرفت مهندسی (٪)</label><input type="number" step="any" id="cr_progress_eng" min="0" max="100" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">پیشرفت تأمین (٪)</label><input type="number" step="any" id="cr_progress_proc" min="0" max="100" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">پیشرفت اجرا (٪)</label><input type="number" step="any" id="cr_progress_constr" min="0" max="100" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
                         </div>
                         <p class="text-xs text-slate-500">انحراف پیشرفت (واقعی − برنامه‌ای) و درصد مدت سپری‌شده از قرارداد، به‌صورت خودکار محاسبه و در گزارش‌ها نمایش داده می‌شود.</p>
 
@@ -463,7 +472,7 @@
                                     <option value="دارای تأخیر">دارای تأخیر</option>
                                 </select>
                             </div>
-                            <div><label class="block text-xs font-semibold mb-1">برآورد تأخیر (روز)</label><input type="number" id="cr_milestone_delay" min="0" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">برآورد تأخیر (روز)</label><input type="number" step="any" id="cr_milestone_delay" min="0" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
                         </div>
                     </div>
 
@@ -1082,6 +1091,8 @@
             document.getElementById('notAuthorizedScreen').classList.toggle('hidden', !noUsableAccess);
             document.getElementById('appShell').classList.toggle('hidden', !currentProfile || noUsableAccess);
             document.getElementById('setPasswordBtn').classList.toggle('hidden', !currentProfile);
+            document.getElementById('topbarUserEmail').classList.toggle('hidden', !currentProfile);
+            if (currentProfile) document.getElementById('topbarUserEmail').textContent = currentUser.email;
 
             if (noUsableAccess) {
                 document.getElementById('unauthEmail').textContent = currentUser.email;
@@ -1183,7 +1194,7 @@
         startTopbarClock();
 
         async function login() {
-            const email = document.getElementById('loginEmail').value.trim();
+            const email = document.getElementById('loginEmail').value.trim().toLowerCase();
             const password = document.getElementById('loginPassword').value;
             const msg = document.getElementById('loginMsg');
             if (!email || !password) { msg.textContent = 'ایمیل و رمز عبور را وارد کنید.'; msg.className = 'text-xs text-red-600'; return; }
@@ -1400,8 +1411,10 @@
             document.getElementById('cr_client_pm').value = row.client_pm_name || '';
             document.getElementById('cr_contractor_pm').value = row.contractor_pm_name || '';
             document.getElementById('cr_consultant_pm').value = row.consultant_pm_name || '';
-            document.getElementById('cr_amount_initial').value = row.contract_initial_amount ?? '';
-            document.getElementById('cr_amount_current').value = row.contract_current_amount ?? '';
+            document.getElementById('cr_amount_initial_rial').value = row.contract_initial_amount_rial ?? '';
+            document.getElementById('cr_amount_initial_eur').value = row.contract_initial_amount_eur ?? '';
+            document.getElementById('cr_amount_current_rial').value = row.contract_current_amount_rial ?? '';
+            document.getElementById('cr_amount_current_eur').value = row.contract_current_amount_eur ?? '';
             document.getElementById('cr_start_date').value = formatJalali(row.contract_start_date);
             document.getElementById('cr_end_date').value = formatJalali(row.contract_end_date);
             document.getElementById('cr_duration').value = row.contract_duration_months ?? '';
@@ -1762,8 +1775,10 @@
                 client_pm_name: document.getElementById('cr_client_pm').value,
                 contractor_pm_name: document.getElementById('cr_contractor_pm').value,
                 consultant_pm_name: document.getElementById('cr_consultant_pm').value,
-                contract_initial_amount: document.getElementById('cr_amount_initial').value ? Number(document.getElementById('cr_amount_initial').value) : null,
-                contract_current_amount: document.getElementById('cr_amount_current').value ? Number(document.getElementById('cr_amount_current').value) : null,
+                contract_initial_amount_rial: document.getElementById('cr_amount_initial_rial').value ? Number(document.getElementById('cr_amount_initial_rial').value) : null,
+                contract_initial_amount_eur: document.getElementById('cr_amount_initial_eur').value ? Number(document.getElementById('cr_amount_initial_eur').value) : null,
+                contract_current_amount_rial: document.getElementById('cr_amount_current_rial').value ? Number(document.getElementById('cr_amount_current_rial').value) : null,
+                contract_current_amount_eur: document.getElementById('cr_amount_current_eur').value ? Number(document.getElementById('cr_amount_current_eur').value) : null,
                 contract_start_date: startIso,
                 contract_end_date: endIso,
                 contract_duration_months: Number(document.getElementById('cr_duration').value),
@@ -2598,7 +2613,8 @@
                 ['پیمانکار', rec.contractor_name],
                 ['مشاور', rec.consultant_name],
                 ['مدیر پروژه کارفرما', rec.client_pm_name],
-                ['مبلغ اولیه / فعلی قرارداد (ریال)', [rec.contract_initial_amount, rec.contract_current_amount].filter(v => v != null).map(v => toPersianDigits(v)).join(' / ')],
+                ['مبلغ اولیه / فعلی قرارداد — ریالی (میلیارد ریال)', [rec.contract_initial_amount_rial, rec.contract_current_amount_rial].filter(v => v != null).map(v => toPersianDigits(v)).join(' / ')],
+                ['مبلغ اولیه / فعلی قرارداد — ارزی (میلیون یورو)', [rec.contract_initial_amount_eur, rec.contract_current_amount_eur].filter(v => v != null).map(v => toPersianDigits(v)).join(' / ')],
                 ['تاریخ شروع / پایان قرارداد', [formatJalali(rec.contract_start_date), formatJalali(rec.contract_end_date)].filter(Boolean).join(' — ')],
                 ['مدت قرارداد / سپری‌شده (ماه)', [rec.contract_duration_months, rec.elapsed_months].filter(v => v != null).map(v => toPersianDigits(v)).join(' / ')],
                 ['پیشرفت مهندسی / تأمین / اجرا', [rec.progress_engineering, rec.progress_procurement, rec.progress_construction].map(v => v != null ? toPersianDigits(v) + '٪' : '-').join(' / ')],
@@ -2775,7 +2791,7 @@
                     ${isAdmin ? `
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-2 pt-3 border-t text-xs">
                         <select class="status-select border rounded-lg p-2">${STATUS_OPTIONS.map(s => `<option ${s === status ? 'selected' : ''}>${s}</option>`).join('')}</select>
-                        <input class="percent-input border rounded-lg p-2" type="number" min="0" max="100" value="${percent}" placeholder="درصد پیشرفت">
+                        <input class="percent-input border rounded-lg p-2" type="number" step="any" min="0" max="100" value="${percent}" placeholder="درصد پیشرفت">
                         <input class="note-input border rounded-lg p-2 md:col-span-2" type="text" placeholder="توضیح بروزرسانی">
                     </div>
                     <button type="button" class="update-btn w-full bg-amber-600 hover:bg-amber-500 text-white rounded-lg py-2 font-bold text-xs">ثبت بروزرسانی پیشرفت</button>` : ''}

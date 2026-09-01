@@ -180,7 +180,8 @@ Deno.serve(async (req) => {
 ### اطلاعات پایه و پیشرفت رسمی پروژه (فرم اول کارفرما)
 - نام طرح: ${cr.plan_name || "-"} | شماره قرارداد: ${cr.contract_number || "-"} | نوع قرارداد: ${cr.contract_type === "سایر" ? cr.contract_type_other : cr.contract_type || "-"}
 - پیمانکار: ${cr.contractor_name || "-"} | مشاور: ${cr.consultant_name || "-"} | مدیر پروژه کارفرما: ${cr.client_pm_name || "-"}
-- مبلغ اولیه/فعلی قرارداد: ${cr.contract_initial_amount ?? "-"} / ${cr.contract_current_amount ?? "-"} ریال
+- مبلغ اولیه/فعلی قرارداد — ریالی (میلیارد ریال): ${cr.contract_initial_amount_rial ?? "-"} / ${cr.contract_current_amount_rial ?? "-"}
+- مبلغ اولیه/فعلی قرارداد — ارزی (میلیون یورو): ${cr.contract_initial_amount_eur ?? "-"} / ${cr.contract_current_amount_eur ?? "-"}
 - تاریخ شروع/پایان قراردادی: ${cr.contract_start_date || "-"} تا ${cr.contract_end_date || "-"}
 - مدت قرارداد: ${cr.contract_duration_months ?? "-"} ماه | مدت سپری‌شده: ${cr.elapsed_months ?? "-"} ماه${elapsedPercent !== null ? ` (${elapsedPercent}% از مدت قرارداد)` : ""}
 - پیشرفت برنامه‌ای رسمی: ${cr.progress_planned ?? "-"}% | پیشرفت واقعی رسمی: ${cr.progress_physical ?? "-"}%${variance !== null ? ` (انحراف ${variance > 0 ? "+" : ""}${variance}%)` : ""}
