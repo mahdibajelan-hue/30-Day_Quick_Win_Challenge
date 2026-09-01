@@ -521,7 +521,8 @@
 
                 <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-3">
                     <h3 class="text-sm font-bold">پروژه‌ها</h3>
-                    <div id="admProjectsList" class="text-xs grid grid-cols-2 md:grid-cols-4 gap-2"></div>
+                    <p class="text-xs text-slate-500">نام پروژه را ویرایش و «ذخیره» بزنید (در همه گزارش‌های قبلی هم به‌روزرسانی می‌شود)، یا با 🗑 پروژه را حذف کنید.</p>
+                    <div id="admProjectsList" class="text-xs grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2"></div>
                 </div>
 
                 <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-3">
@@ -1878,9 +1879,28 @@
             document.getElementById('admInviteProject').innerHTML = projOptionsHtml;
             document.getElementById('admGrantProject').innerHTML = projOptionsHtml;
 
-            document.getElementById('admProjectsList').innerHTML = (projects || []).length
-                ? projects.map(p => `<div class="p-2 bg-slate-50 rounded-lg text-center">${esc(p.name)}</div>`).join('')
-                : '<p class="text-slate-400 col-span-full">هنوز پروژه‌ای تعریف نشده.</p>';
+            const projectsList = document.getElementById('admProjectsList');
+            projectsList.innerHTML = '';
+            if (!(projects || []).length) {
+                projectsList.innerHTML = '<p class="text-slate-400 col-span-full">هنوز پروژه‌ای تعریف نشده.</p>';
+            } else {
+                projects.forEach(p => {
+                    const wrap = document.createElement('div');
+                    wrap.innerHTML = `<div class="p-2 bg-slate-50 rounded-lg flex items-center gap-1">
+                        <input class="proj-name-input flex-1 min-w-0 p-1.5 border rounded text-xs">
+                        <button type="button" class="proj-save-btn bg-blue-100 hover:bg-blue-200 text-blue-900 px-2 py-1 rounded font-bold shrink-0" title="ذخیره نام جدید">💾</button>
+                        <button type="button" class="proj-delete-btn bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded font-bold shrink-0" title="حذف پروژه">🗑</button>
+                    </div>`;
+                    const card = wrap.firstElementChild;
+                    card.querySelector('.proj-name-input').value = p.name;
+                    card.querySelector('.proj-save-btn').addEventListener('click', () => {
+                        const newName = card.querySelector('.proj-name-input').value.trim();
+                        renameProject(p.name, newName);
+                    });
+                    card.querySelector('.proj-delete-btn').addEventListener('click', () => deleteProject(p.name));
+                    projectsList.appendChild(card);
+                });
+            }
 
             const { data: users } = await _supabase.from('app_users').select('*').order('email');
             const { data: grants } = await _supabase.from('user_project_access').select('*').order('project_name');
@@ -2066,6 +2086,37 @@
             if (!error) { input.value = ''; loadAdminData(); }
         }
 
+        // Renaming a project means its name — stored as plain text, not a foreign key —
+        // has to be updated everywhere it's referenced, or historical rows and access
+        // grants would silently detach from the renamed project.
+        const PROJECT_NAME_TABLES = ['user_project_access', 'pending_invites', 'check_ins', 'client_reports', 'quick_win_decisions', 'quick_win_progress', 'quick_win_evaluations', 'app_users'];
+
+        async function renameProject(oldName, newName) {
+            const msg = document.getElementById('admMsg');
+            if (!newName || newName === oldName) return;
+
+            const { data: clash } = await _supabase.from('projects').select('id').eq('name', newName).maybeSingle();
+            if (clash) { msg.textContent = `خطا: پروژه‌ای با نام «${newName}» از قبل وجود دارد.`; msg.className = 'text-xs text-red-600'; loadAdminData(); return; }
+
+            for (const table of PROJECT_NAME_TABLES) {
+                const { error } = await _supabase.from(table).update({ project_name: newName }).eq('project_name', oldName);
+                if (error) { msg.textContent = `خطا در به‌روزرسانی ${table}: ` + error.message; msg.className = 'text-xs text-red-600'; return; }
+            }
+            const { error } = await _supabase.from('projects').update({ name: newName }).eq('name', oldName);
+            msg.textContent = error ? 'خطا: ' + error.message : `نام پروژه به «${newName}» تغییر کرد.`;
+            msg.className = error ? 'text-xs text-red-600' : 'text-xs text-emerald-700';
+            loadAdminData();
+        }
+
+        async function deleteProject(name) {
+            if (!confirm(`آیا از حذف پروژه «${name}» مطمئنید؟ این کار پروژه را از فهرست حذف و دسترسی همه کاربران به آن را لغو می‌کند؛ گزارش‌ها و اطلاعات قبلی‌اش حذف نخواهد شد.`)) return;
+            await _supabase.from('user_project_access').delete().eq('project_name', name);
+            await _supabase.from('pending_invites').delete().eq('project_name', name);
+            const { error } = await _supabase.from('projects').delete().eq('name', name);
+            if (error) { alert('خطا در حذف پروژه: ' + error.message); return; }
+            loadAdminData();
+        }
+
         async function inviteManager() {
             const project_name = document.getElementById('admInviteProject').value;
             const organization = document.getElementById('admInviteOrg').value;
@@ -2131,7 +2182,8 @@
                 const [project, org] = key.split('||');
                 const periodic = [...rows].reverse().find(r => r.main_bottleneck != null);
                 const qw = [...rows].reverse().find(r => r.quick_win_title != null);
-                (result[project] ??= {})[org] = mergeCheckinPair(periodic, qw);
+                const merged = mergeCheckinPair(periodic, qw);
+                if (merged) (result[project] ??= {})[org] = merged;
             });
             return result;
         }
