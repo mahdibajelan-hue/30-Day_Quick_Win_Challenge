@@ -177,6 +177,14 @@
                     <button id="ci_adm_load_btn" type="button" class="w-full bg-blue-900 hover:bg-blue-800 text-white text-sm py-2 rounded-xl font-bold">بارگذاری فرم</button>
                 </div>
 
+                <div id="ci_managerPicker" class="hidden bg-white p-4 rounded-2xl shadow-sm border space-y-2">
+                    <p class="text-xs text-slate-500">شما به چند پروژه دسترسی دارید — پروژه/سازمانی که می‌خواهید این فرم را برایش ثبت کنید انتخاب کنید.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <select id="ci_mgr_access" class="p-2.5 border rounded-xl text-xs md:col-span-2"></select>
+                        <button id="ci_mgr_load_btn" type="button" class="bg-blue-900 hover:bg-blue-800 text-white text-xs px-4 rounded-xl font-bold">بارگذاری فرم</button>
+                    </div>
+                </div>
+
                 <form id="checkinForm" class="space-y-6">
                     <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                         <h3 class="text-sm font-bold border-r-4 border-blue-900 pr-3">مشخصات پاسخ‌دهنده</h3>
@@ -298,6 +306,14 @@
                     <button id="qwp_adm_load_btn" type="button" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm py-2 rounded-xl font-bold">بارگذاری فرم</button>
                 </div>
 
+                <div id="qwp_managerPicker" class="hidden bg-white p-4 rounded-2xl shadow-sm border space-y-2">
+                    <p class="text-xs text-slate-500">شما به چند پروژه دسترسی دارید — پروژه/سازمانی که می‌خواهید این فرم را برایش ثبت کنید انتخاب کنید.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <select id="qwp_mgr_access" class="p-2.5 border rounded-xl text-xs md:col-span-2"></select>
+                        <button id="qwp_mgr_load_btn" type="button" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-4 rounded-xl font-bold">بارگذاری فرم</button>
+                    </div>
+                </div>
+
                 <form id="qwProposalForm" class="space-y-6">
                     <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                         <h3 class="text-sm font-bold border-r-4 border-emerald-600 pr-3">🎯 فرم پیشنهاد Quick Win سی‌روزه</h3>
@@ -384,6 +400,14 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
                         <select id="cr_adm_project" class="p-2.5 border rounded-xl text-xs md:col-span-2"></select>
                         <button id="cr_adm_load_btn" type="button" class="bg-blue-900 hover:bg-blue-800 text-white text-xs px-4 rounded-xl font-bold">بارگذاری فرم</button>
+                    </div>
+                </div>
+
+                <div id="cr_managerPicker" class="hidden bg-white p-4 rounded-2xl shadow-sm border space-y-2">
+                    <p class="text-xs text-slate-500">شما به چند پروژه (به‌عنوان کارفرما) دسترسی دارید — پروژه‌ای که می‌خواهید این فرم را برایش ثبت کنید انتخاب کنید.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <select id="cr_mgr_access" class="p-2.5 border rounded-xl text-xs md:col-span-2"></select>
+                        <button id="cr_mgr_load_btn" type="button" class="bg-blue-900 hover:bg-blue-800 text-white text-xs px-4 rounded-xl font-bold">بارگذاری فرم</button>
                     </div>
                 </div>
                 <form id="clientReportForm" class="space-y-6">
@@ -486,12 +510,25 @@
                 </div>
 
                 <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-3">
+                    <h3 class="text-sm font-bold">افزودن دسترسی پروژه به کاربر موجود</h3>
+                    <p class="text-xs text-slate-500">وقتی کاربری از قبل حساب دارد و باید علاوه‌بر پروژه فعلی‌اش، به یک پروژه/سازمان دیگر هم دسترسی داشته باشد (بدون نیاز به دعوت مجدد).</p>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+                        <select id="admGrantUser" class="p-2.5 border rounded-xl text-xs md:col-span-2"></select>
+                        <select id="admGrantProject" class="p-2.5 border rounded-xl text-xs"></select>
+                        <select id="admGrantOrg" class="p-2.5 border rounded-xl text-xs">
+                            <option value="کارفرما">کارفرما</option><option value="مشاور">مشاور</option><option value="پیمانکار">پیمانکار</option>
+                        </select>
+                    </div>
+                    <button id="admGrantBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-sm py-2 rounded-xl font-bold">افزودن دسترسی</button>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-3">
                     <h3 class="text-sm font-bold">کاربران (فعال / در انتظار ورود)</h3>
-                    <p class="text-xs text-slate-500">نقش، پروژه یا سازمان هر کاربر را تغییر دهید و «ذخیره» بزنید، یا با 🗑 کاربر را حذف کنید.</p>
+                    <p class="text-xs text-slate-500">هر کاربر می‌تواند به چند پروژه/سازمان دسترسی داشته باشد؛ هر ردیف یک دسترسی است. نقش با «ذخیره نقش» و کل حساب با «حذف کاربر» مدیریت می‌شود.</p>
                     <div class="overflow-x-auto">
                         <table class="w-full text-right text-xs">
                             <thead class="bg-slate-100 text-slate-700"><tr>
-                                <th class="p-2 border">پروژه</th><th class="p-2 border">سازمان</th><th class="p-2 border">ایمیل</th><th class="p-2 border">نقش</th><th class="p-2 border">وضعیت</th><th class="p-2 border">عملیات</th>
+                                <th class="p-2 border">پروژه</th><th class="p-2 border">سازمان</th><th class="p-2 border">عملیات دسترسی</th><th class="p-2 border">ایمیل</th><th class="p-2 border">نقش</th><th class="p-2 border">وضعیت</th><th class="p-2 border">عملیات کاربر</th>
                             </tr></thead>
                             <tbody id="admUsersTableBody"></tbody>
                         </table>
@@ -942,10 +979,17 @@
         let currentUser = null;
         let currentProfile = null;
         let hasResolvedOnce = false;
-        let adminPreviewContext = null; // { project_name, organization } — set when admin opens a form preview
+        let pickedProjectContext = null; // { project_name, organization } — explicitly chosen by an admin, or by a manager with more than one project/org grant
+        let myProjectAccess = []; // [{ project_name, organization }, ...] — this manager's grants (empty for admins, who aren't project-scoped)
 
         function effectiveProfile() {
-            return (currentProfile.role === 'admin' && adminPreviewContext) ? adminPreviewContext : currentProfile;
+            if (currentProfile.role === 'admin') return pickedProjectContext;
+            if (myProjectAccess.length === 1) return myProjectAccess[0];
+            return pickedProjectContext;
+        }
+
+        function hasOrganization(org) {
+            return currentProfile.role === 'admin' || myProjectAccess.some(a => a.organization === org);
         }
 
         // --------------------------------------------------
@@ -993,42 +1037,71 @@
             currentUser = newUser;
             if (sameUser) return;
             currentProfile = null;
+            myProjectAccess = [];
+            pickedProjectContext = null;
             if (currentUser) await resolveProfile();
             render();
         }
 
         async function resolveProfile() {
-            const { data: profile } = await _supabase.from('app_users').select('*').eq('user_id', currentUser.id).maybeSingle();
-            if (profile) { currentProfile = profile; return; }
+            let { data: profile } = await _supabase.from('app_users').select('*').eq('user_id', currentUser.id).maybeSingle();
 
-            const { data: invite } = await _supabase.from('pending_invites').select('*').eq('email', currentUser.email).eq('consumed', false).limit(1).maybeSingle();
-            if (invite) {
+            // Any unconsumed invite for this email — whether this is a brand-new user
+            // (no profile yet) or an existing manager the admin just granted another
+            // project to — becomes a project/org grant, consumed right away.
+            const { data: invites } = await _supabase.from('pending_invites').select('*').eq('email', currentUser.email).eq('consumed', false);
+
+            if (!profile && !(invites || []).length) return;
+
+            if (!profile) {
                 const { data: inserted, error } = await _supabase.from('app_users').insert([{
-                    user_id: currentUser.id, email: currentUser.email, role: 'manager',
-                    project_name: invite.project_name, organization: invite.organization
+                    user_id: currentUser.id, email: currentUser.email, role: 'manager'
                 }]).select().maybeSingle();
-                if (!error && inserted) {
-                    await _supabase.from('pending_invites').update({ consumed: true }).eq('id', invite.id);
-                    currentProfile = inserted;
+                if (error || !inserted) return;
+                profile = inserted;
+            }
+
+            if ((invites || []).length) {
+                const grants = invites.map(i => ({ user_id: currentUser.id, project_name: i.project_name, organization: i.organization }));
+                await _supabase.from('user_project_access').upsert(grants, { onConflict: 'user_id,project_name,organization' });
+                for (const i of invites) {
+                    await _supabase.from('pending_invites').update({ consumed: true }).eq('id', i.id);
                 }
             }
+
+            currentProfile = profile;
+            await loadMyProjectAccess();
+        }
+
+        async function loadMyProjectAccess() {
+            if (currentProfile.role === 'admin') { myProjectAccess = []; return; }
+            const { data } = await _supabase.from('user_project_access').select('*').eq('user_id', currentUser.id).order('project_name');
+            myProjectAccess = data || [];
         }
 
         function render() {
+            const noUsableAccess = !!currentUser && (!currentProfile || (currentProfile.role !== 'admin' && myProjectAccess.length === 0));
+
             document.getElementById('authScreen').classList.toggle('hidden', !!currentUser);
-            document.getElementById('notAuthorizedScreen').classList.toggle('hidden', !currentUser || !!currentProfile);
-            document.getElementById('appShell').classList.toggle('hidden', !currentProfile);
+            document.getElementById('notAuthorizedScreen').classList.toggle('hidden', !noUsableAccess);
+            document.getElementById('appShell').classList.toggle('hidden', !currentProfile || noUsableAccess);
             document.getElementById('setPasswordBtn').classList.toggle('hidden', !currentProfile);
 
-            if (currentUser && !currentProfile) {
+            if (noUsableAccess) {
                 document.getElementById('unauthEmail').textContent = currentUser.email;
             }
 
             document.getElementById('headerSubtitle').textContent = currentProfile
-                ? (currentProfile.role === 'admin' ? 'پنل مدیریت سامانه' : `مدیر پروژه — ${currentProfile.project_name} (${currentProfile.organization})`)
+                ? (currentProfile.role === 'admin'
+                    ? 'پنل مدیریت سامانه'
+                    : myProjectAccess.length === 1
+                        ? `مدیر پروژه — ${myProjectAccess[0].project_name} (${myProjectAccess[0].organization})`
+                        : myProjectAccess.length > 1
+                            ? `مدیر پروژه — ${toPersianDigits(String(myProjectAccess.length))} پروژه`
+                            : 'مدیر پروژه — بدون دسترسی به پروژه')
                 : 'سامانه تحول و پایش ۳۰ روزه پروژه‌ها';
 
-            if (currentProfile) renderNav();
+            if (currentProfile && !noUsableAccess) renderNav();
         }
 
         function renderNav() {
@@ -1039,7 +1112,7 @@
 
             const buttons = currentProfile.role === 'admin'
                 ? [['overview', 'نمای کلی'], ['clientReport', 'اطلاعات پایه پروژه (کارفرما)'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب Quick Win'], ['execReport', 'گزارش اجرایی'], ['admin', 'مدیریت کاربران']]
-                : currentProfile.organization === 'کارفرما'
+                : hasOrganization('کارفرما')
                     ? [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win'], ['selection', 'پیشنهادها']]
                     : [['overview', 'وضعیت پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win']];
 
@@ -1178,17 +1251,30 @@
                 : '<option value="">-- ابتدا در «مدیریت کاربران» یک پروژه بسازید --</option>';
         }
 
+        // A manager with more than one project/org grant picks which one they're
+        // acting as from THEIR OWN grants only (unlike the admin picker, which offers
+        // every project — admins aren't scoped to any particular grant).
+        function populateAccessSelect(selectId, filterOrg) {
+            const opts = filterOrg ? myProjectAccess.filter(a => a.organization === filterOrg) : myProjectAccess;
+            document.getElementById(selectId).innerHTML = opts.length
+                ? opts.map(a => `<option value="${esc(a.project_name)}|||${esc(a.organization)}">${esc(a.project_name)} — ${esc(a.organization)}</option>`).join('')
+                : '<option value="">-- دسترسی به پروژه‌ای ندارید --</option>';
+        }
+
         async function prefillCheckinForm() {
             const isAdmin = currentProfile.role === 'admin';
             document.getElementById('ci_adminPicker').classList.toggle('hidden', !isAdmin);
+            document.getElementById('ci_managerPicker').classList.toggle('hidden', isAdmin || myProjectAccess.length <= 1);
             if (isAdmin) {
                 await populateProjectSelect('ci_adm_project');
-                if (adminPreviewContext) {
-                    document.getElementById('ci_adm_project').value = adminPreviewContext.project_name;
-                    document.getElementById('ci_adm_org').value = adminPreviewContext.organization;
+                if (pickedProjectContext) {
+                    document.getElementById('ci_adm_project').value = pickedProjectContext.project_name;
+                    document.getElementById('ci_adm_org').value = pickedProjectContext.organization;
                 }
+            } else if (myProjectAccess.length > 1) {
+                populateAccessSelect('ci_mgr_access');
             }
-            const p = isAdmin ? adminPreviewContext : currentProfile;
+            const p = effectiveProfile();
             document.getElementById('ciProjectName').textContent = p ? p.project_name : '—';
             document.getElementById('ciOrganization').textContent = p ? p.organization : '—';
         }
@@ -1196,25 +1282,31 @@
         async function prefillClientReportForm() {
             const isAdmin = currentProfile.role === 'admin';
             document.getElementById('cr_adminPicker').classList.toggle('hidden', !isAdmin);
+            document.getElementById('cr_managerPicker').classList.toggle('hidden', isAdmin || myProjectAccess.length <= 1);
             if (isAdmin) {
                 await populateProjectSelect('cr_adm_project');
-                if (adminPreviewContext) document.getElementById('cr_adm_project').value = adminPreviewContext.project_name;
+                if (pickedProjectContext) document.getElementById('cr_adm_project').value = pickedProjectContext.project_name;
+            } else if (myProjectAccess.length > 1) {
+                populateAccessSelect('cr_mgr_access', 'کارفرما');
             }
-            const p = isAdmin ? adminPreviewContext : currentProfile;
+            const p = effectiveProfile();
             document.getElementById('crProjectName').textContent = p ? p.project_name : '—';
         }
 
         async function prefillQwProposalForm() {
             const isAdmin = currentProfile.role === 'admin';
             document.getElementById('qwp_adminPicker').classList.toggle('hidden', !isAdmin);
+            document.getElementById('qwp_managerPicker').classList.toggle('hidden', isAdmin || myProjectAccess.length <= 1);
             if (isAdmin) {
                 await populateProjectSelect('qwp_adm_project');
-                if (adminPreviewContext) {
-                    document.getElementById('qwp_adm_project').value = adminPreviewContext.project_name;
-                    document.getElementById('qwp_adm_org').value = adminPreviewContext.organization;
+                if (pickedProjectContext) {
+                    document.getElementById('qwp_adm_project').value = pickedProjectContext.project_name;
+                    document.getElementById('qwp_adm_org').value = pickedProjectContext.organization;
                 }
+            } else if (myProjectAccess.length > 1) {
+                populateAccessSelect('qwp_mgr_access');
             }
-            const p = isAdmin ? adminPreviewContext : currentProfile;
+            const p = effectiveProfile();
             document.getElementById('qwpProjectName').textContent = p ? p.project_name : '—';
             document.getElementById('qwpOrganization').textContent = p ? p.organization : '—';
         }
@@ -1352,13 +1444,13 @@
         }
 
         // --------------------------------------------------
-        // ADMIN: open/prefill any project+org's forms — used by the inline
-        // picker at the top of each of the three form views (reached
-        // directly from the sidebar) as well as from مدیریت کاربران.
+        // ADMIN or multi-project MANAGER: open/prefill any project+org's forms —
+        // used by the inline picker at the top of each of the three form views
+        // (reached directly from the sidebar) as well as from مدیریت کاربران.
         // --------------------------------------------------
         async function openCheckinPreview(project_name, organization) {
             if (!project_name || !organization) { alert('لطفاً ابتدا پروژه و سازمان را انتخاب کنید.'); return; }
-            adminPreviewContext = { project_name, organization };
+            pickedProjectContext = { project_name, organization };
             document.getElementById('ciProjectName').textContent = project_name;
             document.getElementById('ciOrganization').textContent = organization;
 
@@ -1374,7 +1466,7 @@
 
         async function openClientReportPreview(project_name) {
             if (!project_name) { alert('لطفاً ابتدا پروژه را انتخاب کنید.'); return; }
-            adminPreviewContext = { project_name, organization: 'کارفرما' };
+            pickedProjectContext = { project_name, organization: 'کارفرما' };
             document.getElementById('crProjectName').textContent = project_name;
 
             document.getElementById('clientReportForm').reset();
@@ -1388,7 +1480,7 @@
 
         async function openQwProposalPreview(project_name, organization) {
             if (!project_name || !organization) { alert('لطفاً ابتدا پروژه و سازمان را انتخاب کنید.'); return; }
-            adminPreviewContext = { project_name, organization };
+            pickedProjectContext = { project_name, organization };
             document.getElementById('qwpProjectName').textContent = project_name;
             document.getElementById('qwpOrganization').textContent = organization;
 
@@ -1404,6 +1496,11 @@
             if (data) populateQwProposalForm(data);
         }
 
+        function openPreviewFromAccessSelect(selectId, opener) {
+            const [project_name, organization] = document.getElementById(selectId).value.split('|||');
+            opener(project_name, organization);
+        }
+
         document.getElementById('ci_adm_load_btn').addEventListener('click', () => {
             openCheckinPreview(document.getElementById('ci_adm_project').value, document.getElementById('ci_adm_org').value);
         });
@@ -1412,6 +1509,15 @@
         });
         document.getElementById('qwp_adm_load_btn').addEventListener('click', () => {
             openQwProposalPreview(document.getElementById('qwp_adm_project').value, document.getElementById('qwp_adm_org').value);
+        });
+        document.getElementById('ci_mgr_load_btn').addEventListener('click', () => {
+            openPreviewFromAccessSelect('ci_mgr_access', openCheckinPreview);
+        });
+        document.getElementById('cr_mgr_load_btn').addEventListener('click', () => {
+            openPreviewFromAccessSelect('cr_mgr_access', (project_name) => openClientReportPreview(project_name));
+        });
+        document.getElementById('qwp_mgr_load_btn').addEventListener('click', () => {
+            openPreviewFromAccessSelect('qwp_mgr_access', openQwProposalPreview);
         });
 
         document.getElementById('ci_hse_incident').addEventListener('change', (e) => {
@@ -1535,7 +1641,7 @@
 
         document.getElementById('checkinForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (currentProfile.role === 'admin' && !adminPreviewContext) { alert('ابتدا از بالای صفحه پروژه و سازمان را انتخاب و «بارگذاری فرم» را بزنید.'); return; }
+            if (!effectiveProfile()) { alert('ابتدا از بالای صفحه پروژه و سازمان را انتخاب و «بارگذاری فرم» را بزنید.'); return; }
             const hseIncident = document.getElementById('ci_hse_incident').value === 'true';
             const hseNote = document.getElementById('ci_hse_note').value.trim();
             if (hseIncident && !hseNote) { alert('لطفاً توضیح رویداد HSE را وارد کنید.'); return; }
@@ -1594,7 +1700,7 @@
         // --------------------------------------------------
         document.getElementById('qwProposalForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (currentProfile.role === 'admin' && !adminPreviewContext) { alert('ابتدا از بالای صفحه پروژه و سازمان را انتخاب و «بارگذاری فرم» را بزنید.'); return; }
+            if (!effectiveProfile()) { alert('ابتدا از بالای صفحه پروژه و سازمان را انتخاب و «بارگذاری فرم» را بزنید.'); return; }
             const planStartIso = jalaliInputToIso(document.getElementById('ci_plan_start_date').value);
             const planTargetIso = jalaliInputToIso(document.getElementById('ci_plan_target_date').value);
             if (!planStartIso || !planTargetIso) { alert('تاریخ شروع/هدف برنامه Quick Win معتبر نیست. لطفاً به‌صورت ۱۴۰۵/۰۶/۰۱ وارد کنید.'); return; }
@@ -1663,7 +1769,7 @@
         // --------------------------------------------------
         document.getElementById('clientReportForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (currentProfile.role === 'admin' && !adminPreviewContext) { alert('ابتدا از بالای صفحه پروژه را انتخاب و «بارگذاری فرم» را بزنید.'); return; }
+            if (!effectiveProfile()) { alert('ابتدا از بالای صفحه پروژه را انتخاب و «بارگذاری فرم» را بزنید.'); return; }
             const startIso = jalaliInputToIso(document.getElementById('cr_start_date').value);
             const endIso = jalaliInputToIso(document.getElementById('cr_end_date').value);
             const milestoneIso = jalaliInputToIso(document.getElementById('cr_milestone_date').value);
@@ -1712,85 +1818,119 @@
         async function loadAdminData() {
             const { data: projects } = await _supabase.from('projects').select('*').order('name');
 
-            const projSelect = document.getElementById('admInviteProject');
             const projOptionsHtml = (projects || []).length
                 ? projects.map(p => `<option value="${esc(p.name)}">${esc(p.name)}</option>`).join('')
                 : '<option value="">-- ابتدا پروژه بسازید --</option>';
-            projSelect.innerHTML = projOptionsHtml;
+            document.getElementById('admInviteProject').innerHTML = projOptionsHtml;
+            document.getElementById('admGrantProject').innerHTML = projOptionsHtml;
 
             document.getElementById('admProjectsList').innerHTML = (projects || []).length
                 ? projects.map(p => `<div class="p-2 bg-slate-50 rounded-lg text-center">${esc(p.name)}</div>`).join('')
                 : '<p class="text-slate-400 col-span-full">هنوز پروژه‌ای تعریف نشده.</p>';
 
-            const { data: users } = await _supabase.from('app_users').select('*').order('project_name');
+            const { data: users } = await _supabase.from('app_users').select('*').order('email');
+            const { data: grants } = await _supabase.from('user_project_access').select('*').order('project_name');
             const { data: invites } = await _supabase.from('pending_invites').select('*').eq('consumed', false).order('project_name');
 
-            const projOptions = (projects || []).map(p => `<option value="${esc(p.name)}">${esc(p.name)}</option>`).join('');
+            const grantableUsers = (users || []).filter(u => u.role !== 'admin');
+            document.getElementById('admGrantUser').innerHTML = grantableUsers.length
+                ? grantableUsers.map(u => `<option value="${u.user_id}">${esc(u.email)}</option>`).join('')
+                : '<option value="">-- کاربری موجود نیست --</option>';
+
             const orgOptionsHtml = ['کارفرما', 'مشاور', 'پیمانکار'].map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
 
             const tbody = document.getElementById('admUsersTableBody');
             tbody.innerHTML = '';
 
             if (!(users || []).length && !(invites || []).length) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-3 text-center text-slate-400">هنوز کاربری دعوت نشده.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center text-slate-400">هنوز کاربری دعوت نشده.</td></tr>';
                 return;
             }
 
+            const grantsByUser = new Map();
+            (grants || []).forEach(g => {
+                if (!grantsByUser.has(g.user_id)) grantsByUser.set(g.user_id, []);
+                grantsByUser.get(g.user_id).push(g);
+            });
+
             (users || []).forEach(u => {
                 const isSelf = u.user_id === currentUser.id;
-                const wrap = document.createElement('tbody');
-                wrap.innerHTML = `<tr>
-                    <td class="p-1 border"><select class="adm-row-project p-1.5 border rounded text-xs w-full">${projOptions}</select></td>
-                    <td class="p-1 border"><select class="adm-row-org p-1.5 border rounded text-xs w-full">${orgOptionsHtml}</select></td>
-                    <td class="p-2 border" dir="ltr">${esc(u.email)}</td>
-                    <td class="p-1 border">
+                const userGrants = u.role === 'admin' ? [] : (grantsByUser.get(u.user_id) || []);
+                const rowCount = Math.max(userGrants.length, 1);
+
+                const identityCellsHtml = `
+                    <td class="p-2 border" dir="ltr" rowspan="${rowCount}">${esc(u.email)}</td>
+                    <td class="p-1 border" rowspan="${rowCount}">
                         <select class="adm-row-role p-1.5 border rounded text-xs w-full" ${isSelf ? 'disabled' : ''}>
                             <option value="manager">مدیر پروژه</option>
                             <option value="admin">ادمین سامانه</option>
                         </select>
                     </td>
-                    <td class="p-2 border">فعال ✅</td>
-                    <td class="p-1 border">
+                    <td class="p-2 border" rowspan="${rowCount}">فعال ✅</td>
+                    <td class="p-1 border" rowspan="${rowCount}">
                         ${isSelf
                             ? '<span class="text-slate-400">حساب شما</span>'
-                            : `<div class="flex gap-1">
-                                <button type="button" class="adm-save-btn bg-blue-100 hover:bg-blue-200 text-blue-900 px-2 py-1 rounded font-bold">💾 ذخیره</button>
-                                <button type="button" class="adm-delete-btn bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded font-bold">🗑 حذف</button>
-                              </div>`}
-                    </td>
-                </tr>`;
-                const row = wrap.firstElementChild;
-                row.querySelector('.adm-row-project').value = u.project_name;
-                row.querySelector('.adm-row-org').value = u.organization;
-                row.querySelector('.adm-row-role').value = u.role;
+                            : `<div class="flex flex-col gap-1">
+                                <button type="button" class="adm-save-role-btn bg-blue-100 hover:bg-blue-200 text-blue-900 px-2 py-1 rounded font-bold">💾 ذخیره نقش</button>
+                                <button type="button" class="adm-delete-user-btn bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded font-bold">🗑 حذف کاربر</button>
+                               </div>`}
+                    </td>`;
 
-                if (!isSelf) {
-                    row.querySelector('.adm-save-btn').addEventListener('click', () => {
-                        saveUserChanges(u.user_id, {
-                            project_name: row.querySelector('.adm-row-project').value,
-                            organization: row.querySelector('.adm-row-org').value,
-                            role: row.querySelector('.adm-row-role').value,
+                for (let i = 0; i < rowCount; i++) {
+                    const grant = userGrants[i];
+                    const wrap = document.createElement('tbody');
+                    wrap.innerHTML = `<tr>
+                        ${grant
+                            ? `<td class="p-1 border"><select class="adm-row-project p-1.5 border rounded text-xs w-full">${projOptionsHtml}</select></td>
+                               <td class="p-1 border"><select class="adm-row-org p-1.5 border rounded text-xs w-full">${orgOptionsHtml}</select></td>
+                               <td class="p-1 border"><div class="flex gap-1">
+                                   <button type="button" class="adm-save-grant-btn bg-blue-100 hover:bg-blue-200 text-blue-900 px-2 py-1 rounded font-bold" title="ذخیره این دسترسی">💾</button>
+                                   <button type="button" class="adm-delete-grant-btn bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded font-bold" title="حذف این دسترسی">🗑</button>
+                               </div></td>`
+                            : `<td class="p-2 border text-center text-slate-400">${u.role === 'admin' ? 'همه پروژه‌ها' : '—'}</td>
+                               <td class="p-2 border text-center text-slate-400">—</td>
+                               <td class="p-1 border"></td>`}
+                        ${i === 0 ? identityCellsHtml : ''}
+                    </tr>`;
+                    const row = wrap.firstElementChild;
+
+                    if (grant) {
+                        row.querySelector('.adm-row-project').value = grant.project_name;
+                        row.querySelector('.adm-row-org').value = grant.organization;
+                        row.querySelector('.adm-save-grant-btn').addEventListener('click', () => {
+                            saveGrantChanges(grant.id, {
+                                project_name: row.querySelector('.adm-row-project').value,
+                                organization: row.querySelector('.adm-row-org').value,
+                            });
                         });
-                    });
-                    row.querySelector('.adm-delete-btn').addEventListener('click', () => deleteAppUser(u.user_id, u.email));
+                        row.querySelector('.adm-delete-grant-btn').addEventListener('click', () => deleteGrant(grant.id, u.email, grant.project_name, grant.organization));
+                    }
+                    if (i === 0) {
+                        row.querySelector('.adm-row-role').value = u.role;
+                        if (!isSelf) {
+                            row.querySelector('.adm-save-role-btn').addEventListener('click', () => {
+                                saveUserRole(u.user_id, row.querySelector('.adm-row-role').value);
+                            });
+                            row.querySelector('.adm-delete-user-btn').addEventListener('click', () => deleteAppUser(u.user_id, u.email));
+                        }
+                    }
+                    tbody.appendChild(row);
                 }
-                tbody.appendChild(row);
             });
 
             (invites || []).forEach(i => {
                 const wrap = document.createElement('tbody');
                 wrap.innerHTML = `<tr class="bg-amber-50/40">
-                    <td class="p-1 border"><select class="adm-row-project p-1.5 border rounded text-xs w-full">${projOptions}</select></td>
+                    <td class="p-1 border"><select class="adm-row-project p-1.5 border rounded text-xs w-full">${projOptionsHtml}</select></td>
                     <td class="p-1 border"><select class="adm-row-org p-1.5 border rounded text-xs w-full">${orgOptionsHtml}</select></td>
+                    <td class="p-1 border"><div class="flex gap-1">
+                        <button type="button" class="adm-save-btn bg-blue-100 hover:bg-blue-200 text-blue-900 px-2 py-1 rounded font-bold" title="ذخیره تغییرات دعوت">💾</button>
+                        <button type="button" class="adm-delete-btn bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded font-bold" title="لغو دعوت">🗑</button>
+                    </div></td>
                     <td class="p-2 border" dir="ltr">${esc(i.email)}</td>
-                    <td class="p-2 border text-slate-400">—</td>
+                    <td class="p-2 border text-slate-400 text-center">—</td>
                     <td class="p-2 border">در انتظار ورود ⏳</td>
-                    <td class="p-1 border">
-                        <div class="flex gap-1">
-                            <button type="button" class="adm-save-btn bg-blue-100 hover:bg-blue-200 text-blue-900 px-2 py-1 rounded font-bold">💾 ذخیره</button>
-                            <button type="button" class="adm-delete-btn bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded font-bold">🗑 لغو دعوت</button>
-                        </div>
-                    </td>
+                    <td class="p-1 border"></td>
                 </tr>`;
                 const row = wrap.firstElementChild;
                 row.querySelector('.adm-row-project').value = i.project_name;
@@ -1806,18 +1946,45 @@
             });
         }
 
-        async function saveUserChanges(userId, patch) {
-            const { error } = await _supabase.from('app_users').update(patch).eq('user_id', userId);
-            if (error) { alert('خطا در ذخیره تغییرات: ' + error.message); return; }
-            alert('تغییرات کاربر ذخیره شد.');
+        async function saveUserRole(userId, role) {
+            const { error } = await _supabase.from('app_users').update({ role }).eq('user_id', userId);
+            if (error) { alert('خطا در ذخیره نقش: ' + error.message); return; }
+            alert('نقش کاربر ذخیره شد.');
             loadAdminData();
         }
 
         async function deleteAppUser(userId, email) {
-            if (!confirm(`آیا از حذف دسترسی «${email}» مطمئنید؟ این کار فقط دسترسی او به سامانه را حذف می‌کند؛ گزارش‌های قبلی او حذف نمی‌شود.`)) return;
+            if (!confirm(`آیا از حذف کامل حساب «${email}» مطمئنید؟ این کار حساب و همه دسترسی‌های پروژه‌ای او را حذف می‌کند؛ گزارش‌های قبلی او حذف نمی‌شود.`)) return;
+            await _supabase.from('user_project_access').delete().eq('user_id', userId);
             const { error } = await _supabase.from('app_users').delete().eq('user_id', userId);
             if (error) { alert('خطا در حذف کاربر: ' + error.message); return; }
             loadAdminData();
+        }
+
+        async function saveGrantChanges(grantId, patch) {
+            const { error } = await _supabase.from('user_project_access').update(patch).eq('id', grantId);
+            if (error) { alert('خطا در ذخیره دسترسی: ' + error.message); return; }
+            alert('دسترسی ذخیره شد.');
+            loadAdminData();
+        }
+
+        async function deleteGrant(grantId, email, projectName, organization) {
+            if (!confirm(`آیا از حذف دسترسی «${email}» به پروژه «${projectName}» (${organization}) مطمئنید؟`)) return;
+            const { error } = await _supabase.from('user_project_access').delete().eq('id', grantId);
+            if (error) { alert('خطا در حذف دسترسی: ' + error.message); return; }
+            loadAdminData();
+        }
+
+        async function grantExistingUserAccess() {
+            const userId = document.getElementById('admGrantUser').value;
+            const project_name = document.getElementById('admGrantProject').value;
+            const organization = document.getElementById('admGrantOrg').value;
+            const msg = document.getElementById('admMsg');
+            if (!userId || !project_name) { msg.textContent = 'کاربر و پروژه الزامی است.'; msg.className = 'text-xs text-red-600'; return; }
+            const { error } = await _supabase.from('user_project_access').insert([{ user_id: userId, project_name, organization }]);
+            msg.textContent = error ? 'خطا: ' + error.message : 'دسترسی جدید اضافه شد.';
+            msg.className = error ? 'text-xs text-red-600' : 'text-xs text-emerald-700';
+            if (!error) loadAdminData();
         }
 
         async function saveInviteChanges(inviteId, patch) {
@@ -1866,6 +2033,7 @@
 
         document.getElementById('admAddProjectBtn').addEventListener('click', addProject);
         document.getElementById('admInviteBtn').addEventListener('click', inviteManager);
+        document.getElementById('admGrantBtn').addEventListener('click', grantExistingUserAccess);
 
         // --------------------------------------------------
         // SELECTION: compare latest Quick Win proposal per project and pick one
