@@ -206,11 +206,19 @@
 
                     <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                         <h3 class="text-sm font-bold border-r-4 border-blue-900 pr-3">پیشرفت و زمان‌بندی</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div><label class="block text-xs font-semibold mb-1">% پیشرفت برنامه‌ای *</label><input type="number" step="any" id="ci_planned_progress" min="0" max="100" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                             <div><label class="block text-xs font-semibold mb-1">% پیشرفت فیزیکی (واقعی) *</label><input type="number" step="any" id="ci_physical_progress" min="0" max="100" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">% پیشرفت مالی *</label><input type="number" step="any" id="ci_financial_progress" min="0" max="100" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                             <div><label class="block text-xs font-semibold mb-1">تاریخ پیش‌بینی فعلی تکمیل پروژه (شمسی) *</label><input type="text" id="ci_forecast_date" required dir="ltr" placeholder="۱۴۰۵/۰۶/۰۸" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
+                        </div>
+
+                        <div class="pt-2 border-t space-y-2">
+                            <label class="block text-xs font-semibold">پیشرفت مالی — مبلغ خرج‌شده تا امروز (درصد از روی مبلغ فعلی قرارداد پروژه محاسبه می‌شود)</label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><label class="block text-xs font-semibold mb-1">خرج‌شده — ریالی (میلیارد ریال)</label><input type="number" step="any" min="0" id="ci_financial_spent_rial" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                                <div><label class="block text-xs font-semibold mb-1">خرج‌شده — ارزی (میلیون یورو)</label><input type="number" step="any" min="0" id="ci_financial_spent_eur" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            </div>
+                            <p id="ci_financial_progress_preview" class="text-xs text-slate-500">درصد پیشرفت مالی پس از وارد کردن مبلغ خرج‌شده، اینجا محاسبه و نمایش داده می‌شود.</p>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1262,7 +1270,55 @@
             const p = effectiveProfile();
             document.getElementById('ciProjectName').textContent = p ? p.project_name : '—';
             document.getElementById('ciOrganization').textContent = p ? p.organization : '—';
+            await loadCiContractTotals(p ? p.project_name : null);
+            updateFinancialProgressPreview();
         }
+
+        // Financial progress is calculated from spent-vs-contract-amount rather than
+        // typed directly, using the project's current contract amount (اطلاعات پایه
+        // پروژه, same for all three organizations) as the denominator for both the
+        // Rial and Euro portions; the two ratios are simple-averaged (a project priced
+        // in only one currency just uses that one ratio).
+        let ciContractTotals = null;
+
+        async function loadCiContractTotals(project_name) {
+            if (!project_name) { ciContractTotals = null; return; }
+            const { data } = await _supabase.from('client_reports')
+                .select('contract_current_amount_rial, contract_current_amount_eur')
+                .eq('project_name', project_name)
+                .order('created_at', { ascending: false }).limit(1).maybeSingle();
+            ciContractTotals = data || null;
+        }
+
+        function computeFinancialProgress(spentRial, spentEur) {
+            if (!ciContractTotals) return null;
+            const ratios = [];
+            if (ciContractTotals.contract_current_amount_rial > 0 && spentRial != null && !isNaN(spentRial)) {
+                ratios.push((spentRial / ciContractTotals.contract_current_amount_rial) * 100);
+            }
+            if (ciContractTotals.contract_current_amount_eur > 0 && spentEur != null && !isNaN(spentEur)) {
+                ratios.push((spentEur / ciContractTotals.contract_current_amount_eur) * 100);
+            }
+            if (!ratios.length) return null;
+            return ratios.reduce((a, b) => a + b, 0) / ratios.length;
+        }
+
+        function updateFinancialProgressPreview() {
+            const preview = document.getElementById('ci_financial_progress_preview');
+            if (!ciContractTotals || (!ciContractTotals.contract_current_amount_rial && !ciContractTotals.contract_current_amount_eur)) {
+                preview.textContent = 'مبلغ فعلی قرارداد این پروژه هنوز در «اطلاعات پایه پروژه» ثبت نشده — تا آن زمان درصد پیشرفت مالی محاسبه نمی‌شود.';
+                return;
+            }
+            const spentRialStr = document.getElementById('ci_financial_spent_rial').value;
+            const spentEurStr = document.getElementById('ci_financial_spent_eur').value;
+            const pct = computeFinancialProgress(spentRialStr ? Number(spentRialStr) : null, spentEurStr ? Number(spentEurStr) : null);
+            preview.textContent = pct != null
+                ? `≈ ${toPersianDigits(pct.toFixed(1))}٪ پیشرفت مالی (بر اساس مبلغ فعلی قرارداد پروژه)`
+                : 'درصد پیشرفت مالی پس از وارد کردن مبلغ خرج‌شده، اینجا محاسبه و نمایش داده می‌شود.';
+        }
+
+        document.getElementById('ci_financial_spent_rial').addEventListener('input', updateFinancialProgressPreview);
+        document.getElementById('ci_financial_spent_eur').addEventListener('input', updateFinancialProgressPreview);
 
         async function prefillClientReportForm() {
             const isAdmin = currentProfile.role === 'admin';
@@ -1314,7 +1370,9 @@
 
             document.getElementById('ci_planned_progress').value = row.planned_progress ?? '';
             document.getElementById('ci_physical_progress').value = row.physical_progress ?? '';
-            document.getElementById('ci_financial_progress').value = row.financial_progress ?? '';
+            document.getElementById('ci_financial_spent_rial').value = row.financial_spent_rial ?? '';
+            document.getElementById('ci_financial_spent_eur').value = row.financial_spent_eur ?? '';
+            updateFinancialProgressPreview();
             document.getElementById('ci_forecast_date').value = formatJalali(row.forecast_completion_date);
             document.getElementById('ci_manpower').value = row.manpower_count ?? '';
             document.getElementById('ci_weld_reject').value = row.weld_reject_rate ?? '';
@@ -1443,6 +1501,8 @@
 
             document.getElementById('checkinForm').reset();
             document.getElementById('ci_hse_note_wrap').classList.add('hidden');
+            await loadCiContractTotals(project_name);
+            updateFinancialProgressPreview();
 
             const { data } = await _supabase.from('check_ins').select('*')
                 .eq('project_name', project_name).eq('organization', organization)
@@ -1654,7 +1714,12 @@
 
                 planned_progress: Number(document.getElementById('ci_planned_progress').value),
                 physical_progress: Number(document.getElementById('ci_physical_progress').value),
-                financial_progress: Number(document.getElementById('ci_financial_progress').value),
+                financial_spent_rial: document.getElementById('ci_financial_spent_rial').value ? Number(document.getElementById('ci_financial_spent_rial').value) : null,
+                financial_spent_eur: document.getElementById('ci_financial_spent_eur').value ? Number(document.getElementById('ci_financial_spent_eur').value) : null,
+                financial_progress: computeFinancialProgress(
+                    document.getElementById('ci_financial_spent_rial').value ? Number(document.getElementById('ci_financial_spent_rial').value) : null,
+                    document.getElementById('ci_financial_spent_eur').value ? Number(document.getElementById('ci_financial_spent_eur').value) : null
+                ),
                 forecast_completion_date: forecastIso,
                 manpower_count: manpowerVal ? Number(manpowerVal) : null,
                 weld_reject_rate: weldVal ? Number(weldVal) : null,
