@@ -495,25 +495,11 @@
                         <h2 class="text-xl font-bold text-blue-900">🛠 مدیریت پروژه‌ها و کاربران</h2>
                         <button type="button" onclick="document.getElementById('setPasswordBtn').click()" class="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg font-bold">🔑 تنظیم/تغییر رمز عبور من</button>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="space-y-2">
-                            <h3 class="text-sm font-bold">تعریف پروژه جدید</h3>
-                            <div class="flex gap-2">
-                                <input id="admNewProject" type="text" placeholder="نام پروژه" class="flex-1 p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
-                                <button id="admAddProjectBtn" class="bg-blue-900 hover:bg-blue-800 text-white text-sm px-4 rounded-xl font-bold">افزودن</button>
-                            </div>
-                        </div>
-                        <div class="space-y-2">
-                            <h3 class="text-sm font-bold">پیش‌تعریف دسترسی برای ایمیلی که هنوز حساب ندارد</h3>
-                            <p class="text-xs text-slate-500">ایمیلی وارد کنید؛ بعداً حساب او را خودتان در Supabase (Authentication) با رمز عبور بسازید — در اولین ورود، این دسترسی خودکار فعال می‌شود. هیچ ایمیلی ارسال نمی‌شود.</p>
-                            <div class="grid grid-cols-3 gap-2">
-                                <select id="admInviteProject" class="p-2.5 border rounded-xl text-xs"></select>
-                                <select id="admInviteOrg" class="p-2.5 border rounded-xl text-xs">
-                                    <option value="کارفرما">کارفرما</option><option value="مشاور">مشاور</option><option value="پیمانکار">پیمانکار</option>
-                                </select>
-                                <input id="admInviteEmail" type="email" placeholder="ایمیل" dir="ltr" class="p-2.5 border rounded-xl text-xs">
-                            </div>
-                            <button id="admInviteBtn" class="w-full bg-amber-600 hover:bg-amber-500 text-white text-sm py-2 rounded-xl font-bold">ثبت دسترسی از پیش</button>
+                    <div>
+                        <h3 class="text-sm font-bold">تعریف پروژه جدید</h3>
+                        <div class="flex gap-2 mt-2">
+                            <input id="admNewProject" type="text" placeholder="نام پروژه" class="flex-1 p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
+                            <button id="admAddProjectBtn" class="bg-blue-900 hover:bg-blue-800 text-white text-sm px-4 rounded-xl font-bold">افزودن</button>
                         </div>
                     </div>
                     <p id="admMsg" class="text-xs"></p>
@@ -526,8 +512,8 @@
                 </div>
 
                 <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-3">
-                    <h3 class="text-sm font-bold">افزودن دسترسی پروژه به کاربر موجود</h3>
-                    <p class="text-xs text-slate-500">وقتی کاربری از قبل حساب دارد و باید علاوه‌بر پروژه فعلی‌اش، به یک پروژه/سازمان دیگر هم دسترسی داشته باشد (بدون نیاز به دعوت مجدد).</p>
+                    <h3 class="text-sm font-bold">افزودن دسترسی پروژه به کاربر</h3>
+                    <p class="text-xs text-slate-500">ابتدا حساب کاربر را با ایمیل و رمز عبور در Supabase (Authentication) بسازید — با تیک «Auto Confirm User». او یک‌بار با همان ایمیل/رمز در صفحه ورود سامانه وارد شود (کافی‌ست، حتی اگر پیام «دسترسی تعریف‌نشده» ببیند)؛ از همان لحظه در فهرست زیر ظاهر می‌شود و می‌توانید پروژه/سازمانش را از همین‌جا تعریف کنید. اگر بعداً بخواهد به پروژه دیگری هم دسترسی داشته باشد، دوباره از همین فرم استفاده کنید.</p>
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
                         <select id="admGrantUser" class="p-2.5 border rounded-xl text-xs md:col-span-2"></select>
                         <select id="admGrantProject" class="p-2.5 border rounded-xl text-xs"></select>
@@ -1058,32 +1044,17 @@
         async function resolveProfile() {
             let { data: profile } = await _supabase.from('app_users').select('*').eq('user_id', currentUser.id).maybeSingle();
 
-            // Any unconsumed invite for this email — whether this is a brand-new user
-            // (no profile yet) or an existing manager the admin just granted another
-            // project to — becomes a project/org grant, consumed right away. Matched
-            // case-insensitively: admInviteEmail lowercases on insert now, but this
-            // stays defensive against any row stored before that fix, or typed
-            // directly into the database.
-            const { data: invites } = await _supabase.from('pending_invites').select('*').ilike('email', currentUser.email).eq('consumed', false);
-
             if (!profile) {
-                // Covers both the invite flow above AND a user the admin created directly
-                // in Supabase Authentication (email+password, no invite row at all): either
-                // way, once they can authenticate, they get a minimal profile so they show
-                // up in مدیریت کاربران — the admin assigns role/project access from there.
+                // Anyone the admin has created directly in Supabase Authentication
+                // (email + password) gets a minimal profile the moment they can
+                // authenticate, so they show up in مدیریت کاربران — the admin
+                // assigns role and project/organization access from there, via
+                // «افزودن دسترسی پروژه به کاربر».
                 const { data: inserted, error } = await _supabase.from('app_users').insert([{
                     user_id: currentUser.id, email: currentUser.email, role: 'manager'
                 }]).select().maybeSingle();
                 if (error || !inserted) return;
                 profile = inserted;
-            }
-
-            if ((invites || []).length) {
-                const grants = invites.map(i => ({ user_id: currentUser.id, project_name: i.project_name, organization: i.organization }));
-                await _supabase.from('user_project_access').upsert(grants, { onConflict: 'user_id,project_name,organization' });
-                for (const i of invites) {
-                    await _supabase.from('pending_invites').update({ consumed: true }).eq('id', i.id);
-                }
             }
 
             currentProfile = profile;
@@ -1879,7 +1850,6 @@
             const projOptionsHtml = (projects || []).length
                 ? projects.map(p => `<option value="${esc(p.name)}">${esc(p.name)}</option>`).join('')
                 : '<option value="">-- ابتدا پروژه بسازید --</option>';
-            document.getElementById('admInviteProject').innerHTML = projOptionsHtml;
             document.getElementById('admGrantProject').innerHTML = projOptionsHtml;
 
             const projectsList = document.getElementById('admProjectsList');
@@ -2120,23 +2090,7 @@
             loadAdminData();
         }
 
-        async function inviteManager() {
-            const project_name = document.getElementById('admInviteProject').value;
-            const organization = document.getElementById('admInviteOrg').value;
-            const email = document.getElementById('admInviteEmail').value.trim().toLowerCase();
-            const msg = document.getElementById('admMsg');
-            if (!project_name || !email) { msg.textContent = 'پروژه و ایمیل الزامی است.'; msg.className = 'text-xs text-red-600'; return; }
-
-            const { error: insertError } = await _supabase.from('pending_invites').insert([{ project_name, organization, email }]);
-            msg.textContent = insertError
-                ? 'خطا: ' + insertError.message
-                : `دسترسی از پیش برای ${email} ثبت شد. حساب او را در Supabase (Authentication) با رمز عبور بسازید — در اولین ورود، این دسترسی خودکار فعال می‌شود.`;
-            msg.className = insertError ? 'text-xs text-red-600' : 'text-xs text-emerald-700';
-            if (!insertError) { document.getElementById('admInviteEmail').value = ''; loadAdminData(); }
-        }
-
         document.getElementById('admAddProjectBtn').addEventListener('click', addProject);
-        document.getElementById('admInviteBtn').addEventListener('click', inviteManager);
         document.getElementById('admGrantBtn').addEventListener('click', grantExistingUserAccess);
 
         // --------------------------------------------------
