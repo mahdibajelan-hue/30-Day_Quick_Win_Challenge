@@ -1060,8 +1060,11 @@
 
             // Any unconsumed invite for this email — whether this is a brand-new user
             // (no profile yet) or an existing manager the admin just granted another
-            // project to — becomes a project/org grant, consumed right away.
-            const { data: invites } = await _supabase.from('pending_invites').select('*').eq('email', currentUser.email).eq('consumed', false);
+            // project to — becomes a project/org grant, consumed right away. Matched
+            // case-insensitively: admInviteEmail lowercases on insert now, but this
+            // stays defensive against any row stored before that fix, or typed
+            // directly into the database.
+            const { data: invites } = await _supabase.from('pending_invites').select('*').ilike('email', currentUser.email).eq('consumed', false);
 
             if (!profile) {
                 // Covers both the invite flow above AND a user the admin created directly
@@ -2120,7 +2123,7 @@
         async function inviteManager() {
             const project_name = document.getElementById('admInviteProject').value;
             const organization = document.getElementById('admInviteOrg').value;
-            const email = document.getElementById('admInviteEmail').value.trim();
+            const email = document.getElementById('admInviteEmail').value.trim().toLowerCase();
             const msg = document.getElementById('admMsg');
             if (!project_name || !email) { msg.textContent = 'پروژه و ایمیل الزامی است.'; msg.className = 'text-xs text-red-600'; return; }
 
