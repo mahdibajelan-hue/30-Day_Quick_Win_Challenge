@@ -60,6 +60,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <style>
         body { font-family: 'Vazirmatn', sans-serif; }
+        canvas { max-width: 100%; }
         .brand-title { letter-spacing: 0.02em; }
         ::selection { background: #3b82f6; color: #fff; }
         *:focus-visible { outline: 2px solid #3b82f6; outline-offset: 1px; }
@@ -115,16 +116,16 @@
         <div class="flex-1 min-w-0 flex flex-col pb-16 md:pb-0">
             <!-- TOP BAR -->
             <header class="bg-white border-b border-slate-800 px-4 md:px-6 py-3 flex items-center justify-between gap-3 sticky top-0 z-20">
-                <div class="flex items-center gap-2 md:hidden">
-                    <img src="logo.png" alt="" class="h-7 w-7 object-contain" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
-                    <span class="font-bold text-xs text-slate-800">مجری طرح خط لوله ششم سراسری</span>
+                <div class="flex items-center gap-2 md:hidden min-w-0">
+                    <img src="logo.png" alt="" class="h-7 w-7 object-contain shrink-0" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
+                    <span class="font-bold text-xs text-slate-800 truncate">مجری طرح خط لوله ششم سراسری</span>
                 </div>
                 <p class="hidden md:block text-xs text-slate-500" id="headerSubtitle">سامانه تحول و پایش ۳۰ روزه پروژه‌ها</p>
-                <div class="flex items-center gap-3 text-slate-400 text-xs relative">
-                    <span id="topbarUserEmail" class="hidden font-bold text-slate-700 border-l pl-3" dir="ltr"></span>
-                    <span id="topbarDate" class="font-bold text-slate-600"></span>
-                    <span class="flex items-center gap-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="topbarClock"></span></span>
-                    <button id="setPasswordBtn" type="button" title="تنظیم/تغییر رمز عبور" class="text-base leading-none hover:opacity-70">🔑</button>
+                <div class="flex items-center gap-2 md:gap-3 text-slate-400 text-xs relative min-w-0">
+                    <span id="topbarUserEmail" class="hidden font-bold text-slate-700 border-l pl-2 md:pl-3 truncate max-w-[96px] sm:max-w-[160px] md:max-w-none" dir="ltr"></span>
+                    <span id="topbarDate" class="hidden sm:inline font-bold text-slate-600"></span>
+                    <span class="hidden sm:flex items-center gap-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="topbarClock"></span></span>
+                    <button id="setPasswordBtn" type="button" title="تنظیم/تغییر رمز عبور" class="text-base leading-none hover:opacity-70 shrink-0">🔑</button>
                     <div id="setPasswordPanel" class="hidden absolute left-0 top-full mt-2 z-30 bg-white rounded-2xl shadow-sm border p-4 space-y-2 w-64">
                         <p class="text-xs text-slate-500">برای ورود سریع‌تر در دفعات بعد (بدون نیاز به لینک ایمیل)، یک رمز عبور تنظیم کنید.</p>
                         <input id="newPassword" type="password" placeholder="رمز عبور جدید (حداقل ۶ کاراکتر)" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
@@ -615,7 +616,7 @@
                     <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                         <h3 class="text-sm font-bold">وضعیت زمان‌بندی پروژه‌ها</h3>
                         <p class="text-[11px] text-slate-400 leading-relaxed">بر اساس مقایسه «پیشرفت فیزیکی» با «پیشرفت برنامه‌ای»، میانگین سه رکن — از فرم اطلاعات تکمیلی</p>
-                        <div class="relative h-36 mx-auto" style="max-width:170px">
+                        <div class="relative h-36 mx-auto overflow-hidden" style="max-width:170px">
                             <canvas id="ovProgressDonut"></canvas>
                             <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                 <p class="text-xl font-extrabold" id="ovProgressDonutCenter">-</p>
@@ -634,7 +635,7 @@
 
                     <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                         <h3 class="text-sm font-bold">وضعیت Quick Win ها</h3>
-                        <div class="relative h-36 mx-auto" style="max-width:170px">
+                        <div class="relative h-36 mx-auto overflow-hidden" style="max-width:170px">
                             <canvas id="ovQwDonut"></canvas>
                             <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                 <p class="text-xl font-extrabold" id="ovQwDonutCenter">-</p>
@@ -658,7 +659,7 @@
 
                     <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                         <h3 class="text-sm font-bold">تصمیمات مورد نیاز مدیریت</h3>
-                        <div class="relative h-36 mx-auto" style="max-width:170px">
+                        <div class="relative h-36 mx-auto overflow-hidden" style="max-width:170px">
                             <canvas id="ovDecisionsDonut"></canvas>
                             <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                 <p class="text-xl font-extrabold" id="ovDecisionsDonutCenter">-</p>
@@ -733,7 +734,7 @@
                     </div>
                     <div class="space-y-3">
                         <h3 class="text-sm font-bold text-slate-800 border-r-4 border-amber-500 pr-3">وضعیت حوزه‌ها (X-Ray)</h3>
-                        <div class="relative h-32 mx-auto" style="max-width:150px">
+                        <div class="relative h-32 mx-auto overflow-hidden" style="max-width:150px">
                             <canvas id="reportXrayDonut"></canvas>
                             <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                 <p class="text-lg font-extrabold" id="reportXrayDonutCenter">-</p>
