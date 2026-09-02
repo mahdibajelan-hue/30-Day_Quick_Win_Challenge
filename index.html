@@ -151,6 +151,7 @@
         <div id="notAuthorizedScreen" class="hidden max-w-md mx-auto bg-white rounded-2xl shadow-sm border p-8 space-y-3 text-center mt-10">
             <h2 class="text-lg font-bold text-red-700">دسترسی تعریف نشده</h2>
             <p class="text-sm text-slate-600">ایمیل <b id="unauthEmail" dir="ltr"></b> هنوز به هیچ پروژه‌ای دسترسی ندارد. لطفاً با ادمین سامانه تماس بگیرید تا از بخش «مدیریت کاربران» نقش و دسترسی پروژه شما را تعریف کند.</p>
+            <p id="unauthTechError" class="hidden text-[10px] text-slate-400 break-words" dir="ltr"></p>
             <button id="unauthLogoutBtn" class="text-xs text-blue-700 underline">خروج و ورود با ایمیل دیگر</button>
         </div>
 
@@ -976,6 +977,7 @@
         // --------------------------------------------------
         let currentUser = null;
         let currentProfile = null;
+        let lastProfileError = null;
         let hasResolvedOnce = false;
         let pickedProjectContext = null; // { project_name, organization } — explicitly chosen by an admin, or by a manager with more than one project/org grant
         let myProjectAccess = []; // [{ project_name, organization }, ...] — this manager's grants (empty for admins, who aren't project-scoped)
@@ -1037,6 +1039,7 @@
             currentProfile = null;
             myProjectAccess = [];
             pickedProjectContext = null;
+            lastProfileError = null;
             if (currentUser) await resolveProfile();
             render();
         }
@@ -1053,7 +1056,7 @@
                 const { data: inserted, error } = await _supabase.from('app_users').insert([{
                     user_id: currentUser.id, email: currentUser.email, role: 'manager'
                 }]).select().maybeSingle();
-                if (error || !inserted) return;
+                if (error || !inserted) { lastProfileError = error ? error.message : 'ثبت پروفایل بدون خطا اما بدون بازگشت داده انجام شد.'; return; }
                 profile = inserted;
             }
 
@@ -1079,6 +1082,9 @@
 
             if (noUsableAccess) {
                 document.getElementById('unauthEmail').textContent = currentUser.email;
+                const techErrorEl = document.getElementById('unauthTechError');
+                techErrorEl.classList.toggle('hidden', !lastProfileError);
+                techErrorEl.textContent = lastProfileError ? ('خطای فنی: ' + lastProfileError) : '';
             }
 
             document.getElementById('headerSubtitle').textContent = currentProfile
