@@ -125,15 +125,42 @@
                     <span id="topbarUserEmail" class="hidden font-bold text-slate-700 border-l pl-2 md:pl-3 truncate max-w-[96px] sm:max-w-[160px] md:max-w-none" dir="ltr"></span>
                     <span id="topbarDate" class="hidden sm:inline font-bold text-slate-600"></span>
                     <span class="hidden sm:flex items-center gap-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="topbarClock"></span></span>
-                    <button id="setPasswordBtn" type="button" title="تنظیم/تغییر رمز عبور" class="text-base leading-none hover:opacity-70 shrink-0">🔑</button>
-                    <div id="setPasswordPanel" class="hidden absolute left-0 top-full mt-2 z-30 bg-white rounded-2xl shadow-sm border p-4 space-y-2 w-64">
+                    <button id="profileBtn" type="button" title="پروفایل من" class="text-base leading-none hover:opacity-70 shrink-0">👤</button>
+                </div>
+            </header>
+
+            <!-- PROFILE MODAL (personal info + password change) -->
+            <div id="profileModal" class="hidden fixed inset-0 z-40 bg-slate-900/50 flex items-center justify-center p-4">
+                <div class="bg-white rounded-2xl shadow-lg border w-full max-w-md max-h-[90vh] overflow-y-auto p-6 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-bold text-blue-900">👤 پروفایل من</h2>
+                        <button id="closeProfileModalBtn" type="button" class="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
+                    </div>
+
+                    <div class="space-y-3">
+                        <h3 class="text-sm font-bold text-slate-700">اطلاعات شخصی</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <input id="profFirstName" type="text" placeholder="نام" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
+                            <input id="profLastName" type="text" placeholder="نام خانوادگی" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
+                            <input id="profPhone" type="tel" placeholder="شماره تماس" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-right">
+                            <input id="profCompany" type="text" placeholder="نام شرکت" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
+                            <input id="profJobTitle" type="text" placeholder="سمت" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 sm:col-span-2">
+                        </div>
+                        <button id="saveProfileBtn" type="button" class="w-full bg-blue-900 hover:bg-blue-800 text-white text-sm py-2 rounded-xl font-bold">ذخیره اطلاعات</button>
+                        <p id="profileMsg" class="text-xs"></p>
+                    </div>
+
+                    <hr class="border-t">
+
+                    <div class="space-y-2">
+                        <h3 class="text-sm font-bold text-slate-700">تغییر رمز عبور</h3>
                         <p class="text-xs text-slate-500">برای ورود سریع‌تر در دفعات بعد (بدون نیاز به لینک ایمیل)، یک رمز عبور تنظیم کنید.</p>
                         <input id="newPassword" type="password" placeholder="رمز عبور جدید (حداقل ۶ کاراکتر)" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
-                        <button id="savePasswordBtn" type="button" class="w-full bg-blue-900 hover:bg-blue-800 text-white text-sm py-2 rounded-xl font-bold">ذخیره رمز عبور</button>
+                        <button id="savePasswordBtn" type="button" class="w-full bg-slate-800 hover:bg-slate-700 text-white text-sm py-2 rounded-xl font-bold">ذخیره رمز عبور</button>
                         <p id="setPasswordMsg" class="text-xs"></p>
                     </div>
                 </div>
-            </header>
+            </div>
 
             <main class="flex-1 p-4 md:p-6 space-y-6">
 
@@ -495,7 +522,7 @@
                 <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                     <div class="flex justify-between items-center flex-wrap gap-2">
                         <h2 class="text-xl font-bold text-blue-900">🛠 مدیریت پروژه‌ها و کاربران</h2>
-                        <button type="button" onclick="document.getElementById('setPasswordBtn').click()" class="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg font-bold">🔑 تنظیم/تغییر رمز عبور من</button>
+                        <button type="button" onclick="document.getElementById('profileBtn').click()" class="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg font-bold">👤 پروفایل من</button>
                     </div>
                     <div>
                         <h3 class="text-sm font-bold">تعریف پروژه جدید</h3>
@@ -1077,7 +1104,7 @@
             document.getElementById('authScreen').classList.toggle('hidden', !!currentUser);
             document.getElementById('notAuthorizedScreen').classList.toggle('hidden', !noUsableAccess);
             document.getElementById('appShell').classList.toggle('hidden', !currentProfile || noUsableAccess);
-            document.getElementById('setPasswordBtn').classList.toggle('hidden', !currentProfile);
+            document.getElementById('profileBtn').classList.toggle('hidden', !currentProfile);
             document.getElementById('topbarUserEmail').classList.toggle('hidden', !currentProfile);
             if (currentProfile) document.getElementById('topbarUserEmail').textContent = currentUser.email;
 
@@ -1202,8 +1229,39 @@
         document.getElementById('loginBtn').addEventListener('click', login);
         document.getElementById('unauthLogoutBtn').addEventListener('click', logout);
 
-        document.getElementById('setPasswordBtn').addEventListener('click', () => {
-            document.getElementById('setPasswordPanel').classList.toggle('hidden');
+        function openProfileModal() {
+            document.getElementById('profFirstName').value = currentProfile.first_name || '';
+            document.getElementById('profLastName').value = currentProfile.last_name || '';
+            document.getElementById('profPhone').value = currentProfile.phone || '';
+            document.getElementById('profCompany').value = currentProfile.company_name || '';
+            document.getElementById('profJobTitle').value = currentProfile.job_title || '';
+            document.getElementById('profileMsg').textContent = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('setPasswordMsg').textContent = '';
+            document.getElementById('profileModal').classList.remove('hidden');
+        }
+
+        document.getElementById('profileBtn').addEventListener('click', openProfileModal);
+        document.getElementById('closeProfileModalBtn').addEventListener('click', () => {
+            document.getElementById('profileModal').classList.add('hidden');
+        });
+        document.getElementById('profileModal').addEventListener('click', (e) => {
+            if (e.target.id === 'profileModal') document.getElementById('profileModal').classList.add('hidden');
+        });
+
+        document.getElementById('saveProfileBtn').addEventListener('click', async () => {
+            const msg = document.getElementById('profileMsg');
+            const patch = {
+                first_name: document.getElementById('profFirstName').value.trim() || null,
+                last_name: document.getElementById('profLastName').value.trim() || null,
+                phone: document.getElementById('profPhone').value.trim() || null,
+                company_name: document.getElementById('profCompany').value.trim() || null,
+                job_title: document.getElementById('profJobTitle').value.trim() || null,
+            };
+            const { error } = await _supabase.from('app_users').update(patch).eq('user_id', currentUser.id);
+            msg.textContent = error ? 'خطا: ' + error.message : 'اطلاعات با موفقیت ذخیره شد.';
+            msg.className = error ? 'text-xs text-red-600' : 'text-xs text-emerald-700';
+            if (!error) Object.assign(currentProfile, patch);
         });
 
         document.getElementById('savePasswordBtn').addEventListener('click', async () => {
