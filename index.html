@@ -423,15 +423,15 @@
                 </form>
             </div>
 
-            <!-- CLIENT (کارفرما) ONLY: Form 1 — basic project info + progress/schedule + milestone -->
+            <!-- Form 1 (any organization): basic project info + progress/schedule + milestone -->
             <div id="clientReportView" class="hidden space-y-6">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-1">
                     <h2 class="text-xl font-bold text-blue-900">📋 اطلاعات پایه و پیشرفت پروژه</h2>
-                    <p class="text-xs text-slate-500">فرم اول — تکمیل توسط برنامه‌ریزی و کنترل پروژه کارفرما، هر دوره. پروژه: <b id="crProjectName"></b></p>
+                    <p class="text-xs text-slate-500">فرم اول — تکمیل توسط تیم برنامه‌ریزی و کنترل پروژه، هر دوره. پروژه: <b id="crProjectName"></b></p>
                 </div>
 
                 <div id="cr_adminPicker" class="hidden bg-white p-4 rounded-2xl shadow-sm border space-y-2">
-                    <p class="text-xs text-slate-500">به‌عنوان ادمین، پروژه‌ای که می‌خواهید این فرم (مخصوص کارفرما) را برایش باز/ثبت کنید انتخاب کنید.</p>
+                    <p class="text-xs text-slate-500">به‌عنوان ادمین، پروژه‌ای که می‌خواهید این فرم را برایش باز/ثبت کنید انتخاب کنید.</p>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
                         <select id="cr_adm_project" class="p-2.5 border rounded-xl text-xs md:col-span-2"></select>
                         <button id="cr_adm_load_btn" type="button" class="bg-blue-900 hover:bg-blue-800 text-white text-xs px-4 rounded-xl font-bold">بارگذاری فرم</button>
@@ -439,7 +439,7 @@
                 </div>
 
                 <div id="cr_managerPicker" class="hidden bg-white p-4 rounded-2xl shadow-sm border space-y-2">
-                    <p class="text-xs text-slate-500">شما به چند پروژه (به‌عنوان کارفرما) دسترسی دارید — پروژه‌ای که می‌خواهید این فرم را برایش ثبت کنید انتخاب کنید.</p>
+                    <p class="text-xs text-slate-500">شما به چند پروژه دسترسی دارید — پروژه‌ای که می‌خواهید این فرم را برایش ثبت کنید انتخاب کنید.</p>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
                         <select id="cr_mgr_access" class="p-2.5 border rounded-xl text-xs md:col-span-2"></select>
                         <button id="cr_mgr_load_btn" type="button" class="bg-blue-900 hover:bg-blue-800 text-white text-xs px-4 rounded-xl font-bold">بارگذاری فرم</button>
@@ -743,7 +743,7 @@
                 </div>
 
                 <div id="reportClientCard" class="hidden print-card bg-white rounded-2xl shadow-sm border p-6 space-y-4">
-                    <h3 class="text-sm font-bold text-slate-800 border-r-4 border-blue-900 pr-3">اطلاعات پایه و پیشرفت پروژه (فرم کارفرما)</h3>
+                    <h3 class="text-sm font-bold text-slate-800 border-r-4 border-blue-900 pr-3">اطلاعات پایه و پیشرفت پروژه</h3>
                     <div id="reportClientKpis" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-right text-xs">
@@ -1135,10 +1135,10 @@
             mobileNav.innerHTML = '';
 
             const buttons = currentProfile.role === 'admin'
-                ? [['overview', 'نمای کلی'], ['clientReport', 'اطلاعات پایه پروژه (کارفرما)'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب Quick Win'], ['execReport', 'گزارش اجرایی'], ['admin', 'مدیریت کاربران']]
+                ? [['overview', 'نمای کلی'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب Quick Win'], ['execReport', 'گزارش اجرایی'], ['admin', 'مدیریت کاربران']]
                 : hasOrganization('کارفرما')
                     ? [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win'], ['selection', 'پیشنهادها']]
-                    : [['overview', 'وضعیت پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win']];
+                    : [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win']];
 
             buttons.forEach(([view, label], i) => {
                 const iconName = NAV_ICON[view] || 'grid';
@@ -1368,7 +1368,7 @@
                 await populateProjectSelect('cr_adm_project');
                 if (pickedProjectContext) document.getElementById('cr_adm_project').value = pickedProjectContext.project_name;
             } else if (myProjectAccess.length > 1) {
-                populateAccessSelect('cr_mgr_access', 'کارفرما');
+                populateAccessSelect('cr_mgr_access');
             }
             const p = effectiveProfile();
             document.getElementById('crProjectName').textContent = p ? p.project_name : '—';
@@ -1857,7 +1857,7 @@
         });
 
         // --------------------------------------------------
-        // CLIENT (کارفرما) ONLY: Form 1 — basic project info + progress/schedule
+        // Form 1 (any organization): basic project info + progress/schedule
         // --------------------------------------------------
         document.getElementById('clientReportForm').addEventListener('submit', async (e) => {
             e.preventDefault();
