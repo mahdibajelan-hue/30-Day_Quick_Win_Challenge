@@ -1105,8 +1105,16 @@
             document.getElementById('notAuthorizedScreen').classList.toggle('hidden', !noUsableAccess);
             document.getElementById('appShell').classList.toggle('hidden', !currentProfile || noUsableAccess);
             document.getElementById('profileBtn').classList.toggle('hidden', !currentProfile);
-            document.getElementById('topbarUserEmail').classList.toggle('hidden', !currentProfile);
-            if (currentProfile) document.getElementById('topbarUserEmail').textContent = currentUser.email;
+            const topbarNameEl = document.getElementById('topbarUserEmail');
+            topbarNameEl.classList.toggle('hidden', !currentProfile);
+            if (currentProfile) {
+                const fullName = currentProfile.first_name && currentProfile.last_name
+                    ? `${currentProfile.first_name} ${currentProfile.last_name}` : null;
+                topbarNameEl.textContent = fullName || currentUser.email;
+                topbarNameEl.setAttribute('dir', fullName ? 'rtl' : 'ltr');
+                topbarNameEl.classList.toggle('text-blue-900', !!fullName);
+                topbarNameEl.classList.toggle('text-slate-700', !fullName);
+            }
 
             if (noUsableAccess) {
                 document.getElementById('unauthEmail').textContent = currentUser.email;
