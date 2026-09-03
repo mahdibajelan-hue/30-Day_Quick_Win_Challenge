@@ -2186,10 +2186,24 @@
             loadAdminData();
         }
 
+        // Every table below is keyed by plain-text project_name (no foreign
+        // key), so deleting a project's row from `projects` alone would leave
+        // all of this historical data orphaned but still fully visible on
+        // every aggregate view (Overview, انتخاب Quick Win, پیگیری اجرا,
+        // گزارش اجرایی) — those views read straight from these tables and
+        // never cross-check the current `projects` list. So "حذف پروژه"
+        // purges them all; app_users is deliberately excluded (those are
+        // user accounts, not project data).
+        const PROJECT_DATA_TABLES = ['check_ins', 'client_reports', 'quick_win_decisions', 'quick_win_progress', 'quick_win_evaluations'];
+
         async function deleteProject(name) {
-            if (!confirm(`آیا از حذف پروژه «${name}» مطمئنید؟ این کار پروژه را از فهرست حذف و دسترسی همه کاربران به آن را لغو می‌کند؛ گزارش‌ها و اطلاعات قبلی‌اش حذف نخواهد شد.`)) return;
+            if (!confirm(`آیا از حذف کامل و همیشگی پروژه «${name}» مطمئنید؟ این کار غیرقابل بازگشت است: دسترسی همه کاربران به آن لغو می‌شود و تمام گزارش‌های ثبت‌شده‌اش (اطلاعات پایه، اطلاعات تکمیلی، پیشنهادهای Quick Win، تصمیمات و پیگیری اجرا) برای همیشه پاک خواهد شد.`)) return;
             await _supabase.from('user_project_access').delete().eq('project_name', name);
             await _supabase.from('pending_invites').delete().eq('project_name', name);
+            for (const table of PROJECT_DATA_TABLES) {
+                const { error } = await _supabase.from(table).delete().eq('project_name', name);
+                if (error) { alert(`خطا در حذف داده‌های «${table}»: ` + error.message + '\nپروژه هنوز به‌طور کامل حذف نشده؛ دوباره تلاش کنید.'); return; }
+            }
             const { error } = await _supabase.from('projects').delete().eq('name', name);
             if (error) { alert('خطا در حذف پروژه: ' + error.message); return; }
             loadAdminData();
