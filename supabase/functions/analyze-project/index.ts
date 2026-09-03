@@ -36,7 +36,7 @@ serve(async (req) => {
       }
     }
 
-    // ۲. تعریف ساختار پرامپت
+    // ۲. تعریف پرامپت سخت‌گیرانه برای JSON
     const systemInstruction = `تو یک مدیر ارشد PMO هستی. فقط و فقط یک شیء JSON معتبر طبق فرمت درخواستی تولید کن. هیچ متن اضافی یا توضیحات Markdown خارج از JSON ارسال نکن.`;
 
     const userPrompt = `پروژه: ${project_name}
@@ -85,42 +85,43 @@ serve(async (req) => {
 
     let jsonString = "";
 
-    // ۳. ارسال به سرویس هوش مصنوعی
+    // ۳. فراخوانی API با مدل رسمی gemini-2.5-flash
     if (provider === "gemini") {
       const apiKey = Deno.env.get("GEMINI_API_KEY");
       if (!apiKey) {
-        throw new Error("کلید GEMINI_API_KEY در Supabase تعریف نشده است.");
+        throw new Error("کلید GEMINI_API_KEY در تنظیمات Supabase ست نشده است.");
       }
 
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: `${systemInstruction}\n\n${userPrompt}` }] }],
+          system_instruction: { parts: [{ text: systemInstruction }] },
+          contents: [{ parts: [{ text: userPrompt }] }],
           generationConfig: {
-            responseMimeType: "application/json"
+            response_mime_type: "application/json",
+            temperature: 0.2
           }
         }),
       });
 
       const geminiData = await res.json();
 
-      // برطرف کردن خطای خواندن candidates[0]
       if (geminiData.error) {
         throw new Error(`خطای گوگل جمینای: ${geminiData.error.message}`);
       }
 
       if (!geminiData.candidates || geminiData.candidates.length === 0) {
-        throw new Error("پاسخی از مدل Gemini دریافت نشد یا پاسخ توسط فیلتر محتوا مسدود شده است.");
+        throw new Error("پاسخی از مدل Gemini دریافت نشد.");
       }
 
       jsonString = geminiData.candidates[0]?.content?.parts[0]?.text || "";
     } else {
       const apiKey = Deno.env.get("OPENAI_API_KEY");
       if (!apiKey) {
-        throw new Error("کلید OPENAI_API_KEY در Supabase تعریف نشده است.");
+        throw new Error("کلید OPENAI_API_KEY در تنظیمات Supabase ست نشده است.");
       }
 
       const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -132,6 +133,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: "gpt-4o-mini",
           response_format: { type: "json_object" },
+          temperature: 0.2,
           messages: [
             { role: "system", content: systemInstruction },
             { role: "user", content: userPrompt }
@@ -147,7 +149,7 @@ serve(async (req) => {
       jsonString = openaiData.choices[0]?.message?.content || "";
     }
 
-    // ۴. پاک‌سازی و Pars کردن JSON
+    // ۴. Pars و اعتبارسنجی خروجی
     const cleanJson = jsonString.replace(/```json/g, "").replace(/```/g, "").trim();
     if (!cleanJson) {
       throw new Error("خروجی هوش مصنوعی خالی است.");
@@ -155,7 +157,7 @@ serve(async (req) => {
 
     const parsedData = JSON.parse(cleanJson);
 
-    // ۵. ذخیره در دیتابیس
+    // ۵. ذخیره‌سازی در دیتابیس
     await supabase.from("ai_analyses").insert({
       project_name,
       provider,
