@@ -156,9 +156,8 @@ Deno.serve(async (req) => {
 - پاسخ‌دهنده: ${c.respondent || "-"} (${c.respondent_position || "-"})
 - وضعیت حوزه‌ها (X-Ray): ${summarizeStatusGroup(c.area_status)}
 - وضعیت جبهه‌های کاری: ${summarizeStatusGroup(c.work_fronts)}
-- پیشرفت برنامه‌ای: ${c.planned_progress ?? "-"}% | پیشرفت فیزیکی واقعی: ${c.physical_progress}% | پیشرفت مالی: ${c.financial_progress}%
+- پیشرفت برنامه‌ای: ${c.planned_progress ?? "-"}% | پیشرفت فیزیکی واقعی: ${c.physical_progress}%
 - تاریخ پیش‌بینی فعلی تکمیل: ${c.forecast_completion_date}
-- نیروی انسانی مستقر: ${c.manpower_count ?? "-"} | نرخ ردی جوش: ${c.weld_reject_rate ?? "-"}%
 - رویداد HSE: ${c.hse_incident ? "بله - " + c.hse_incident_note : "خیر"}
 - سه مسئله اصلی:\n${summarizeIssues(c.issues)}
 - سه ریسک اصلی:\n${summarizeRisks(c.risks)}
