@@ -31,6 +31,20 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
+// Both Gemini and OpenAI occasionally answer a request with 503 ("model
+// overloaded" / "try again later") purely due to transient load on their
+// end — the request itself was never even processed, so retrying costs
+// almost nothing. Only 503 is retried; any other status (auth, quota,
+// bad request, ...) is a real error retrying won't fix.
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 2): Promise<Response> {
+  let res: Response;
+  for (let attempt = 0; ; attempt++) {
+    res = await fetch(url, options);
+    if (res.ok || res.status !== 503 || attempt >= maxRetries) return res;
+    await new Promise((r) => setTimeout(r, 800 * 2 ** attempt));
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: CORS_HEADERS });
@@ -218,7 +232,7 @@ ${progressText}
         return jsonResponse({ error: "کلید OpenAI هنوز در تنظیمات Supabase (Secrets) ثبت نشده است." }, 500);
       }
 
-      const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+      const aiRes = await fetchWithRetry("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -233,6 +247,9 @@ ${progressText}
       });
 
       if (!aiRes.ok) {
+        if (aiRes.status === 503) {
+          return jsonResponse({ error: "سرویس ChatGPT در حال حاضر با ترافیک بالا مواجه است. این وضعیت موقتی است و از سمت OpenAI رخ می‌دهد، نه سامانه ما — لطفاً چند لحظه دیگر دوباره تلاش کنید." }, 503);
+        }
         const errText = await aiRes.text();
         return jsonResponse({ error: "خطا در فراخوانی ChatGPT: " + errText }, 502);
       }
@@ -248,7 +265,7 @@ ${progressText}
       // Check ai.google.dev/models for the current recommended free-tier
       // model name if this one starts returning a "model not found" error
       // (Google periodically retires older model versions).
-      const aiRes = await fetch(
+      const aiRes = await fetchWithRetry(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`,
         {
           method: "POST",
@@ -260,6 +277,9 @@ ${progressText}
       );
 
       if (!aiRes.ok) {
+        if (aiRes.status === 503) {
+          return jsonResponse({ error: "سرویس Gemini در حال حاضر با ترافیک بالا مواجه است. این وضعیت موقتی است و از سمت Google رخ می‌دهد، نه سامانه ما — لطفاً چند لحظه دیگر دوباره تلاش کنید." }, 503);
+        }
         const errText = await aiRes.text();
         return jsonResponse({ error: "خطا در فراخوانی Gemini: " + errText }, 502);
       }
