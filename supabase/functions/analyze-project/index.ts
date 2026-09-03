@@ -254,7 +254,8 @@ ${progressText}
       }
 
       const aiData = await aiRes.json();
-      analysisText = aiData.choices?.[0]?.message?.content || "پاسخی دریافت نشد.";
+      const content = aiData.choices?.[0]?.message?.content;
+      analysisText = typeof content === "string" && content ? content : "پاسخی دریافت نشد.";
     } else {
       const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
       if (!GEMINI_API_KEY) {
@@ -284,7 +285,14 @@ ${progressText}
       }
 
       const aiData = await aiRes.json();
-      analysisText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "پاسخی دریافت نشد.";
+      // A response can legitimately carry more than one part (e.g. a
+      // reasoning/thought part alongside the answer) — join every part
+      // that actually is text instead of assuming parts[0] is it, so a
+      // shape Google changes on us never hands the frontend a non-string.
+      const parts = aiData.candidates?.[0]?.content?.parts;
+      // deno-lint-ignore no-explicit-any
+      const joinedText = Array.isArray(parts) ? parts.map((p: any) => (typeof p?.text === "string" ? p.text : "")).join("") : "";
+      analysisText = joinedText || "پاسخی دریافت نشد.";
     }
 
     return jsonResponse({ analysis: analysisText, provider: chosenProvider });
