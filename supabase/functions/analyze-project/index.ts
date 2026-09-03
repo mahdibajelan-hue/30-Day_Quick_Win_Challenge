@@ -18,7 +18,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // 1. بررسی کش در دیتابیس
+    // ۱. بررسی کش دیتابیس
     if (!force_refresh) {
       const { data: cached } = await supabase
         .from("ai_analyses")
@@ -26,7 +26,7 @@ serve(async (req) => {
         .eq("project_name", project_name)
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (cached?.analysis_json) {
         return new Response(
@@ -36,75 +36,62 @@ serve(async (req) => {
       }
     }
 
-    // 2. پرامپت سخت‌گیرانه برای تولید STRICT JSON
-    const systemInstruction = `تو یک مدیر ارشد PMO و تحلیل‌گر داده پروژه‌های عمرانی/صنعتی هستی.
-وظیفه تو تحلیل گزارش‌های سه‌گانه (کارفرما، مشاور، پیمانکار) و تولید یک خروجی JSON کاملاً ساختاریافته است.
-تو باید حتماً خروجی را فقط به صورت JSON معتبر برگردانی. هیچ متن اضافی، توضیح یا کد Markdown نباید خارج از ساختار JSON وجود داشته باشد.`;
+    // ۲. تعریف ساختار پرامپت
+    const systemInstruction = `تو یک مدیر ارشد PMO هستی. فقط و فقط یک شیء JSON معتبر طبق فرمت درخواستی تولید کن. هیچ متن اضافی یا توضیحات Markdown خارج از JSON ارسال نکن.`;
 
-    const userPrompt = `پروژه مورد بررسی: ${project_name}
-
-اطلاعات گزارش‌های ۳ طرف را تحلیل کن و دقیقا ساختار JSON زیر را پر کن:
-
+    const userPrompt = `پروژه: ${project_name}
+    
+یک گزارش تحلیلی کامل در قالب دقیق JSON زیر برگردان:
 {
   "kpis": {
-    "project_status_color": "RED", // یکی از مقادیر: RED یا YELLOW یا GREEN
-    "status_title": "عنوان کوتاه وضعیت پروژه (مثلاً: هشدار جدی تأخیر و توقف جبهه کاری)",
-    "divergence_score": 65, // عدد بین 0 تا 100 میزان اختلاف گزارش‌ها
-    "schedule_variance_days": 62, // عدد انحراف زمانی به روز
-    "overall_progress_planned": 82, // درصد برنامه‌ای
-    "overall_progress_actual": 76 // درصد واقعی
+    "project_status_color": "RED",
+    "status_title": "هشدار جدی تأخیر و توقف جبهه کاری",
+    "divergence_score": 65,
+    "schedule_variance_days": 62,
+    "overall_progress_planned": 82,
+    "overall_progress_actual": 76
   },
   "three_perspectives": [
-    {
-      "stakeholder": "کارفرما",
-      "claimed_issue": "تأخیر در تأمین شیرآلات و عقب‌ماندگی از برنامه",
-      "severity": "High" // Critical, High, Medium, Low
-    },
-    {
-      "stakeholder": "مشاور",
-      "claimed_issue": "عدم تأیید نقشه‌های As-built و تأخیر در جبهه کاری قطعه ۳",
-      "severity": "Critical"
-    },
-    {
-      "stakeholder": "پیمانکار",
-      "claimed_issue": "توقف عملیات به دلیل وجود معارضین ملکی در کیلومتر ۳۲ الی ۳۴",
-      "severity": "Critical"
-    }
+    { "stakeholder": "کارفرما", "claimed_issue": "تأخیر در تأمین شیرآلات", "severity": "High" },
+    { "stakeholder": "مشاور", "claimed_issue": "تأخیر در تأیید نقشه‌های As-built", "severity": "Critical" },
+    { "stakeholder": "پیمانکار", "claimed_issue": "وجود معارضین ملکی", "severity": "Critical" }
   ],
   "root_cause_analysis": {
-    "primary_root_cause": "علت اصلی و ریشه‌ای تمامی مشکلات (مثلاً: عدم آزادسازی زمین و توقف گمرک)",
-    "analysis_summary": "خلاصه دو جمله‌ای از تحلیل ریشه‌ای پایش پروژه"
+    "primary_root_cause": "عدم آزادسازی زمین و معطلی در گمرک",
+    "analysis_summary": "بررسی ریشه‌ای نشان‌دهنده لزوم مداخله فوری مدیریت ارشد است."
   },
   "risk_assessment": {
-    "top_bottleneck": "بحرانی‌ترین گلوگاه فعلی (مثلاً: معارض ملکی کیلومتر ۳۲ الی ۳۴)",
-    "probability": 5, // 1 تا 5
-    "impact": 5, // 1 تا 5
+    "top_bottleneck": "معارض ملکی کیلومتر ۳۲ الی ۳۴",
+    "probability": 5,
+    "impact": 5,
     "risk_score": 25
   },
   "quick_win": {
-    "title": "عنوان پیشنهاد Quick Win اصلی",
+    "title": "رفع معارض ملکی قطعه ۳",
     "timeframe_days": 15,
     "owner": "مدیر پروژه کارفرما",
-    "expected_impact": "میزان تأثیرگذاری (مثلاً کاهش ۲۵ روز تأخیر و رفع ریسک حقوقی)",
-    "cost_impact": "کم‌هزینه / بودجه مصوب"
+    "expected_impact": "کاهش ۲۵ روز تأخیر",
+    "cost_impact": "بودجه مصوب"
   },
   "executive_decisions": [
-    "تصمیم فوری ۱ برای C-Level",
-    "تصمیم فوری ۲ برای C-Level"
+    "تصویب بودجه تکمیلی تملک اراضی",
+    "مکاتبه فوری با مدیریت گمرک"
   ],
   "action_plan_30_days": [
-    { "week": "هفته اول", "action": "شرح اقدام اول", "owner": "مسئول" },
-    { "week": "هفته دوم", "action": "شرح اقدام دوم", "owner": "مسئول" },
-    { "week": "هفته سوم", "action": "شرح اقدام سوم", "owner": "مسئول" },
-    { "week": "هفته چهارم", "action": "شرح اقدام چهارم", "owner": "مسئول" }
+    { "week": "هفته اول", "action": "تکمیل مذاکرات ملکی", "owner": "کارفرما" },
+    { "week": "هفته دوم", "action": "ترخیص کالا از گمرک", "owner": "پیمانکار/کارفرما" }
   ]
 }`;
 
     let jsonString = "";
 
-    // 3. فراخوانی Gemini با فعال‌سازی response_mime_type: "application/json"
+    // ۳. ارسال به سرویس هوش مصنوعی
     if (provider === "gemini") {
       const apiKey = Deno.env.get("GEMINI_API_KEY");
+      if (!apiKey) {
+        throw new Error("کلید GEMINI_API_KEY در Supabase تعریف نشده است.");
+      }
+
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
       const res = await fetch(url, {
@@ -113,16 +100,29 @@ serve(async (req) => {
         body: JSON.stringify({
           contents: [{ parts: [{ text: `${systemInstruction}\n\n${userPrompt}` }] }],
           generationConfig: {
-            response_mime_type: "application/json" // اجبار هوش مصنوعی به تولید JSON
+            responseMimeType: "application/json"
           }
         }),
       });
 
       const geminiData = await res.json();
-      jsonString = geminiData.candidates[0].content.parts[0].text;
+
+      // برطرف کردن خطای خواندن candidates[0]
+      if (geminiData.error) {
+        throw new Error(`خطای گوگل جمینای: ${geminiData.error.message}`);
+      }
+
+      if (!geminiData.candidates || geminiData.candidates.length === 0) {
+        throw new Error("پاسخی از مدل Gemini دریافت نشد یا پاسخ توسط فیلتر محتوا مسدود شده است.");
+      }
+
+      jsonString = geminiData.candidates[0]?.content?.parts[0]?.text || "";
     } else {
-      // فراخوانی OpenAI با response_format json_object
       const apiKey = Deno.env.get("OPENAI_API_KEY");
+      if (!apiKey) {
+        throw new Error("کلید OPENAI_API_KEY در Supabase تعریف نشده است.");
+      }
+
       const res = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -140,14 +140,22 @@ serve(async (req) => {
       });
 
       const openaiData = await res.json();
-      jsonString = openaiData.choices[0].message.content;
+      if (openaiData.error) {
+        throw new Error(`خطای OpenAI: ${openaiData.error.message}`);
+      }
+
+      jsonString = openaiData.choices[0]?.message?.content || "";
     }
 
-    // پاک‌سازی احتمالی متون اضافی
+    // ۴. پاک‌سازی و Pars کردن JSON
     const cleanJson = jsonString.replace(/```json/g, "").replace(/```/g, "").trim();
+    if (!cleanJson) {
+      throw new Error("خروجی هوش مصنوعی خالی است.");
+    }
+
     const parsedData = JSON.parse(cleanJson);
 
-    // 4. ذخیره در دیتابیس
+    // ۵. ذخیره در دیتابیس
     await supabase.from("ai_analyses").insert({
       project_name,
       provider,
@@ -162,7 +170,7 @@ serve(async (req) => {
   } catch (err) {
     return new Response(
       JSON.stringify({ error: err.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
