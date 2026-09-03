@@ -85,14 +85,14 @@ serve(async (req) => {
 
     let jsonString = "";
 
-    // ۳. فراخوانی API با مدل رسمی gemini-2.5-flash
+    // ۳. فراخوانی API با مدل رسمی gemini-3.6-flash
     if (provider === "gemini") {
       const apiKey = Deno.env.get("GEMINI_API_KEY");
       if (!apiKey) {
         throw new Error("کلید GEMINI_API_KEY در تنظیمات Supabase ست نشده است.");
       }
 
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
 
       const res = await fetch(url, {
         method: "POST",
