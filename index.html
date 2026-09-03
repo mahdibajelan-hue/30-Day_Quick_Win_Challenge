@@ -191,6 +191,7 @@
                 <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-1">
                     <h2 class="text-xl font-bold text-blue-900">📝 اطلاعات تکمیلی پروژه</h2>
                     <p class="text-xs text-slate-500">پروژه: <b id="ciProjectName"></b> — سازمان: <b id="ciOrganization"></b></p>
+                    <p class="text-[11px] text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mt-1">⚠️ اطلاعات این فرم صرفاً جهت عارضه‌یابی و کمک مدیریتی به پروژه است و هیچ‌گونه استناد حقوقی یا ادعای قراردادی (Claim) بر اساس آن مسموع نخواهد بود.</p>
                 </div>
 
                 <div id="ci_adminPicker" class="hidden bg-white p-4 rounded-2xl shadow-sm border space-y-2">
@@ -315,6 +316,7 @@
                 <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-1">
                     <h2 class="text-xl font-bold text-blue-900">🎯 پیشنهاد Quick Win</h2>
                     <p class="text-xs text-slate-500">پروژه: <b id="qwpProjectName"></b> — سازمان: <b id="qwpOrganization"></b></p>
+                    <p class="text-[11px] text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mt-1">⚠️ اطلاعات این فرم صرفاً جهت عارضه‌یابی و کمک مدیریتی به پروژه است و هیچ‌گونه استناد حقوقی یا ادعای قراردادی (Claim) بر اساس آن مسموع نخواهد بود.</p>
                 </div>
 
                 <div id="qwp_adminPicker" class="hidden bg-white p-4 rounded-2xl shadow-sm border space-y-2">
@@ -392,6 +394,9 @@
                         <div id="ci_support_types" class="flex flex-wrap gap-2"></div>
                         <input type="text" id="ci_support_other" placeholder="توضیح «سایر»" class="hidden w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
                         <div><label class="block text-xs font-semibold mb-1">شرح حمایت مورد نیاز *</label><textarea id="ci_qw_support" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></textarea></div>
+
+                        <h4 class="text-xs font-bold text-slate-600 pt-2 border-t">اقدام متقابل شما</h4>
+                        <div><label class="block text-xs font-semibold mb-1">در صورت صدور این مجوز یا تأمین این حمایت از سوی مجری طرح، تعهد مشخص شما برای پیشبرد پروژه در ۳۰ روز چیست؟ *</label><textarea id="ci_qw_counter_commitment" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></textarea></div>
 
                         <h4 class="text-xs font-bold text-slate-600 pt-2 border-t">برآورد زمان</h4>
                         <select id="ci_time_estimate" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
@@ -1435,6 +1440,7 @@
             document.getElementById('ci_support_other').value = row.support_other_text || '';
             document.getElementById('ci_support_other').classList.toggle('hidden', !supportSet.has('سایر'));
             document.getElementById('ci_qw_support').value = row.support_needed || '';
+            document.getElementById('ci_qw_counter_commitment').value = row.counter_commitment || '';
 
             if (row.time_estimate) document.getElementById('ci_time_estimate').value = row.time_estimate;
             document.getElementById('ci_final_reflection').value = row.final_reflection || '';
@@ -1782,6 +1788,7 @@
                 support_types: collectCheckboxGroup('support-cb'),
                 support_other_text: document.getElementById('ci_support_other').value.trim() || null,
                 support_needed: document.getElementById('ci_qw_support').value,
+                counter_commitment: document.getElementById('ci_qw_counter_commitment').value,
 
                 time_estimate: document.getElementById('ci_time_estimate').value,
                 final_reflection: document.getElementById('ci_final_reflection').value
@@ -2218,6 +2225,7 @@
                     <p class="flex gap-1.5"><span class="font-bold shrink-0">⚡ اقدام:</span><span class="text-slate-600">${esc(prop.action_details)}</span></p>
                     <p class="flex gap-1.5"><span class="font-bold shrink-0 text-emerald-700">🎯 نتیجه ۳۰ روزه:</span><span class="text-slate-600">${esc(prop.tangible_result)}</span></p>
                     <p class="flex gap-1.5"><span class="font-bold shrink-0 ${style.text}">🤝 حمایت لازم:</span><span class="text-slate-600">${esc(prop.support_needed)}</span></p>
+                    <p class="flex gap-1.5"><span class="font-bold shrink-0 ${style.text}">🤲 تعهد متقابل:</span><span class="text-slate-600">${esc(prop.counter_commitment)}</span></p>
                 </div>
                 ${qwImpactChips(prop)}
                 ${isAdmin ? `
@@ -2779,6 +2787,7 @@
                     selected_action: prop.action_details,
                     selected_result: prop.tangible_result,
                     selected_support: prop.support_needed,
+                    selected_counter_commitment: prop.counter_commitment,
                     impact_score: scores.score_time,
                     feasibility_score: scores.score_feasibility,
                     cost_score: scores.score_cost,
