@@ -4,9 +4,11 @@
 // triggered once a day by a Supabase Cron schedule (pg_cron + pg_net,
 // see supabase/setup_overdue_task_cron.sql). It finds every
 // quick_win_tasks row that's still open past its due_date and hasn't
-// been notified about yet, emails the responsible person (with every
-// admin cc'd) via Resend, then stamps overdue_notified_at so the same
-// task is only ever emailed about once.
+// been notified about yet, and emails via Resend whoever still owes an
+// action: the responsible person (cc admins) while the task hasn't been
+// submitted yet, or admins directly once it's «در انتظار تایید» — their
+// final approval is the only thing left — then stamps overdue_notified_at
+// so the same task is only ever emailed about once.
 //
 // There is no logged-in caller here (it's a scheduled job, not a user
 // action), so — unlike analyze-project — using the service-role key is
@@ -43,10 +45,16 @@ function buildEmail(task: any): { subject: string; html: string } {
     0,
     Math.floor((Date.now() - new Date(task.due_date).getTime()) / 86400000),
   );
-  const subject = `⚠️ اقدام معوق: ${task.title} — پروژه ${task.project_name}`;
+  const pendingApproval = task.status === "در انتظار تایید";
+  const subject = pendingApproval
+    ? `⚠️ در انتظار تایید نهایی (معوق): ${task.title} — پروژه ${task.project_name}`
+    : `⚠️ اقدام معوق: ${task.title} — پروژه ${task.project_name}`;
+  const closingLine = pendingApproval
+    ? "<p>این اقدام قبلاً توسط مسئول ثبت شده و صرفاً منتظر تایید نهایی ادمین است.</p>"
+    : "<p>لطفاً وضعیت این اقدام را در سامانه بروزرسانی کنید.</p>";
   const html = `
     <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:14px;line-height:1.8;color:#1e293b">
-      <p>یک اقدام از تایم‌لاین پیگیری اجرای Quick Win هنوز تا موعد مقررش انجام نشده است:</p>
+      <p>یک اقدام از تایم‌لاین پیگیری اجرای Quick Win هنوز تا موعد مقررش به تایید نهایی نرسیده است:</p>
       <ul>
         <li><b>پروژه:</b> ${task.project_name}</li>
         <li><b>عنوان اقدام:</b> ${task.title}</li>
@@ -54,7 +62,7 @@ function buildEmail(task: any): { subject: string; html: string } {
         <li><b>موعد انجام:</b> ${task.due_date}</li>
         <li><b>مدت تأخیر:</b> ${daysOverdue} روز</li>
       </ul>
-      <p>لطفاً وضعیت این اقدام را در سامانه بروزرسانی کنید.</p>
+      ${closingLine}
     </div>`;
   return { subject, html };
 }
@@ -72,7 +80,7 @@ Deno.serve(async (req) => {
 
     const { data: overdueTasks, error: tasksErr } = await supabase
       .from("quick_win_tasks")
-      .select("id, project_name, title, responsible_name, responsible_email, due_date")
+      .select("id, project_name, title, responsible_name, responsible_email, due_date, status")
       .lt("due_date", new Date().toISOString().slice(0, 10))
       .neq("status", "انجام‌شده")
       .is("overdue_notified_at", null);
@@ -91,6 +99,14 @@ Deno.serve(async (req) => {
 
     for (const task of overdueTasks) {
       const { subject, html } = buildEmail(task);
+      // Once the responsible person has already submitted the task for
+      // approval, the ball is in the admin's court — address the reminder
+      // to admins instead of nagging someone who already did their part.
+      const pendingApproval = task.status === "در انتظار تایید";
+      const toEmails = pendingApproval ? adminEmails : [task.responsible_email];
+      const ccEmails = pendingApproval ? [] : adminEmails;
+      if (toEmails.length === 0) continue;
+
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -99,8 +115,8 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           from: RESEND_FROM,
-          to: [task.responsible_email],
-          cc: adminEmails,
+          to: toEmails,
+          cc: ccEmails,
           subject,
           html,
         }),
