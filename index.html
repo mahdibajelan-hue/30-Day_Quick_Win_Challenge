@@ -738,7 +738,7 @@
                         <h3 class="text-sm font-bold">پیشرفت فیزیکی پروژه‌ها</h3>
                         <p class="text-[11px] text-slate-400 leading-relaxed">میانگین % پیشرفت فیزیکی خود پروژه (نه Quick Win)، گزارش‌شده توسط کارفرما، مشاور و پیمانکار در فرم اطلاعات تکمیلی</p>
                         <div id="ovProjectProgressList" class="space-y-3 max-h-52 overflow-y-auto scroll-thin pl-1"></div>
-                        <button type="button" onclick="document.getElementById('trackingContainer').scrollIntoView({behavior:'smooth'})" class="text-xs text-blue-900 font-bold hover:underline">‹ مشاهده پیشرفت Quick Win ها</button>
+                        <button type="button" onclick="switchView('tracking')" class="text-xs text-blue-900 font-bold hover:underline">‹ مشاهده پیگیری اجرای Quick Win ها</button>
                     </div>
 
                     <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
@@ -780,17 +780,6 @@
                     <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                         <h3 class="text-sm font-bold">آخرین فعالیت‌های انجام‌شده</h3>
                         <div id="ovActivityFeed" class="space-y-2 max-h-48 overflow-y-auto scroll-thin"></div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-3">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-lg font-bold text-slate-800">🧭 پیشرفت Quick Winهای برگزیده</h2>
-                        <button onclick="loadTrackingData()" class="bg-blue-100 text-blue-900 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200">🔄 بروزرسانی</button>
-                    </div>
-                    <p class="text-xs text-slate-500">وضعیت اجرای Quick Win برگزیده هر پروژه، تا رسیدن به نتیجه نهایی.</p>
-                    <div id="trackingContainer" class="space-y-6 pt-2">
-                        <p class="text-center text-slate-400 p-4">در حال بارگذاری...</p>
                     </div>
                 </div>
 
@@ -878,6 +867,20 @@
                     <h3 class="text-sm font-bold text-slate-800 border-r-4 border-purple-600 pr-3">🤖 تحلیل و پیشنهاد هوش مصنوعی</h3>
                     <div id="reportAiHealthStrip" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
                     <div id="reportAiText" class="text-sm leading-loose space-y-3"></div>
+                </div>
+            </div>
+
+            <!-- QUICK WIN EXECUTION TRACKING (تایم‌لاین، آخرین وضعیت و فرد مسئول هر Quick Win برگزیده) -->
+            <div id="trackingView" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-2">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xl font-bold text-blue-900">🗓️ پیگیری اجرای Quick Win</h2>
+                        <button onclick="loadTrackingData()" class="bg-blue-100 text-blue-900 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200">🔄 بروزرسانی</button>
+                    </div>
+                    <p class="text-xs text-slate-500">تایم‌لاین، آخرین وضعیت و فرد مسئول Quick Win برگزیده هر پروژه، تا رسیدن به نتیجه نهایی ظرف ۳۰ روز.</p>
+                </div>
+                <div id="trackingContainer" class="space-y-6">
+                    <p class="text-center text-slate-400 p-4">در حال بارگذاری...</p>
                 </div>
             </div>
 
@@ -1131,7 +1134,7 @@
             return `<svg class="${cls || 'w-5 h-5'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name] || ''}</svg>`;
         }
 
-        const NAV_ICON = { overview: 'grid', aiAnalysis: 'activity', admin: 'tool', selection: 'zap', execReport: 'fileText', checkin: 'edit', clientReport: 'clipboard', qwProposal: 'target' };
+        const NAV_ICON = { overview: 'grid', aiAnalysis: 'activity', admin: 'tool', selection: 'zap', tracking: 'calendar', execReport: 'fileText', checkin: 'edit', clientReport: 'clipboard', qwProposal: 'target' };
         const SIDEBAR_ACTIVE_CLASS = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold bg-blue-900/10 text-blue-900 transition';
         const SIDEBAR_INACTIVE_CLASS = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition';
         const MOBILE_ACTIVE_CLASS = 'flex flex-col items-center gap-0.5 px-3 py-2 shrink-0 text-blue-900';
@@ -1229,10 +1232,10 @@
             mobileNav.innerHTML = '';
 
             const buttons = currentProfile.role === 'admin'
-                ? [['overview', 'نمای کلی'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب Quick Win'], ['execReport', 'گزارش تحلیلی مدیریتی'], ['admin', 'مدیریت کاربران']]
+                ? [['overview', 'نمای کلی'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب Quick Win'], ['tracking', 'پیگیری اجرای Quick Win'], ['execReport', 'گزارش تحلیلی مدیریتی'], ['admin', 'مدیریت کاربران']]
                 : hasOrganization('کارفرما')
-                    ? [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win'], ['selection', 'پیشنهادها']]
-                    : [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win']];
+                    ? [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win'], ['selection', 'پیشنهادها'], ['tracking', 'پیگیری اجرای Quick Win']]
+                    : [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win'], ['tracking', 'پیگیری اجرای Quick Win']];
 
             buttons.forEach(([view, label], i) => {
                 const iconName = NAV_ICON[view] || 'grid';
@@ -1254,7 +1257,7 @@
             switchView(buttons[0][0]);
         }
 
-        const ALL_VIEWS = ['overview', 'checkin', 'clientReport', 'qwProposal', 'admin', 'selection', 'aiAnalysis', 'execReport'];
+        const ALL_VIEWS = ['overview', 'checkin', 'clientReport', 'qwProposal', 'admin', 'selection', 'aiAnalysis', 'tracking', 'execReport'];
 
         function switchView(view) {
             ALL_VIEWS.forEach(v => {
@@ -1275,6 +1278,7 @@
             if (view === 'admin') loadAdminData();
             if (view === 'selection') loadSelectionData();
             if (view === 'aiAnalysis') loadAiAnalysisView();
+            if (view === 'tracking') loadTrackingData();
             if (view === 'execReport') loadExecReport();
         }
 
@@ -3006,7 +3010,7 @@
             document.getElementById('reportGeneratedBy').textContent = currentUser.email;
             document.getElementById('reportAiProvider').textContent = provider === 'openai' ? 'ChatGPT' : 'Gemini';
             document.getElementById('reportAiSource').textContent = '';
-            document.getElementById('reportAiText').innerHTML = '<p class="text-purple-700 text-xs">🤖 در حال تولید تحلیل عمیق...</p>';
+            document.getElementById('reportAiText').innerHTML = '<p class="text-purple-700 text-xs">🤖 در حال بارگذاری...</p>';
             document.getElementById('reportAiHealthStrip').innerHTML = '';
             document.getElementById('reportTableBody').innerHTML = '';
             document.getElementById('reportKpiCards').innerHTML = '';
@@ -3030,6 +3034,29 @@
             renderAiHealthStrip(latestByOrg);
 
             try {
+                // Default: read the last saved analysis straight from the
+                // ai_analyses table — no Edge Function call, no AI cost —
+                // and only fall through to a live call the first time this
+                // project has ever been analyzed. An explicit «تحلیل مجدد»
+                // click (forceRefresh) always calls the Edge Function live.
+                if (!forceRefresh) {
+                    const { data: cached } = await _supabase
+                        .from('ai_analyses')
+                        .select('analysis_json, created_at')
+                        .eq('project_name', projectName)
+                        .eq('provider', provider)
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .maybeSingle();
+
+                    if (cached) {
+                        document.getElementById('reportAiSource').textContent = `نتایج تحلیل قبلی (تولید در ${formatJalali(cached.created_at)}) — برای تحلیل تازه «🔄 تولید مجدد بدون کش» را بزنید`;
+                        renderAiAnalysisSections(cached.analysis_json);
+                        return;
+                    }
+                }
+
+                document.getElementById('reportAiText').innerHTML = '<p class="text-purple-700 text-xs">🤖 در حال تولید تحلیل عمیق...</p>';
                 const { data, error } = await _supabase.functions.invoke('analyze-project', { body: { project_name: projectName, provider, force_refresh: !!forceRefresh } });
 
                 if (error) {
@@ -3131,10 +3158,12 @@
 
             const { data: rawDecisions, error: e1 } = await _supabase.from('quick_win_decisions').select('*').order('target_date', { ascending: true });
             const { data: rawLogs, error: e2 } = await _supabase.from('quick_win_progress').select('*').order('created_at', { ascending: true });
-            if (e1 || e2) { container.innerHTML = '<p class="text-red-600 p-4">خطا در دریافت داده‌ها.</p>'; return; }
+            const { data: rawCheckins, error: e3 } = await _supabase.from('check_ins').select('*').order('created_at', { ascending: true });
+            if (e1 || e2 || e3) { container.innerHTML = '<p class="text-red-600 p-4">خطا در دریافت داده‌ها.</p>'; return; }
             const guideNames = await getGuideProjectNames();
             const decisions = (rawDecisions || []).filter(d => !guideNames.has(d.project_name));
             const logs = (rawLogs || []).filter(l => !guideNames.has(l.project_name));
+            const checkins = (rawCheckins || []).filter(c => !guideNames.has(c.project_name));
 
             if (!decisions || decisions.length === 0) {
                 container.innerHTML = '<p class="text-center text-slate-400 p-4">هنوز هیچ Quick Win‌ی انتخاب نشده.</p>';
@@ -3143,6 +3172,7 @@
 
             const logsByProject = {};
             (logs || []).forEach(l => { (logsByProject[l.project_name] ??= []).push(l); });
+            const byProjectOrg = buildMergedByProjectOrg(checkins);
 
             const isAdmin = currentProfile.role === 'admin';
             container.innerHTML = '';
@@ -3153,6 +3183,8 @@
                 const latest = projectLogs[projectLogs.length - 1];
                 const percent = latest ? latest.progress_percent : 0;
                 const status = latest ? latest.status : 'شروع نشده';
+                const rec = byProjectOrg[dec.project_name]?.[dec.selected_organization] || {};
+                const responsible = rec.plan_responsible || dec.selected_organization;
 
                 const target = new Date(dec.target_date);
                 const daysLeft = Math.round((target - today) / 86400000);
@@ -3187,7 +3219,7 @@
                     <div class="w-full bg-slate-100 rounded-full h-2.5">
                         <div class="${barColor} h-2.5 rounded-full" style="width:${Math.min(percent, 100)}%"></div>
                     </div>
-                    <p class="text-xs text-slate-500">وضعیت فعلی: <b>${esc(status)}</b> — مهلت: ${formatJalali(dec.target_date)}</p>
+                    <p class="text-xs text-slate-500">وضعیت فعلی: <b>${esc(status)}</b> — 👤 مسئول: <b>${esc(responsible)}</b> — مهلت: ${formatJalali(dec.target_date)}</p>
                     <div class="space-y-1 max-h-40 overflow-y-auto">${timelineHtml}</div>
                     ${isAdmin ? `
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-2 pt-3 border-t text-xs">
@@ -3414,7 +3446,6 @@
         }
 
         async function loadOverview() {
-            loadTrackingData();
             const [{ data: rawCheckins }, { data: rawDecisions }, { data: rawLogs }, { data: rawClientReports }, guideNames] = await Promise.all([
                 _supabase.from('check_ins').select('*').order('created_at', { ascending: true }),
                 _supabase.from('quick_win_decisions').select('*'),
