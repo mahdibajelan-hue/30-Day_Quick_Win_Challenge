@@ -2322,7 +2322,7 @@
             return score >= 4 ? '#22c55e' : score >= 3 ? '#f59e0b' : '#ef4444';
         }
 
-        function qwProposalCardHtml(prop, isSelected, existingEval, isAdmin) {
+        function qwProposalCardHtml(prop, isSelected, existingEval, isAdmin, hasDecision) {
             const style = ORG_STYLE[prop.organization] || ORG_STYLE['کارفرما'];
             return `<div class="bg-slate-50 rounded-2xl border-r-4 ${style.border} p-4 space-y-3 text-xs ${isSelected ? 'ring-2 ring-emerald-400' : ''} relative">
                 ${isSelected ? '<span class="absolute -top-2 left-3 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">🏆 منتخب</span>' : ''}
@@ -2352,7 +2352,7 @@
                     <select class="eval-decision w-full border rounded-lg p-1.5 text-xs mt-1">
                         ${QW_DECISION_OPTIONS.map(o => `<option value="${esc(o)}" ${existingEval && existingEval.decision === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
                     </select>
-                    <button type="button" class="eval-save-btn w-full bg-blue-900 hover:bg-blue-800 text-white rounded-lg py-1.5 font-bold mt-1">ثبت ارزیابی</button>
+                    <button type="button" class="eval-save-btn w-full bg-blue-900 hover:bg-blue-800 text-white rounded-lg py-1.5 font-bold mt-1 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-blue-900" ${hasDecision && !isSelected ? 'disabled title="یک Quick Win دیگر برای این پروژه قبلاً انتخاب شده است"' : ''}>ثبت ارزیابی</button>
                 </div>` : ''}
             </div>`;
         }
@@ -2460,7 +2460,7 @@
                     const isSelected = decision && decision.selected_title === prop.quick_win_title && decision.selected_organization === prop.organization;
                     const existingEval = evalByKey[pName + '||' + prop.organization + '||' + prop.created_at];
                     const wrap = document.createElement('div');
-                    wrap.innerHTML = qwProposalCardHtml(prop, isSelected, existingEval, isAdmin);
+                    wrap.innerHTML = qwProposalCardHtml(prop, isSelected, existingEval, isAdmin, !!decision);
                     const propEl = wrap.firstElementChild;
                     if (isAdmin) {
                         const scoreSelects = Array.from(propEl.querySelectorAll('.eval-score'));
