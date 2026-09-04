@@ -2793,7 +2793,7 @@
             }
 
             const overall = analysis.overall || {};
-            const overallBorder = { '🟢': 'border-emerald-600 bg-emerald-50', '🟡': 'border-amber-500 bg-amber-50', '🔴': 'border-red-600 bg-red-50' }[overall.status_color] || 'border-slate-400 bg-slate-50';
+            const overallBorder = { '🟢': 'border-emerald-600 bg-emerald-100', '🟡': 'border-amber-500 bg-amber-100', '🔴': 'border-red-600 bg-red-100' }[overall.status_color] || 'border-slate-400 bg-slate-50';
             const sections = [];
 
             sections.push(`
@@ -2814,12 +2814,12 @@
 
             if (Array.isArray(analysis.overlooked_insights) && analysis.overlooked_insights.length) {
                 sections.push(`
-                    <div class="rounded-xl border-r-4 border-purple-600 bg-purple-50 p-4 space-y-3">
+                    <div class="rounded-xl border-r-4 border-purple-700 bg-purple-100 p-4 space-y-3">
                         <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('activity', 'w-4 h-4 shrink-0')}🔍 نکات پنهان و نادیده‌گرفته‌شده</h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             ${analysis.overlooked_insights.map(i => `
                                 <div class="bg-white rounded-lg p-3 border border-purple-100 space-y-1">
-                                    <p class="text-xs font-bold text-purple-900">${esc(i.insight || '-')}</p>
+                                    <p class="text-xs font-bold text-purple-800">${esc(i.insight || '-')}</p>
                                     ${i.evidence ? `<p class="text-[11px] text-slate-600">📎 ${esc(i.evidence)}</p>` : ''}
                                     ${i.why_it_matters ? `<p class="text-[11px] text-slate-500">چرا مهم است: ${esc(i.why_it_matters)}</p>` : ''}
                                 </div>`).join('')}
@@ -2829,7 +2829,7 @@
 
             if (Array.isArray(analysis.cross_perspective_contradictions) && analysis.cross_perspective_contradictions.length) {
                 sections.push(`
-                    <div class="rounded-xl border-r-4 border-amber-500 bg-amber-50 p-4 space-y-3">
+                    <div class="rounded-xl border-r-4 border-amber-500 bg-amber-100 p-4 space-y-3">
                         <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('alertTriangle', 'w-4 h-4 shrink-0')}تناقض‌های کلیدی بین دیدگاه‌ها</h4>
                         <div class="overflow-x-auto">
                             <table class="w-full text-right text-[11px] bg-white rounded-lg overflow-hidden">
@@ -2854,7 +2854,7 @@
             if (Array.isArray(analysis.problem_areas) && analysis.problem_areas.length) {
                 const sortedAreas = [...analysis.problem_areas].sort((a, b) => (b.flagged_by || []).length - (a.flagged_by || []).length);
                 sections.push(`
-                    <div class="rounded-xl border-r-4 border-red-600 bg-red-50 p-4 space-y-3">
+                    <div class="rounded-xl border-r-4 border-red-600 bg-red-100 p-4 space-y-3">
                         <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('zap', 'w-4 h-4 shrink-0')}حوزه‌ها و جبهه‌های کاری مسئله‌ساز</h4>
                         <div style="height:${Math.max(120, sortedAreas.length * 36)}px"><canvas id="aiProblemAreasChart"></canvas></div>
                         <div class="space-y-2">
