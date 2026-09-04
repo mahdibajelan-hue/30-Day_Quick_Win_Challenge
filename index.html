@@ -801,16 +801,19 @@
 
             <!-- AI ANALYSIS REPORT (full page, printable) -->
             <div id="aiReportView" class="hidden space-y-6">
-                <div class="no-print flex justify-between items-center">
+                <div class="no-print flex justify-between items-center gap-2 flex-wrap">
                     <button type="button" onclick="closeAiReport()" class="text-xs text-blue-700 hover:underline font-bold">→ بازگشت</button>
-                    <button type="button" onclick="window.print()" class="bg-blue-900 hover:bg-blue-800 text-white text-xs px-4 py-2 rounded-lg font-bold">🖨 چاپ / ذخیره PDF</button>
+                    <div class="flex items-center gap-2">
+                        <button type="button" id="aiRegenerateBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-2 rounded-lg font-bold">🔄 تولید مجدد بدون کش</button>
+                        <button type="button" onclick="window.print()" class="bg-blue-900 hover:bg-blue-800 text-white text-xs px-4 py-2 rounded-lg font-bold">🖨 چاپ / ذخیره PDF</button>
+                    </div>
                 </div>
 
                 <div class="print-card bg-white rounded-2xl shadow-sm border p-6 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="text-center md:text-right">
                         <h2 class="text-lg font-extrabold text-blue-900">گزارش تحلیلی هوشمند پروژه</h2>
                         <p class="text-sm font-bold text-slate-700 mt-1" id="reportProjectName">-</p>
-                        <p class="text-xs text-slate-500 mt-1">تاریخ تولید: <span id="reportGeneratedAt"></span> — تهیه‌کننده: <span id="reportGeneratedBy"></span> — ابزار تحلیل: <span id="reportAiProvider">-</span></p>
+                        <p class="text-xs text-slate-500 mt-1">تاریخ تولید: <span id="reportGeneratedAt"></span> — تهیه‌کننده: <span id="reportGeneratedBy"></span> — ابزار تحلیل: <span id="reportAiProvider">-</span> — <span id="reportAiSource"></span></p>
                     </div>
                     <div class="flex flex-col items-center text-center gap-1">
                         <img src="logo.png" alt="لوگوی شرکت" class="h-10 w-10 object-contain" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
@@ -2721,65 +2724,237 @@
             ].join('');
         }
 
-        // Parses the AI's fixed 8-section numbered/bold-headed narrative into
-        // styled, icon-coded cards instead of one flat wall of text. Falls
-        // back to a single generic block if the model drifts from the
-        // requested format, so a format change never breaks the page.
-        const AI_SECTION_STYLE = {
-            1: { icon: 'fileText', border: 'border-blue-900', bg: 'bg-blue-100' },
-            2: { icon: 'calendar', border: 'border-blue-900', bg: 'bg-blue-100' },
-            3: { icon: 'alertTriangle', border: 'border-amber-500', bg: 'bg-amber-100' },
-            4: { icon: 'zap', border: 'border-red-600', bg: 'bg-red-100' },
-            5: { icon: 'shield', border: 'border-red-600', bg: 'bg-red-100' },
-            6: { icon: 'target', border: 'border-emerald-600', bg: 'bg-emerald-100' },
-            7: { icon: 'checkCircle', border: 'border-emerald-600', bg: 'bg-emerald-100' },
-            8: { icon: 'trendingUp', border: 'border-purple-700', bg: 'bg-purple-100' },
+        // Renders the AI's structured JSON analysis (see the prompt schema in
+        // supabase/functions/analyze-project/index.ts) as charts, gauges and
+        // color-coded cards instead of a wall of text. The headline section —
+        // "نکات پنهان و نادیده‌گرفته‌شده" — is what the model is explicitly
+        // asked to use the raw cross-organization data for: patterns that
+        // only show up when you line up all three forms side by side.
+        const AI_SEVERITY_STYLE = {
+            'بحرانی': { text: 'text-red-700', bg: 'bg-red-100', hex: '#ef4444' },
+            'زیاد': { text: 'text-amber-700', bg: 'bg-amber-100', hex: '#f59e0b' },
+            'متوسط': { text: 'text-blue-900', bg: 'bg-blue-100', hex: '#3b82f6' },
+            'کم': { text: 'text-emerald-700', bg: 'bg-emerald-100', hex: '#22c55e' },
         };
-        const PERSIAN_DIGIT_MAP = { '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4', '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9' };
+        const AI_SEVERITY_RANK = { 'بحرانی': 0, 'زیاد': 1, 'متوسط': 2, 'کم': 3 };
+        const AI_AREA_FRONT_LABELS = Object.fromEntries([...XRAY_AREAS, ...WORK_FRONTS]);
 
-        function formatAiBody(text) {
-            const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-            let html = '', inList = false;
-            lines.forEach(line => {
-                const isBullet = /^[-•]\s+/.test(line);
-                const content = esc(line.replace(/^[-•]\s+/, '')).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-                if (isBullet) {
-                    if (!inList) { html += '<ul class="list-disc pr-5 space-y-1">'; inList = true; }
-                    html += `<li>${content}</li>`;
-                } else {
-                    if (inList) { html += '</ul>'; inList = false; }
-                    html += `<p>${content}</p>`;
-                }
-            });
-            return html + (inList ? '</ul>' : '');
+        function aiSevBadge(level) {
+            const s = AI_SEVERITY_STYLE[level] || { text: 'text-slate-600', bg: 'bg-slate-100' };
+            return `<span class="${s.bg} ${s.text} px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap">${esc(level || '-')}</span>`;
         }
 
-        function renderAiAnalysisSections(rawText) {
+        function renderDivergenceGauge(score) {
+            const el = document.getElementById('aiDivergenceGauge');
+            if (!el) return;
+            const value = Math.max(0, Math.min(100, Number(score) || 0));
+            const color = value < 33 ? '#22c55e' : value < 66 ? '#f59e0b' : '#ef4444';
+            new Chart(el.getContext('2d'), {
+                type: 'doughnut',
+                data: { datasets: [{ data: [value, 100 - value], backgroundColor: [color, '#22304f'], borderWidth: 0 }] },
+                options: { circumference: 180, rotation: 270, cutout: '75%', plugins: { legend: { display: false }, tooltip: { enabled: false } } },
+            });
+        }
+
+        function renderProblemAreasChart(problemAreas) {
+            const el = document.getElementById('aiProblemAreasChart');
+            if (!el || !problemAreas.length) return;
+            const sorted = [...problemAreas].sort((a, b) => (b.flagged_by || []).length - (a.flagged_by || []).length);
+            new Chart(el.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: sorted.map(p => AI_AREA_FRONT_LABELS[p.key] || p.key),
+                    datasets: [{
+                        data: sorted.map(p => (p.flagged_by || []).length),
+                        backgroundColor: sorted.map(p => (AI_SEVERITY_STYLE[p.severity] || {}).hex || '#94a3b8'),
+                    }],
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { min: 0, max: 3, ticks: { stepSize: 1, callback: (v) => toPersianDigits(v) }, title: { display: true, text: 'تعداد ارکانی که گزارش کرده‌اند', color: '#8b96ad' }, grid: { color: '#22304f' } },
+                        y: { grid: { display: false } },
+                    },
+                    plugins: { legend: { display: false } },
+                },
+            });
+        }
+
+        function renderAiAnalysisSections(analysis) {
             const container = document.getElementById('reportAiText');
             // The AI provider is a third-party boundary — never trust it to hand
-            // back exactly the string shape expected, or rendering crashes on
-            // whatever it sends instead of just showing the response as-is.
-            const text = typeof rawText === 'string' ? rawText : (rawText == null ? '' : String(rawText));
-            if (!text.trim()) { container.innerHTML = '<p class="text-slate-400 text-xs">پاسخی دریافت نشد.</p>'; return; }
+            // back exactly the shape expected, or rendering crashes on whatever
+            // it sends instead of just showing something reasonable.
+            if (!analysis || typeof analysis !== 'object' || Array.isArray(analysis)) {
+                container.innerHTML = '<p class="text-slate-400 text-xs">پاسخی دریافت نشد.</p>';
+                return;
+            }
 
-            const chunks = text.split(/\n(?=\s*[۰-۹0-9]+\.\s*\*\*)/);
-            const sectionRe = /^\s*([۰-۹0-9]+)\.\s*\*\*([^*]+)\*\*\s*[—\-–]?\s*([\s\S]*)$/;
-            let html = '';
-            chunks.forEach(chunk => {
-                const m = chunk.match(sectionRe);
-                if (!m) {
-                    const text = chunk.trim();
-                    if (text) html += `<div class="text-sm">${formatAiBody(text)}</div>`;
-                    return;
-                }
-                const num = parseInt(m[1].split('').map(ch => PERSIAN_DIGIT_MAP[ch] ?? ch).join(''), 10);
-                const style = AI_SECTION_STYLE[num] || { icon: 'fileText', border: 'border-slate-400', bg: 'bg-slate-50' };
-                html += `<div class="rounded-xl border-r-4 ${style.border} ${style.bg} p-4 space-y-2">
-                    <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg(style.icon, 'w-4 h-4 shrink-0')}${esc(m[2].trim())}</h4>
-                    <div class="text-xs leading-relaxed text-slate-700 space-y-1">${formatAiBody(m[3].trim())}</div>
-                </div>`;
-            });
-            container.innerHTML = html || `<div class="whitespace-pre-wrap text-sm">${esc(text)}</div>`;
+            const overall = analysis.overall || {};
+            const overallBorder = { '🟢': 'border-emerald-600 bg-emerald-50', '🟡': 'border-amber-500 bg-amber-50', '🔴': 'border-red-600 bg-red-50' }[overall.status_color] || 'border-slate-400 bg-slate-50';
+            const sections = [];
+
+            sections.push(`
+                <div class="rounded-xl border-r-4 ${overallBorder} p-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                    <div class="md:col-span-2 space-y-1">
+                        <h4 class="text-sm font-bold flex items-center gap-2"><span class="text-base">${esc(overall.status_color || '⚪')}</span> جمع‌بندی هوش مصنوعی</h4>
+                        <p class="text-xs leading-relaxed text-slate-700">${esc(overall.status_summary || '-')}</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="relative h-20 mx-auto" style="max-width:160px">
+                            <canvas id="aiDivergenceGauge"></canvas>
+                        </div>
+                        <p class="text-lg font-extrabold -mt-7">${toPersianDigits(overall.divergence_score ?? '-')}<span class="text-xs font-normal text-slate-500">/۱۰۰</span></p>
+                        <p class="text-[10px] text-slate-500">شاخص واگرایی دیدگاه‌ها</p>
+                        ${overall.divergence_note ? `<p class="text-[10px] text-slate-400 mt-1">${esc(overall.divergence_note)}</p>` : ''}
+                    </div>
+                </div>`);
+
+            if (Array.isArray(analysis.overlooked_insights) && analysis.overlooked_insights.length) {
+                sections.push(`
+                    <div class="rounded-xl border-r-4 border-purple-600 bg-purple-50 p-4 space-y-3">
+                        <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('activity', 'w-4 h-4 shrink-0')}🔍 نکات پنهان و نادیده‌گرفته‌شده</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            ${analysis.overlooked_insights.map(i => `
+                                <div class="bg-white rounded-lg p-3 border border-purple-100 space-y-1">
+                                    <p class="text-xs font-bold text-purple-900">${esc(i.insight || '-')}</p>
+                                    ${i.evidence ? `<p class="text-[11px] text-slate-600">📎 ${esc(i.evidence)}</p>` : ''}
+                                    ${i.why_it_matters ? `<p class="text-[11px] text-slate-500">چرا مهم است: ${esc(i.why_it_matters)}</p>` : ''}
+                                </div>`).join('')}
+                        </div>
+                    </div>`);
+            }
+
+            if (Array.isArray(analysis.cross_perspective_contradictions) && analysis.cross_perspective_contradictions.length) {
+                sections.push(`
+                    <div class="rounded-xl border-r-4 border-amber-500 bg-amber-50 p-4 space-y-3">
+                        <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('alertTriangle', 'w-4 h-4 shrink-0')}تناقض‌های کلیدی بین دیدگاه‌ها</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-right text-[11px] bg-white rounded-lg overflow-hidden">
+                                <thead class="bg-slate-100 text-slate-700"><tr>
+                                    <th class="p-2 border">موضوع</th><th class="p-2 border text-blue-900">کارفرما</th><th class="p-2 border text-amber-900">مشاور</th><th class="p-2 border text-emerald-900">پیمانکار</th><th class="p-2 border">چرا مهم است</th>
+                                </tr></thead>
+                                <tbody>
+                                    ${analysis.cross_perspective_contradictions.map(c => `
+                                        <tr>
+                                            <td class="p-2 border font-bold bg-slate-50">${esc(c.topic || '-')}</td>
+                                            <td class="p-2 border">${esc(c['کارفرما'] ?? '-')}</td>
+                                            <td class="p-2 border">${esc(c['مشاور'] ?? '-')}</td>
+                                            <td class="p-2 border">${esc(c['پیمانکار'] ?? '-')}</td>
+                                            <td class="p-2 border text-slate-500">${esc(c.why_it_matters || '-')}</td>
+                                        </tr>`).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`);
+            }
+
+            if (Array.isArray(analysis.problem_areas) && analysis.problem_areas.length) {
+                const sortedAreas = [...analysis.problem_areas].sort((a, b) => (b.flagged_by || []).length - (a.flagged_by || []).length);
+                sections.push(`
+                    <div class="rounded-xl border-r-4 border-red-600 bg-red-50 p-4 space-y-3">
+                        <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('zap', 'w-4 h-4 shrink-0')}حوزه‌ها و جبهه‌های کاری مسئله‌ساز</h4>
+                        <div style="height:${Math.max(120, sortedAreas.length * 36)}px"><canvas id="aiProblemAreasChart"></canvas></div>
+                        <div class="space-y-2">
+                            ${sortedAreas.map(p => `
+                                <div class="bg-white rounded-lg p-2.5 border border-red-100 flex flex-wrap items-center gap-2 justify-between">
+                                    <span class="text-xs font-bold">${esc(AI_AREA_FRONT_LABELS[p.key] || p.key)}</span>
+                                    <span class="flex items-center gap-1.5">${aiSevBadge(p.severity)}<span class="text-[10px] text-slate-500">${(p.flagged_by || []).join('، ') || '-'}</span></span>
+                                    ${p.synthesis ? `<span class="text-[11px] text-slate-600 w-full">${esc(p.synthesis)}</span>` : ''}
+                                </div>`).join('')}
+                        </div>
+                    </div>`);
+            }
+
+            if (Array.isArray(analysis.risk_register) && analysis.risk_register.length) {
+                const sortedRisks = [...analysis.risk_register].sort((a, b) => (AI_SEVERITY_RANK[a.level] ?? 9) - (AI_SEVERITY_RANK[b.level] ?? 9));
+                sections.push(`
+                    <div class="rounded-xl border-r-4 border-red-600 bg-white p-4 space-y-3 border border-slate-200">
+                        <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('shield', 'w-4 h-4 shrink-0')}ثبت ریسک‌ها</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-right text-[11px]">
+                                <thead class="bg-slate-100 text-slate-700"><tr><th class="p-2 border">ریسک</th><th class="p-2 border">منبع</th><th class="p-2 border">سطح</th><th class="p-2 border">اقدام</th></tr></thead>
+                                <tbody>
+                                    ${sortedRisks.map(r => `
+                                        <tr>
+                                            <td class="p-2 border font-bold bg-slate-50">${esc(r.risk || '-')}</td>
+                                            <td class="p-2 border">${esc(r.source_org || '-')}</td>
+                                            <td class="p-2 border">${aiSevBadge(r.level)}</td>
+                                            <td class="p-2 border text-slate-600">${esc(r.current_action || '-')}</td>
+                                        </tr>`).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`);
+            }
+
+            if (Array.isArray(analysis.quick_win_comparison) && analysis.quick_win_comparison.length) {
+                const ranked = [...analysis.quick_win_comparison].sort((a, b) => (a.recommended_rank || 9) - (b.recommended_rank || 9));
+                const medal = ['🥇', '🥈', '🥉'];
+                sections.push(`
+                    <div class="rounded-xl border-r-4 border-emerald-600 bg-emerald-50 p-4 space-y-3">
+                        <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('target', 'w-4 h-4 shrink-0')}مقایسه پیشنهادهای Quick Win</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            ${ranked.map((q, i) => `
+                                <div class="bg-white rounded-lg p-3 border border-emerald-100 space-y-1">
+                                    <p class="text-xs font-bold">${medal[i] || '•'} ${esc(q.organization || '-')}</p>
+                                    <p class="text-[11px] font-bold text-slate-700">${esc(q.title || '-')}</p>
+                                    <p class="text-[11px] text-slate-600">${esc(q.impact_summary || '-')}</p>
+                                    ${q.time_estimate_days != null ? `<p class="text-[10px] text-slate-400">برآورد زمان: ${toPersianDigits(q.time_estimate_days)} روز</p>` : ''}
+                                </div>`).join('')}
+                        </div>
+                        ${analysis.selected_quick_win_assessment ? `<p class="text-[11px] text-slate-600 bg-white rounded-lg p-2.5 border border-emerald-100">🎯 ارزیابی Quick Win برگزیده فعلی: ${esc(analysis.selected_quick_win_assessment)}</p>` : ''}
+                    </div>`);
+            }
+
+            if (analysis.root_cause_analysis && analysis.root_cause_analysis.primary_root_cause) {
+                sections.push(`
+                    <div class="rounded-xl border-r-4 border-blue-900 bg-blue-100 p-4 space-y-1">
+                        <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('fileText', 'w-4 h-4 shrink-0')}علت ریشه‌ای مشترک</h4>
+                        <p class="text-xs font-bold text-slate-800">${esc(analysis.root_cause_analysis.primary_root_cause)}</p>
+                        ${analysis.root_cause_analysis.summary ? `<p class="text-xs text-slate-600">${esc(analysis.root_cause_analysis.summary)}</p>` : ''}
+                    </div>`);
+            }
+
+            if (Array.isArray(analysis.action_plan_30_days) && analysis.action_plan_30_days.length) {
+                sections.push(`
+                    <div class="rounded-xl border-r-4 border-blue-900 bg-blue-100 p-4 space-y-2">
+                        <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('calendar', 'w-4 h-4 shrink-0')}برنامه اقدام ۳۰ روزه</h4>
+                        <div class="space-y-2">
+                            ${analysis.action_plan_30_days.map(a => `
+                                <div class="bg-white rounded-lg p-2.5 border border-blue-200 flex flex-wrap items-center gap-2">
+                                    <span class="text-[10px] font-bold text-blue-900 bg-blue-100 px-2 py-0.5 rounded-lg whitespace-nowrap">${esc(a.week || '-')}</span>
+                                    <span class="text-xs flex-1">${esc(a.action || '-')}</span>
+                                    <span class="text-[10px] text-slate-500 whitespace-nowrap">مسئول: ${esc(a.owner || '-')}</span>
+                                </div>`).join('')}
+                        </div>
+                    </div>`);
+            }
+
+            if (Array.isArray(analysis.executive_decisions_needed) && analysis.executive_decisions_needed.length) {
+                sections.push(`
+                    <div class="rounded-xl border-r-4 border-red-600 bg-red-100 p-4 space-y-2">
+                        <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('checkCircle', 'w-4 h-4 shrink-0')}تصمیمات مورد نیاز مدیریت ارشد</h4>
+                        <ul class="list-disc pr-5 space-y-1 text-xs text-slate-700">
+                            ${analysis.executive_decisions_needed.map(d => `<li>${esc(d)}</li>`).join('')}
+                        </ul>
+                    </div>`);
+            }
+
+            if (analysis.final_recommendation) {
+                sections.push(`
+                    <div class="rounded-xl border-r-4 border-purple-700 bg-purple-100 p-4 space-y-1">
+                        <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('trendingUp', 'w-4 h-4 shrink-0')}توصیه پایانی</h4>
+                        <p class="text-xs leading-relaxed text-slate-800">${esc(analysis.final_recommendation)}</p>
+                    </div>`);
+            }
+
+            container.innerHTML = sections.length ? sections.join('') : '<p class="text-slate-400 text-xs">پاسخی دریافت نشد.</p>';
+
+            renderDivergenceGauge(overall.divergence_score);
+            if (Array.isArray(analysis.problem_areas)) renderProblemAreasChart(analysis.problem_areas);
         }
 
         function renderClientReportCard(rec) {
@@ -2819,18 +2994,29 @@
                 .join('') || '<tr><td class="p-2 border text-center text-slate-400">-</td></tr>';
         }
 
-        async function loadAiReport(projectName, provider) {
+        let currentAiReportProject = null;
+        let currentAiReportProvider = null;
+
+        async function loadAiReport(projectName, provider, forceRefresh) {
+            currentAiReportProject = projectName;
+            currentAiReportProvider = provider;
+
             document.getElementById('reportProjectName').textContent = projectName;
             document.getElementById('reportGeneratedAt').textContent = todayJalali();
             document.getElementById('reportGeneratedBy').textContent = currentUser.email;
             document.getElementById('reportAiProvider').textContent = provider === 'openai' ? 'ChatGPT' : 'Gemini';
-            document.getElementById('reportAiText').innerHTML = '<p class="text-purple-700 text-xs">🤖 در حال تولید تحلیل...</p>';
+            document.getElementById('reportAiSource').textContent = '';
+            document.getElementById('reportAiText').innerHTML = '<p class="text-purple-700 text-xs">🤖 در حال تولید تحلیل عمیق...</p>';
             document.getElementById('reportAiHealthStrip').innerHTML = '';
             document.getElementById('reportTableBody').innerHTML = '';
             document.getElementById('reportKpiCards').innerHTML = '';
 
+            const regenBtn = document.getElementById('aiRegenerateBtn');
+            regenBtn.disabled = true;
+            regenBtn.classList.add('opacity-50');
+
             const { data: checkins, error: e1 } = await _supabase.from('check_ins').select('*').eq('project_name', projectName).order('created_at', { ascending: true });
-            if (e1) { document.getElementById('reportAiText').innerHTML = `<p class="text-red-600 text-xs">خطا در دریافت داده‌ها: ${esc(e1.message)}</p>`; return; }
+            if (e1) { document.getElementById('reportAiText').innerHTML = `<p class="text-red-600 text-xs">خطا در دریافت داده‌ها: ${esc(e1.message)}</p>`; regenBtn.disabled = false; regenBtn.classList.remove('opacity-50'); return; }
 
             const { data: clientReports } = await _supabase.from('client_reports').select('*').eq('project_name', projectName).order('created_at', { ascending: false }).limit(1);
 
@@ -2844,7 +3030,7 @@
             renderAiHealthStrip(latestByOrg);
 
             try {
-                const { data, error } = await _supabase.functions.invoke('analyze-project', { body: { project_name: projectName, provider } });
+                const { data, error } = await _supabase.functions.invoke('analyze-project', { body: { project_name: projectName, provider, force_refresh: !!forceRefresh } });
 
                 if (error) {
                     let message = error.message || String(error);
@@ -2860,11 +3046,21 @@
                 }
 
                 document.getElementById('reportAiProvider').textContent = data.provider === 'openai' ? 'ChatGPT' : 'Gemini';
+                document.getElementById('reportAiSource').textContent = data.source === 'cache'
+                    ? `از تحلیل قبلی (تولید در ${data.cached_at ? formatJalali(data.cached_at) : '-'})`
+                    : 'تحلیل تازه';
                 renderAiAnalysisSections(data.analysis);
             } catch (e) {
                 document.getElementById('reportAiText').innerHTML = `<p class="text-red-600 text-xs">خطای غیرمنتظره: ${esc(e.message || String(e))}</p>`;
+            } finally {
+                regenBtn.disabled = false;
+                regenBtn.classList.remove('opacity-50');
             }
         }
+
+        document.getElementById('aiRegenerateBtn').addEventListener('click', () => {
+            if (currentAiReportProject) loadAiReport(currentAiReportProject, currentAiReportProvider, true);
+        });
 
         async function saveEvaluation(projectName, prop, scores, weightedScore, decision) {
             const evalRow = {

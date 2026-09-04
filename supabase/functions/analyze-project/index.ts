@@ -1,13 +1,22 @@
 // Supabase Edge Function: analyze-project
 //
 // Called from the app's admin-only "🤖 تحلیل هوشمند" button. Fetches every
-// organization's latest check-in for a project and asks either Gemini or
-// ChatGPT (caller's choice) for a short analytical report. Whichever
-// provider's API key stays server-side (in this function's secrets) and is
-// never exposed to the browser.
+// organization's latest check-in for a project (plus اطلاعات پایه/client_reports,
+// the selected Quick Win decision, and its progress log) and asks either
+// Gemini or ChatGPT (caller's choice) to synthesize a deep, structured
+// analysis — not just a summary of each report on its own, but the kind of
+// cross-perspective pattern a busy executive skimming three separate forms
+// would likely miss. Whichever provider's API key stays server-side (in
+// this function's secrets) and is never exposed to the browser.
 //
-// Deploy: paste this file's content into a new Edge Function named
-// "analyze-project" in the Supabase dashboard (or `supabase functions deploy
+// The result is cached in the ai_analyses table (see migration
+// 015_ai_analyses.sql) keyed by project+provider, and only regenerated when
+// the underlying data has changed since the cached run, or the caller
+// explicitly asks for force_refresh — so the paid AI call only happens when
+// there's actually something new to analyze.
+//
+// Deploy: paste this file's content into the "analyze-project" Edge
+// Function in the Supabase dashboard (or `supabase functions deploy
 // analyze-project` if using the CLI), then set at least one of the secrets
 // GEMINI_API_KEY / OPENAI_API_KEY (only the one(s) you actually plan to use).
 // Note: Gemini's API has an ongoing free tier (rate-limited); OpenAI's API
@@ -55,7 +64,10 @@ Deno.serve(async (req) => {
     if (!authHeader) return jsonResponse({ error: "Unauthorized" }, 401);
 
     // Client scoped to the caller's own JWT: identifies who is asking and
-    // lets Postgres RLS decide what they're allowed to read.
+    // lets Postgres RLS decide what they're allowed to read. Deliberately
+    // never the service-role key — this function must stay exactly as
+    // restricted as a logged-in admin using the app normally, since it
+    // reads every organization's private data for a project at once.
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -73,7 +85,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "این تحلیل فقط برای ادمین سامانه در دسترس است." }, 403);
     }
 
-    const { project_name, provider } = await req.json();
+    const { project_name, provider, force_refresh } = await req.json();
     if (!project_name) return jsonResponse({ error: "project_name الزامی است." }, 400);
     const chosenProvider = provider === "openai" ? "openai" : "gemini";
 
@@ -106,6 +118,48 @@ Deno.serve(async (req) => {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    // Newest timestamp across every source row this analysis depends on —
+    // used below to tell a genuinely stale cache entry from a fresh one.
+    const timestamps: string[] = [];
+    // deno-lint-ignore no-explicit-any
+    checkins.forEach((c: any) => c.created_at && timestamps.push(c.created_at));
+    if (decision?.created_at) timestamps.push(decision.created_at);
+    // deno-lint-ignore no-explicit-any
+    (progress || []).forEach((p: any) => p.created_at && timestamps.push(p.created_at));
+    if (clientReport?.created_at) timestamps.push(clientReport.created_at);
+    const newestSourceAt = timestamps.length
+      ? timestamps.reduce((a, b) => (a > b ? a : b))
+      : new Date(0).toISOString();
+
+    // ---- Cache check (skipped entirely on force_refresh) ----
+    // Soft-fail on purpose: caching is an optimization, never a dependency
+    // — if the ai_analyses table isn't there yet (migration not applied)
+    // or the read errors for any other reason, just fall through to a
+    // live call instead of breaking the whole feature.
+    if (!force_refresh) {
+      try {
+        const { data: cached } = await supabase
+          .from("ai_analyses")
+          .select("analysis_json, source_data_at, created_at")
+          .eq("project_name", project_name)
+          .eq("provider", chosenProvider)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (cached && cached.source_data_at >= newestSourceAt) {
+          return jsonResponse({
+            analysis: cached.analysis_json,
+            provider: chosenProvider,
+            source: "cache",
+            cached_at: cached.created_at,
+          });
+        }
+      } catch (_e) {
+        // fall through to a live call
+      }
+    }
 
     // The app's check-in form was split into two independent forms (a
     // periodic status report and a Quick Win proposal), so a given
@@ -204,26 +258,49 @@ Deno.serve(async (req) => {
 
     const clientReportText = buildClientReportText(clientReport);
 
-    const prompt = `شما یک متخصص ارشد مدیریت پورتفولیوی پروژه‌های خط انتقال گاز هستید. اطلاعات زیر مربوط به پروژه «${project_name}» است: هم اطلاعات رسمی قرارداد و پیشرفت که توسط برنامه‌ریزی و کنترل پروژه کارفرما ثبت شده، و هم گزارش‌های دوره‌ای که کارفرما، مشاور و پیمانکار هرکدام به‌طور مستقل از دیدگاه خودشان ثبت کرده‌اند:
+    const prompt = `شما یک متخصص ارشد مدیریت پورتفولیوی پروژه‌های خط انتقال گاز هستید. اطلاعات زیر مربوط به پروژه «${project_name}» است: هم اطلاعات رسمی قرارداد و پیشرفت که توسط برنامه‌ریزی و کنترل پروژه کارفرما ثبت شده (فرم اطلاعات پایه)، و هم گزارش‌های دوره‌ای که کارفرما، مشاور و پیمانکار هرکدام به‌طور مستقل از دیدگاه خودشان ثبت کرده‌اند (فرم اطلاعات تکمیلی و پیشنهاد Quick Win):
 ${clientReportText}
 ${perspectiveText}
 ${decisionText}
 ${progressText}
 
-با استفاده از تمام اطلاعات بالا (اطلاعات قراردادی/رسمی + هر سه دیدگاه)، یک گزارش تحلیلی جامع و کامل به فارسی تولید کن، دقیقاً با این ساختار:
+با استفاده از تمام اطلاعات بالا، یک تحلیل عمیق و کاملاً مستند تهیه کن. هدف اصلی این است که نکاتی را آشکار کنی که در نگاه سطحی و جداگانه به هر گزارش دیده نمی‌شوند: مغایرت‌های عددی هرچند کوچک بین دیدگاه‌ها یا بین فرم اول کارفرما و ادعای خود کارفرما در فرم‌های بعدی، جمله یا نکته‌ای که فقط یک رکن به آن اشاره کرده اما می‌تواند نشانه یک مسئله بزرگ‌تر باشد، و الگوهایی که فقط با کنار هم گذاشتن وضعیت چند حوزه یا جبهه کاری مختلف آشکار می‌شوند (نه هرکدام به‌تنهایی).
 
-۱. **خلاصه مدیریتی** — وضعیت کلی پروژه در ۲ تا ۳ جمله (سبز/زرد/قرمز و چرا).
-۲. **وضعیت قراردادی و زمان‌بندی** — مقایسه پیشرفت رسمی (فرم کارفرما) با پیشرفت گزارش‌شده توسط هر سه رکن، انحراف از برنامه، درصد مدت سپری‌شده نسبت به پیشرفت واقعی، و ریسک Milestone پیش‌رو.
-۳. **تناقض‌های کلیدی بین دیدگاه‌ها** — هر عدد یا برداشتی که بین کارفرما، مشاور و پیمانکار (یا بین گزارش رسمی کارفرما و ادعای خودشان) مغایرت دارد را دقیقاً با اسم و عدد ذکر کن.
-۴. **گلوگاه‌ها و جبهه‌های بحرانی** — بر اساس وضعیت حوزه‌ها (X-Ray) و جبهه‌های کاری هر سه رکن، کدام حوزه‌ها/جبهه‌ها در بیش از یک دیدگاه قرمز یا زرد گزارش شده‌اند.
-۵. **مهم‌ترین ریسک‌ها و مسائل باز** — از میان ریسک‌ها و مسائل سه‌گانه‌ی هر رکن، مهم‌ترین‌ها را دسته‌بندی و اولویت‌بندی کن (تکراری‌ها را یکی کن).
-۶. **ارزیابی مقایسه‌ای پیشنهادهای Quick Win** — سه پیشنهاد Quick Win را با هم مقایسه کن و مشخص کن کدام بیشترین اثر/کمترین زمان را دارد و چرا (مستقل از اینکه فعلاً کدام برگزیده شده).
-۷. **پیشنهاد اقدام اولویت‌دار برای ۳۰ روز آینده** — مشخص، عملیاتی، و با ذکر مسئول پیشنهادی.
-۸. **جمع‌بندی و توصیه به مدیریت ارشد** — چه تصمیمی از مدیریت ارشد لازم است و چرا فوریت دارد.
+خروجی را دقیقاً و فقط به‌صورت یک شیء JSON معتبر برگردان — بدون Markdown، بدون بلوک کد، بدون هیچ متنی قبل یا بعد از آن. همه فیلدها الزامی‌اند؛ اگر آرایه‌ای موردی ندارد [] بگذار، هرگز فیلد را حذف نکن. دقیقاً با این ساختار:
 
-خروجی باید دقیق، مستند به اعداد واقعی داده‌شده، و قابل ارائه مستقیم به مدیر اجرایی طرح باشد — از تکرار کلی‌گویی بدون عدد یا مصداق پرهیز کن.`;
+{
+  "overall": {
+    "status_color": "🟢" یا "🟡" یا "🔴",
+    "status_summary": "۲ تا ۳ جمله جمع‌بندی وضعیت واقعی پروژه، نه کلی‌گویی",
+    "divergence_score": عددی صحیح بین ۰ تا ۱۰۰ — ۰ یعنی هر سه دیدگاه کاملاً همسو و بدون تناقض، ۱۰۰ یعنی تناقض‌های اساسی و غیرقابل‌توضیح بین دیدگاه‌ها؛ فقط بر اساس شواهد واقعی محاسبه کن نه حدس تصادفی,
+    "divergence_note": "یک جمله کوتاه که توضیح دهد این عدد از کجا آمده"
+  },
+  "overlooked_insights": [
+    { "insight": "نکته‌ای که به‌راحتی در نگاه اول دیده نمی‌شود", "evidence": "دقیقاً کدام بخش از داده‌ها این نکته را نشان می‌دهد", "why_it_matters": "چرا این نکته برای مدیریت مهم است" }
+  ],
+  "cross_perspective_contradictions": [
+    { "topic": "موضوع تناقض", "کارفرما": "ادعا یا عدد کارفرما یا null اگر اشاره نکرده", "مشاور": "ادعا یا عدد مشاور یا null", "پیمانکار": "ادعا یا عدد پیمانکار یا null", "why_it_matters": "چرا این تناقض مهم است" }
+  ],
+  "problem_areas": [
+    { "key": "دقیقاً یکی از این کلیدهای انگلیسی: engineering, procurement, construction, contract, finance, hse, quality (حوزه‌های X-Ray) یا row, pipe_supply, valve_equipment, welding, ndt, coating, lowering, backfilling, crossings, station_facility (جبهه‌های کاری)", "flagged_by": ["زیرمجموعه‌ای از کارفرما و/یا مشاور و/یا پیمانکار — هرکدام این حوزه/جبهه را زرد یا قرمز گزارش کرده"], "severity": "بحرانی" یا "زیاد" یا "متوسط", "synthesis": "چرا این حوزه/جبهه واقعاً مسئله‌ساز است" }
+  ],
+  "risk_register": [
+    { "risk": "شرح ریسک", "source_org": "کارفرما" یا "مشاور" یا "پیمانکار", "level": "بحرانی" یا "زیاد" یا "متوسط" یا "کم", "current_action": "اقدام فعلی یا توصیه‌شده" }
+  ],
+  "quick_win_comparison": [
+    { "organization": "کارفرما" یا "مشاور" یا "پیمانکار", "title": "عنوان پیشنهاد Quick Win آن رکن", "time_estimate_days": عدد تخمینی روز یا null, "impact_summary": "خلاصه اثر مورد انتظار", "recommended_rank": ۱ یا ۲ یا ۳ (۱ یعنی بیشترین اثر/کمترین زمان) }
+  ],
+  "selected_quick_win_assessment": "ارزیابی کوتاه از اینکه آیا Quick Win فعلاً برگزیده (در صورت وجود) هنوز بهترین انتخاب است؛ اگر هنوز چیزی انتخاب نشده null بگذار",
+  "root_cause_analysis": { "primary_root_cause": "مهم‌ترین علت ریشه‌ای مشترک", "summary": "توضیح کوتاه" },
+  "action_plan_30_days": [
+    { "week": "هفته اول" یا "هفته دوم" یا "هفته سوم" یا "هفته چهارم", "action": "اقدام مشخص", "owner": "مسئول پیشنهادی" }
+  ],
+  "executive_decisions_needed": ["تصمیم مورد نیاز از مدیریت ارشد", "..."],
+  "final_recommendation": "یک پاراگراف پایانی، مستقیم و قابل ارائه به مدیر اجرایی طرح"
+}`;
 
-    let analysisText: string;
+    // deno-lint-ignore no-explicit-any
+    let analysisJson: any;
 
     if (chosenProvider === "openai") {
       const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
@@ -240,7 +317,8 @@ ${progressText}
         // gpt-4o-mini is a good low-cost default; change if your account uses a different model.
         body: JSON.stringify({
           model: "gpt-4o-mini",
-          max_tokens: 2000,
+          max_tokens: 4000,
+          response_format: { type: "json_object" },
           messages: [{ role: "user", content: prompt }],
         }),
       });
@@ -255,7 +333,14 @@ ${progressText}
 
       const aiData = await aiRes.json();
       const content = aiData.choices?.[0]?.message?.content;
-      analysisText = typeof content === "string" && content ? content : "پاسخی دریافت نشد.";
+      if (typeof content !== "string" || !content.trim()) {
+        return jsonResponse({ error: "پاسخی از ChatGPT دریافت نشد." }, 502);
+      }
+      try {
+        analysisJson = JSON.parse(content);
+      } catch (_e) {
+        return jsonResponse({ error: "پاسخ ChatGPT به‌صورت JSON معتبر نبود." }, 502);
+      }
     } else {
       const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
       if (!GEMINI_API_KEY) {
@@ -272,6 +357,7 @@ ${progressText}
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" },
           }),
         },
       );
@@ -292,10 +378,30 @@ ${progressText}
       const parts = aiData.candidates?.[0]?.content?.parts;
       // deno-lint-ignore no-explicit-any
       const joinedText = Array.isArray(parts) ? parts.map((p: any) => (typeof p?.text === "string" ? p.text : "")).join("") : "";
-      analysisText = joinedText || "پاسخی دریافت نشد.";
+      if (!joinedText.trim()) {
+        return jsonResponse({ error: "پاسخی از Gemini دریافت نشد یا پاسخ توسط فیلتر محتوا مسدود شده است." }, 502);
+      }
+      try {
+        analysisJson = JSON.parse(joinedText);
+      } catch (_e) {
+        return jsonResponse({ error: "پاسخ Gemini به‌صورت JSON معتبر نبود." }, 502);
+      }
     }
 
-    return jsonResponse({ analysis: analysisText, provider: chosenProvider });
+    // Best-effort cache write — never let a caching failure hide an
+    // otherwise-successful analysis from the caller.
+    try {
+      await supabase.from("ai_analyses").insert({
+        project_name,
+        provider: chosenProvider,
+        analysis_json: analysisJson,
+        source_data_at: newestSourceAt,
+      });
+    } catch (_e) {
+      // ignore
+    }
+
+    return jsonResponse({ analysis: analysisJson, provider: chosenProvider, source: "live" });
   } catch (err) {
     return jsonResponse({ error: String(err) }, 500);
   }
