@@ -399,20 +399,37 @@ ${progressText}
       }
     }
 
-    // Best-effort cache write — never let a caching failure hide an
-    // otherwise-successful analysis from the caller.
+    // Cache write. A failure here must never hide an otherwise-successful
+    // analysis from the caller — but it also must not vanish silently the
+    // way it used to (an unchecked insert() never throws on an RLS/schema
+    // error; it just resolves with an `error` field nobody was reading),
+    // which made a real problem here indistinguishable from "no problem":
+    // the analysis would render fine, then quietly never be there again
+    // next time. Log it for the Edge Function logs, and also hand it back
+    // to the frontend so the admin sees it immediately, in context.
+    let cacheWriteError: string | null = null;
     try {
-      await supabase.from("ai_analyses").insert({
+      const { error: insertErr } = await supabase.from("ai_analyses").insert({
         project_name,
         provider: chosenProvider,
         analysis_json: analysisJson,
         source_data_at: newestSourceAt,
       });
-    } catch (_e) {
-      // ignore
+      if (insertErr) {
+        cacheWriteError = insertErr.message;
+        console.error("ai_analyses insert failed:", insertErr);
+      }
+    } catch (e) {
+      cacheWriteError = String(e);
+      console.error("ai_analyses insert threw:", e);
     }
 
-    return jsonResponse({ analysis: analysisJson, provider: chosenProvider, source: "live" });
+    return jsonResponse({
+      analysis: analysisJson,
+      provider: chosenProvider,
+      source: "live",
+      ...(cacheWriteError ? { cache_write_error: cacheWriteError } : {}),
+    });
   } catch (err) {
     return jsonResponse({ error: String(err) }, 500);
   }
