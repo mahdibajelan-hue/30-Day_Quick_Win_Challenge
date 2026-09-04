@@ -3050,8 +3050,16 @@
                         .maybeSingle();
 
                     if (cached) {
+                        // A stale/incompatible Edge Function deployment can have
+                        // stored analysis_json as a JSON *string* instead of an
+                        // object (double-encoded) — unwrap it here so an old bad
+                        // row still displays instead of showing "پاسخی دریافت نشد."
+                        let cachedAnalysis = cached.analysis_json;
+                        if (typeof cachedAnalysis === 'string') {
+                            try { cachedAnalysis = JSON.parse(cachedAnalysis); } catch (_e) { /* leave as-is */ }
+                        }
                         document.getElementById('reportAiSource').textContent = `نتایج تحلیل قبلی (تولید در ${formatJalali(cached.created_at)}) — برای تحلیل تازه «🔄 تولید مجدد بدون کش» را بزنید`;
-                        renderAiAnalysisSections(cached.analysis_json);
+                        renderAiAnalysisSections(cachedAnalysis);
                         return;
                     }
                 }
