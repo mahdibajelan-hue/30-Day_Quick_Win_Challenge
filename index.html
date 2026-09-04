@@ -1434,6 +1434,12 @@
                 }
             } else if (myProjectAccess.length > 1) {
                 populateAccessSelect('ci_mgr_access');
+            } else if (myProjectAccess.length === 1) {
+                // Only one project/organization to work with — no picker needed,
+                // but still load whatever was already saved instead of leaving
+                // the form blank (this used to only happen via the now-hidden
+                // «بارگذاری فرم» button).
+                await openCheckinPreview(myProjectAccess[0].project_name, myProjectAccess[0].organization);
             }
             const p = effectiveProfile();
             document.getElementById('ciProjectName').textContent = p ? p.project_name : '—';
@@ -1449,6 +1455,11 @@
                 if (pickedProjectContext) document.getElementById('cr_adm_project').value = pickedProjectContext.project_name;
             } else if (myProjectAccess.length > 1) {
                 populateAccessSelect('cr_mgr_access');
+            } else if (myProjectAccess.length === 1) {
+                // Only one project — no picker needed, but still load whatever
+                // was already saved instead of leaving the form blank (this
+                // used to only happen via the now-hidden «بارگذاری فرم» button).
+                await openClientReportPreview(myProjectAccess[0].project_name);
             }
             const p = effectiveProfile();
             document.getElementById('crProjectName').textContent = p ? p.project_name : '—';
@@ -1466,6 +1477,12 @@
                 }
             } else if (myProjectAccess.length > 1) {
                 populateAccessSelect('qwp_mgr_access');
+            } else if (myProjectAccess.length === 1) {
+                // Only one project/organization — no picker needed, but still
+                // load whatever was already saved instead of leaving the form
+                // blank (this used to only happen via the now-hidden
+                // «بارگذاری فرم» button).
+                await openQwProposalPreview(myProjectAccess[0].project_name, myProjectAccess[0].organization);
             }
             const p = effectiveProfile();
             document.getElementById('qwpProjectName').textContent = p ? p.project_name : '—';
