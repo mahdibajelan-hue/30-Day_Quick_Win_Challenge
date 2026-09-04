@@ -149,8 +149,19 @@ Deno.serve(async (req) => {
           .maybeSingle();
 
         if (cached && cached.source_data_at >= newestSourceAt) {
+          // A previous, incompatible deployment of this function could have
+          // stored analysis_json as a JSON *string* (double-encoded) instead
+          // of an object — unwrap it so an old row still renders correctly.
+          let cachedAnalysis = cached.analysis_json;
+          if (typeof cachedAnalysis === "string") {
+            try {
+              cachedAnalysis = JSON.parse(cachedAnalysis);
+            } catch (_e) {
+              // leave as-is
+            }
+          }
           return jsonResponse({
-            analysis: cached.analysis_json,
+            analysis: cachedAnalysis,
             provider: chosenProvider,
             source: "cache",
             cached_at: cached.created_at,
