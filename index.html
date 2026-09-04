@@ -153,13 +153,38 @@
         #sidebar::-webkit-scrollbar, .scroll-thin::-webkit-scrollbar { width: 6px; }
         #sidebar::-webkit-scrollbar-thumb, .scroll-thin::-webkit-scrollbar-thumb { background: var(--c-scrollbar-thumb); border-radius: 3px; }
         @media print {
+            /* Printed reports should always look like the light theme,
+               whichever theme is active on screen — a dark-background PDF
+               makes no sense on paper. Every card/badge/table in this app
+               already gets its color from these variables, so resetting
+               them here (rather than fighting each individual Tailwind
+               class) fixes print output everywhere at once. */
+            :root {
+                --c-white: 255 255 255;
+                --c-slate-50: #f8fafc; --c-slate-100: #f1f5f9; --c-slate-200: #e2e8f0;
+                --c-slate-300: #cbd5e1; --c-slate-400: #94a3b8; --c-slate-500: #64748b;
+                --c-slate-600: #475569; --c-slate-700: #334155; --c-slate-800: #1e293b;
+                --c-slate-900: #0f172a; --c-slate-950: #eef1f6;
+                --c-blue-100: #dbeafe; --c-blue-200: #bfdbfe;
+                --c-blue-700: #1d4ed8; --c-blue-800: #1e40af; --c-blue-900: 30 58 138;
+                --c-emerald-50: #ecfdf5; --c-emerald-100: #d1fae5; --c-emerald-200: #a7f3d0;
+                --c-emerald-600: #059669; --c-emerald-700: #047857; --c-emerald-800: #065f46; --c-emerald-900: #064e3b;
+                --c-amber-100: #fef3c7; --c-amber-500: #f59e0b; --c-amber-600: #d97706;
+                --c-amber-700: #b45309; --c-amber-800: #92400e; --c-amber-900: #78350f;
+                --c-red-100: #fee2e2; --c-red-600: #dc2626; --c-red-700: #b91c1c; --c-red-800: #991b1b;
+                --c-purple-100: #f3e8ff; --c-purple-200: #e9d5ff;
+                --c-purple-700: #7e22ce; --c-purple-800: #6b21a8;
+                --c-border: #e2e8f0;
+            }
             body { background: #fff !important; }
             body * { visibility: hidden; }
-            #aiReportView, #aiReportView * { visibility: visible; }
-            #aiReportView { position: absolute; inset: 0; padding: 0; margin: 0; background: #fff; }
+            #aiReportView, #aiReportView *, #execReportView, #execReportView *, #trackingView, #trackingView * { visibility: visible; }
+            #aiReportView, #execReportView, #trackingView { position: absolute; inset: 0; padding: 0; margin: 0; background: #fff; }
             .no-print { display: none !important; }
-            #aiReportView, #aiReportView .print-card { background: #fff !important; color: #111 !important; border-color: #ccc !important; }
-            #aiReportView h1, #aiReportView h2, #aiReportView h3, #aiReportView p, #aiReportView span, #aiReportView td, #aiReportView th, #aiReportView b { color: #111 !important; }
+            #aiReportView, #execReportView, #trackingView, .print-card { background: #fff !important; color: #111 !important; border-color: #ccc !important; }
+            #aiReportView h1, #aiReportView h2, #aiReportView h3, #aiReportView p, #aiReportView span, #aiReportView td, #aiReportView th, #aiReportView b,
+            #execReportView h1, #execReportView h2, #execReportView h3, #execReportView p, #execReportView span, #execReportView td, #execReportView th, #execReportView b,
+            #trackingView h1, #trackingView h2, #trackingView h3, #trackingView p, #trackingView span, #trackingView td, #trackingView th, #trackingView b { color: #111 !important; }
             .print-card { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: avoid; }
         }
     </style>
@@ -870,14 +895,18 @@
                 </div>
             </div>
 
-            <!-- QUICK WIN EXECUTION TRACKING (تایم‌لاین، آخرین وضعیت و فرد مسئول هر Quick Win برگزیده) -->
+            <!-- QUICK WIN EXECUTION TRACKING (تایم‌لاین، آخرین وضعیت، فرد مسئول و تسک‌های اجرایی هر Quick Win برگزیده) -->
             <div id="trackingView" class="hidden space-y-6">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-2">
-                    <div class="flex justify-between items-center">
+                    <div class="flex justify-between items-center flex-wrap gap-2">
                         <h2 class="text-xl font-bold text-blue-900">🗓️ پیگیری اجرای Quick Win</h2>
-                        <button onclick="loadTrackingData()" class="bg-blue-100 text-blue-900 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200">🔄 بروزرسانی</button>
+                        <div class="flex items-center gap-2 no-print">
+                            <button type="button" onclick="window.print()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-lg font-bold">🖨 گزارش پیگیری</button>
+                            <button onclick="loadTrackingData()" class="bg-blue-100 text-blue-900 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200">🔄 بروزرسانی</button>
+                        </div>
                     </div>
-                    <p class="text-xs text-slate-500">تایم‌لاین، آخرین وضعیت و فرد مسئول Quick Win برگزیده هر پروژه، تا رسیدن به نتیجه نهایی ظرف ۳۰ روز.</p>
+                    <p class="text-xs text-slate-500">تایم‌لاین، آخرین وضعیت، فرد مسئول و تسک‌های اجرایی Quick Win برگزیده هر پروژه، تا رسیدن به نتیجه نهایی ظرف ۳۰ روز.</p>
+                    <div id="trackingOverdueBanner"></div>
                 </div>
                 <div id="trackingContainer" class="space-y-6">
                     <p class="text-center text-slate-400 p-4">در حال بارگذاری...</p>
@@ -3160,6 +3189,51 @@
             return new Set((data || []).map(p => p.name));
         }
 
+        function isTaskOverdue(task) {
+            return task.status !== 'انجام‌شده' && task.due_date < new Date().toISOString().slice(0, 10);
+        }
+
+        function quickWinTaskItemHtml(task, isAdmin) {
+            const overdue = isTaskOverdue(task);
+            const badge = task.status === 'انجام‌شده'
+                ? '<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap">✅ انجام‌شده</span>'
+                : overdue
+                    ? '<span class="bg-red-100 text-red-800 px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap">⏰ معوق</span>'
+                    : `<span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap">${esc(task.status)}</span>`;
+            return `<div class="flex items-center justify-between gap-2 text-xs bg-slate-50 rounded-lg px-3 py-2 flex-wrap" data-task-id="${task.id}">
+                <div class="min-w-0">
+                    <p class="font-bold truncate">${esc(task.title)}</p>
+                    <p class="text-slate-500">👤 ${esc(task.responsible_name)} — مهلت: ${formatJalali(task.due_date)}</p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    ${badge}
+                    ${isAdmin && task.status !== 'انجام‌شده' ? `<button type="button" class="task-done-btn no-print text-[10px] bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded-lg font-bold">انجام شد</button>` : ''}
+                </div>
+            </div>`;
+        }
+
+        async function completeQuickWinTask(taskId) {
+            const { error } = await _supabase.from('quick_win_tasks')
+                .update({ status: 'انجام‌شده', completed_at: new Date().toISOString() })
+                .eq('id', taskId);
+            if (error) { alert('خطا در ثبت اتمام تسک: ' + error.message); return; }
+            loadTrackingData();
+        }
+
+        async function addQuickWinTask(projectName, title, responsibleName, responsibleEmail, dueDateJalali) {
+            const dueDateIso = jalaliInputToIso(dueDateJalali);
+            if (!title || !responsibleName || !responsibleEmail || !dueDateIso) {
+                alert('عنوان، مسئول، ایمیل مسئول و مهلت انجام (به‌صورت ۱۴۰۵/۰۶/۳۰) الزامی است.');
+                return;
+            }
+            const { error } = await _supabase.from('quick_win_tasks').insert([{
+                project_name: projectName, title, responsible_name: responsibleName,
+                responsible_email: responsibleEmail, due_date: dueDateIso, created_by: currentUser.email,
+            }]);
+            if (error) { alert('خطا در ثبت تسک: ' + error.message); return; }
+            loadTrackingData();
+        }
+
         async function loadTrackingData() {
             const container = document.getElementById('trackingContainer');
             container.innerHTML = '<p class="text-center text-slate-400 p-4">در حال دریافت اطلاعات پایش...</p>';
@@ -3167,16 +3241,25 @@
             const { data: decisions, error: e1 } = await _supabase.from('quick_win_decisions').select('*').order('target_date', { ascending: true });
             const { data: logs, error: e2 } = await _supabase.from('quick_win_progress').select('*').order('created_at', { ascending: true });
             const { data: checkins, error: e3 } = await _supabase.from('check_ins').select('*').order('created_at', { ascending: true });
-            if (e1 || e2 || e3) { container.innerHTML = '<p class="text-red-600 p-4">خطا در دریافت داده‌ها.</p>'; return; }
+            const { data: tasks, error: e4 } = await _supabase.from('quick_win_tasks').select('*').order('due_date', { ascending: true });
+            if (e1 || e2 || e3 || e4) { container.innerHTML = '<p class="text-red-600 p-4">خطا در دریافت داده‌ها.</p>'; return; }
 
             if (!decisions || decisions.length === 0) {
+                document.getElementById('trackingOverdueBanner').innerHTML = '';
                 container.innerHTML = '<p class="text-center text-slate-400 p-4">هنوز هیچ Quick Win‌ی انتخاب نشده.</p>';
                 return;
             }
 
             const logsByProject = {};
             (logs || []).forEach(l => { (logsByProject[l.project_name] ??= []).push(l); });
+            const tasksByProject = {};
+            (tasks || []).forEach(t => { (tasksByProject[t.project_name] ??= []).push(t); });
             const byProjectOrg = buildMergedByProjectOrg(checkins);
+
+            const overdueCount = (tasks || []).filter(isTaskOverdue).length;
+            document.getElementById('trackingOverdueBanner').innerHTML = overdueCount
+                ? `<div class="bg-red-100 text-red-800 text-xs font-bold px-3 py-2 rounded-lg">⚠️ ${toPersianDigits(overdueCount)} تسک معوق نیاز به پیگیری فوری دارد.</div>`
+                : '';
 
             const isAdmin = currentProfile.role === 'admin';
             container.innerHTML = '';
@@ -3211,8 +3294,13 @@
                         <span class="text-slate-400">- ${esc(l.reported_by || '')}</span>
                     </div>`).join('') || '<p class="text-xs text-slate-400">هنوز بروزرسانی‌ای ثبت نشده.</p>';
 
+                const projectTasks = tasksByProject[dec.project_name] || [];
+                const tasksHtml = projectTasks.length
+                    ? projectTasks.map(t => quickWinTaskItemHtml(t, isAdmin)).join('')
+                    : '<p class="text-xs text-slate-400">هنوز تسکی برای این Quick Win ثبت نشده.</p>';
+
                 const wrap = document.createElement('div');
-                wrap.innerHTML = `<div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-3">
+                wrap.innerHTML = `<div class="print-card bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-3">
                     <div class="flex justify-between items-center flex-wrap gap-2">
                         <div>
                             <h3 class="font-bold text-blue-900">${esc(dec.project_name)}</h3>
@@ -3225,17 +3313,47 @@
                     </div>
                     <p class="text-xs text-slate-500">وضعیت فعلی: <b>${esc(status)}</b> — 👤 مسئول: <b>${esc(responsible)}</b> — مهلت: ${formatJalali(dec.target_date)}</p>
                     <div class="space-y-1 max-h-40 overflow-y-auto">${timelineHtml}</div>
+
+                    <div class="pt-3 border-t space-y-2">
+                        <p class="text-xs font-bold text-slate-700">✅ تسک‌های اجرایی</p>
+                        <div class="tasks-list space-y-1.5">${tasksHtml}</div>
+                        ${isAdmin ? `
+                        <div class="no-print grid grid-cols-1 md:grid-cols-5 gap-2 pt-1 text-xs">
+                            <input class="task-title-input border rounded-lg p-2 md:col-span-2" type="text" placeholder="عنوان تسک">
+                            <input class="task-resp-name-input border rounded-lg p-2" type="text" placeholder="نام مسئول">
+                            <input class="task-resp-email-input border rounded-lg p-2" type="email" dir="ltr" placeholder="ایمیل مسئول">
+                            <input class="task-due-input border rounded-lg p-2 text-center" type="text" dir="ltr" placeholder="۱۴۰۵/۰۶/۳۰">
+                        </div>
+                        <button type="button" class="task-add-btn no-print w-full bg-slate-700 hover:bg-slate-600 text-white rounded-lg py-1.5 font-bold text-xs">➕ افزودن تسک</button>` : ''}
+                    </div>
+
                     ${isAdmin ? `
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-2 pt-3 border-t text-xs">
+                    <div class="no-print grid grid-cols-1 md:grid-cols-4 gap-2 pt-3 border-t text-xs">
                         <select class="status-select border rounded-lg p-2">${STATUS_OPTIONS.map(s => `<option ${s === status ? 'selected' : ''}>${s}</option>`).join('')}</select>
                         <input class="percent-input border rounded-lg p-2" type="number" step="any" min="0" max="100" value="${percent}" placeholder="درصد پیشرفت">
                         <input class="note-input border rounded-lg p-2 md:col-span-2" type="text" placeholder="توضیح بروزرسانی">
                     </div>
-                    <button type="button" class="update-btn w-full bg-amber-600 hover:bg-amber-500 text-white rounded-lg py-2 font-bold text-xs">ثبت بروزرسانی پیشرفت</button>` : ''}
+                    <button type="button" class="update-btn no-print w-full bg-amber-600 hover:bg-amber-500 text-white rounded-lg py-2 font-bold text-xs">ثبت بروزرسانی پیشرفت</button>` : ''}
                 </div>`;
 
                 const cardEl = wrap.firstElementChild;
+                cardEl.querySelectorAll('.task-done-btn').forEach(btn => {
+                    const taskId = Number(btn.closest('[data-task-id]').dataset.taskId);
+                    btn.addEventListener('click', () => completeQuickWinTask(taskId));
+                });
                 if (isAdmin) {
+                    const taskAddBtn = cardEl.querySelector('.task-add-btn');
+                    if (taskAddBtn) {
+                        taskAddBtn.addEventListener('click', () => {
+                            addQuickWinTask(
+                                dec.project_name,
+                                cardEl.querySelector('.task-title-input').value.trim(),
+                                cardEl.querySelector('.task-resp-name-input').value.trim(),
+                                cardEl.querySelector('.task-resp-email-input').value.trim(),
+                                cardEl.querySelector('.task-due-input').value.trim(),
+                            );
+                        });
+                    }
                     const statusSel = cardEl.querySelector('.status-select');
                     const percentInput = cardEl.querySelector('.percent-input');
                     const noteInput = cardEl.querySelector('.note-input');
