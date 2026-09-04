@@ -3346,21 +3346,32 @@
         function quickWinTaskItemHtml(task, isAdmin) {
             const overdue = isTaskOverdue(task);
             const isDone = task.status === 'انجام‌شده';
+            const isPending = task.status === 'در انتظار تایید';
+            // A non-admin can only act on a task through the submit button
+            // below when they're the one it's assigned to — admins have
+            // their own full controls regardless of whose name is on it.
+            const isResponsible = !isAdmin && task.responsible_email === currentUser.email;
             const badge = isDone
                 ? '<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap">✅ انجام‌شده</span>'
-                : overdue
-                    ? '<span class="bg-red-100 text-red-800 px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap">⏰ معوق</span>'
-                    : `<span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap">${esc(task.status)}</span>`;
+                : isPending
+                    ? '<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap">🕓 در انتظار تایید ادمین</span>'
+                    : overdue
+                        ? '<span class="bg-red-100 text-red-800 px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap">⏰ معوق</span>'
+                        : `<span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap">${esc(task.status)}</span>`;
             return `<div class="task-row" data-task-id="${task.id}">
                 <div class="flex items-center justify-between gap-2 text-xs bg-slate-50 rounded-lg px-3 py-2 flex-wrap">
                     <div class="min-w-0">
                         <p class="font-bold truncate ${isDone ? 'line-through text-slate-400' : ''}">${esc(task.title)}</p>
                         <p class="text-slate-500">👤 ${esc(task.responsible_name)} — مهلت: ${formatJalali(task.due_date)}</p>
+                        ${task.submitted_note ? `<p class="text-slate-400 italic truncate">📝 ${esc(task.submitted_note)}</p>` : ''}
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                         ${badge}
                         <span class="no-print flex items-center gap-1">
-                            ${isAdmin && !isDone ? `<button type="button" class="task-done-btn text-[10px] bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded-lg font-bold">انجام شد</button>` : ''}
+                            ${isResponsible && !isDone && !isPending ? `<button type="button" class="task-submit-btn text-[10px] bg-blue-900 hover:bg-blue-800 text-white px-2 py-1 rounded-lg font-bold">📤 ثبت اقدام</button>` : ''}
+                            ${isAdmin && isPending ? `<button type="button" class="task-approve-btn text-[10px] bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded-lg font-bold">✅ تایید نهایی</button>` : ''}
+                            ${isAdmin && isPending ? `<button type="button" class="task-reject-btn text-[10px] bg-amber-600 hover:bg-amber-500 text-white px-2 py-1 rounded-lg font-bold" title="بازگشت برای اصلاح">↩️ بازگشت</button>` : ''}
+                            ${isAdmin && !isDone && !isPending ? `<button type="button" class="task-done-btn text-[10px] bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded-lg font-bold">انجام شد</button>` : ''}
                             ${isAdmin ? `<button type="button" class="task-edit-btn text-[10px] bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded-lg font-bold" title="ویرایش تسک">✏️</button>` : ''}
                             ${isAdmin ? `<button type="button" class="task-delete-btn text-[10px] bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded-lg font-bold" title="حذف تسک">🗑</button>` : ''}
                         </span>
@@ -3397,8 +3408,12 @@
                 const task = tasksById[taskId];
                 if (!task) return;
 
-                if (e.target.closest('.task-done-btn')) {
+                if (e.target.closest('.task-done-btn') || e.target.closest('.task-approve-btn')) {
                     completeQuickWinTask(taskId);
+                } else if (e.target.closest('.task-reject-btn')) {
+                    rejectQuickWinTask(taskId);
+                } else if (e.target.closest('.task-submit-btn')) {
+                    submitQuickWinTask(taskId);
                 } else if (e.target.closest('.task-delete-btn')) {
                     if (confirm(`آیا از حذف تسک «${task.title}» مطمئنید؟`)) deleteQuickWinTask(taskId);
                 } else if (e.target.closest('.task-edit-btn')) {
@@ -3424,6 +3439,29 @@
                 .update({ status: 'انجام‌شده', completed_at: new Date().toISOString() })
                 .eq('id', taskId);
             if (error) { alert('خطا در ثبت اتمام تسک: ' + error.message); return; }
+            loadTrackingData();
+        }
+
+        // The task's responsible person reports their work is done; this
+        // only ever moves status to «در انتظار تایید» (enforced by RLS too),
+        // never straight to «انجام‌شده» — that final call stays admin's.
+        async function submitQuickWinTask(taskId) {
+            const note = prompt('توضیح اقدام انجام‌شده (اختیاری):', '');
+            if (note === null) return;
+            const { error } = await _supabase.from('quick_win_tasks')
+                .update({ status: 'در انتظار تایید', submitted_at: new Date().toISOString(), submitted_note: note || null })
+                .eq('id', taskId);
+            if (error) { alert('خطا در ثبت اقدام: ' + error.message); return; }
+            loadTrackingData();
+        }
+
+        // Admin sends a submitted task back for rework instead of approving it.
+        async function rejectQuickWinTask(taskId) {
+            if (!confirm('این تسک به «در حال انجام» بازگردانده شود تا مسئول دوباره اقدام کند؟')) return;
+            const { error } = await _supabase.from('quick_win_tasks')
+                .update({ status: 'در حال انجام', submitted_at: null, submitted_note: null })
+                .eq('id', taskId);
+            if (error) { alert('خطا در بازگشت تسک: ' + error.message); return; }
             loadTrackingData();
         }
 
@@ -3532,12 +3570,14 @@
             (tasks || []).forEach(t => { (tasksByProject[t.project_name] ??= []).push(t); });
             const byProjectOrg = buildMergedByProjectOrg(checkins);
 
-            const overdueCount = (tasks || []).filter(isTaskOverdue).length;
-            document.getElementById('trackingOverdueBanner').innerHTML = overdueCount
-                ? `<div class="bg-red-100 text-red-800 text-xs font-bold px-3 py-2 rounded-lg">⚠️ ${toPersianDigits(overdueCount)} تسک معوق نیاز به پیگیری فوری دارد.</div>`
-                : '';
-
             const isAdmin = currentProfile.role === 'admin';
+            const overdueCount = (tasks || []).filter(isTaskOverdue).length;
+            const pendingApprovalCount = isAdmin ? (tasks || []).filter(t => t.status === 'در انتظار تایید').length : 0;
+            const bannerParts = [];
+            if (overdueCount) bannerParts.push(`<div class="bg-red-100 text-red-800 text-xs font-bold px-3 py-2 rounded-lg">⚠️ ${toPersianDigits(overdueCount)} تسک معوق نیاز به پیگیری فوری دارد.</div>`);
+            if (pendingApprovalCount) bannerParts.push(`<div class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-2 rounded-lg">🕓 ${toPersianDigits(pendingApprovalCount)} تسک در انتظار تایید نهایی شماست.</div>`);
+            document.getElementById('trackingOverdueBanner').innerHTML = bannerParts.length ? `<div class="space-y-2">${bannerParts.join('')}</div>` : '';
+
             renderTaskSummaryReport(tasks, isAdmin);
             container.innerHTML = '';
             const today = new Date(); today.setHours(0, 0, 0, 0);
