@@ -908,6 +908,7 @@
                     <p class="text-xs text-slate-500">تایم‌لاین، آخرین وضعیت، فرد مسئول و تسک‌های اجرایی Quick Win برگزیده هر پروژه، تا رسیدن به نتیجه نهایی ظرف ۳۰ روز.</p>
                     <div id="trackingOverdueBanner"></div>
                 </div>
+                <div id="trackingTaskReport"></div>
                 <div id="trackingContainer" class="space-y-6">
                     <p class="text-center text-slate-400 p-4">در حال بارگذاری...</p>
                 </div>
@@ -1077,6 +1078,138 @@
         function todayJalali() {
             const now = new Date();
             return formatJalali(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`);
+        }
+
+        // --------------------------------------------------
+        // JALALI CALENDAR PICKER — a small popup calendar (no external
+        // library) for any text input that should hold a Jalali date.
+        // attachJalaliDatePicker() makes the input read-only so the
+        // calendar is the only way to set it — jalaliInputToIso() never
+        // has to deal with a mistyped format.
+        // --------------------------------------------------
+        const JALALI_MONTH_NAMES = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
+        const JALALI_WEEKDAY_LABELS = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
+
+        function daysInJalaliMonth(jy, jm) {
+            if (jm <= 6) return 31;
+            if (jm <= 11) return 30;
+            // Esfand: round-trip day 30 through Gregorian to see if this
+            // Jalali year is leap, using the exact same conversion the
+            // rest of the app relies on (instead of a separate leap-year
+            // formula that could disagree with it).
+            const [gy, gm, gd] = jalaliToGregorian(jy, 12, 30);
+            const [jy2, jm2, jd2] = gregorianToJalali(gy, gm, gd);
+            return (jy2 === jy && jm2 === 12 && jd2 === 30) ? 30 : 29;
+        }
+
+        let activeJalaliPicker = null;
+        let activeJalaliPickerInput = null;
+        let activeJalaliPickerOutsideHandler = null;
+
+        function closeJalaliPicker() {
+            if (activeJalaliPickerOutsideHandler) {
+                document.removeEventListener('click', activeJalaliPickerOutsideHandler);
+                activeJalaliPickerOutsideHandler = null;
+            }
+            if (activeJalaliPicker) {
+                activeJalaliPicker.remove();
+                activeJalaliPicker = null;
+                activeJalaliPickerInput = null;
+            }
+        }
+
+        function attachJalaliDatePicker(input) {
+            input.readOnly = true;
+            input.classList.add('cursor-pointer', 'bg-white');
+            input.addEventListener('click', (e) => { e.stopPropagation(); openJalaliPicker(input); });
+        }
+
+        function openJalaliPicker(input) {
+            if (activeJalaliPickerInput === input) { closeJalaliPicker(); return; }
+            closeJalaliPicker();
+
+            const today = new Date();
+            let [jy, jm] = gregorianToJalali(today.getFullYear(), today.getMonth() + 1, today.getDate());
+            const existingIso = jalaliInputToIso(input.value);
+            if (existingIso) {
+                const [ey, em, ed] = existingIso.split('-').map(Number);
+                [jy, jm] = gregorianToJalali(ey, em, ed);
+            }
+
+            const pop = document.createElement('div');
+            pop.className = 'fixed z-50 bg-white border rounded-xl shadow-lg p-3 text-xs';
+            pop.style.width = '240px';
+            // render() replaces pop's children (month nav, day select), which
+            // would detach the exact node a bubbled click event was dispatched
+            // on — making the outside-click check below (which walks up from
+            // e.target) see no connection to `pop` and self-close the picker
+            // on every nav click. Stopping propagation here keeps all clicks
+            // inside the popup from ever reaching that document listener.
+            pop.addEventListener('click', (e) => e.stopPropagation());
+            document.body.appendChild(pop);
+            activeJalaliPicker = pop;
+            activeJalaliPickerInput = input;
+
+            function selectDay(d) {
+                const [gy, gm, gd] = jalaliToGregorian(jy, jm, d);
+                const iso = `${gy}-${String(gm).padStart(2, '0')}-${String(gd).padStart(2, '0')}`;
+                input.value = formatJalali(iso);
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                closeJalaliPicker();
+            }
+
+            function render() {
+                const dim = daysInJalaliMonth(jy, jm);
+                const [gy1, gm1, gd1] = jalaliToGregorian(jy, jm, 1);
+                const startOffset = (new Date(gy1, gm1 - 1, gd1).getDay() + 1) % 7;
+                const selectedIso = jalaliInputToIso(input.value);
+
+                let cells = '';
+                for (let i = 0; i < startOffset; i++) cells += '<span></span>';
+                for (let d = 1; d <= dim; d++) {
+                    const [dgy, dgm, dgd] = jalaliToGregorian(jy, jm, d);
+                    const dIso = `${dgy}-${String(dgm).padStart(2, '0')}-${String(dgd).padStart(2, '0')}`;
+                    const isSelected = dIso === selectedIso;
+                    cells += `<button type="button" data-day="${d}" class="jdp-day h-7 rounded-lg hover:bg-blue-100 ${isSelected ? 'bg-blue-900 text-white font-bold' : ''}">${toPersianDigits(d)}</button>`;
+                }
+
+                pop.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <button type="button" class="jdp-next px-2 py-1 rounded hover:bg-slate-100">›</button>
+                        <span class="font-bold">${JALALI_MONTH_NAMES[jm - 1]} ${toPersianDigits(jy)}</span>
+                        <button type="button" class="jdp-prev px-2 py-1 rounded hover:bg-slate-100">‹</button>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1 text-center text-slate-400 mb-1">${JALALI_WEEKDAY_LABELS.map(w => `<span>${w}</span>`).join('')}</div>
+                    <div class="grid grid-cols-7 gap-1 text-center">${cells}</div>
+                    <button type="button" class="jdp-today w-full mt-2 text-blue-900 hover:underline">امروز</button>
+                `;
+
+                pop.querySelector('.jdp-prev').addEventListener('click', () => { jm++; if (jm > 12) { jm = 1; jy++; } render(); });
+                pop.querySelector('.jdp-next').addEventListener('click', () => { jm--; if (jm < 1) { jm = 12; jy--; } render(); });
+                pop.querySelector('.jdp-today').addEventListener('click', () => {
+                    const t = new Date();
+                    const [ty, tm, td] = gregorianToJalali(t.getFullYear(), t.getMonth() + 1, t.getDate());
+                    jy = ty; jm = tm;
+                    selectDay(td);
+                });
+                pop.querySelectorAll('.jdp-day').forEach(btn => {
+                    btn.addEventListener('click', () => selectDay(Number(btn.dataset.day)));
+                });
+            }
+
+            render();
+
+            const rect = input.getBoundingClientRect();
+            pop.style.top = `${rect.bottom + 4}px`;
+            pop.style.left = `${Math.max(8, Math.min(rect.right - 240, window.innerWidth - 248))}px`;
+
+            const onDocClick = (e) => {
+                if (activeJalaliPicker && !activeJalaliPicker.contains(e.target) && e.target !== input) closeJalaliPicker();
+            };
+            setTimeout(() => {
+                document.addEventListener('click', onDocClick);
+                activeJalaliPickerOutsideHandler = onDocClick;
+            }, 0);
         }
 
         // --------------------------------------------------
@@ -3212,21 +3345,78 @@
 
         function quickWinTaskItemHtml(task, isAdmin) {
             const overdue = isTaskOverdue(task);
-            const badge = task.status === 'انجام‌شده'
+            const isDone = task.status === 'انجام‌شده';
+            const badge = isDone
                 ? '<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap">✅ انجام‌شده</span>'
                 : overdue
                     ? '<span class="bg-red-100 text-red-800 px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap">⏰ معوق</span>'
                     : `<span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap">${esc(task.status)}</span>`;
-            return `<div class="flex items-center justify-between gap-2 text-xs bg-slate-50 rounded-lg px-3 py-2 flex-wrap" data-task-id="${task.id}">
-                <div class="min-w-0">
-                    <p class="font-bold truncate">${esc(task.title)}</p>
-                    <p class="text-slate-500">👤 ${esc(task.responsible_name)} — مهلت: ${formatJalali(task.due_date)}</p>
-                </div>
-                <div class="flex items-center gap-2 shrink-0">
-                    ${badge}
-                    ${isAdmin && task.status !== 'انجام‌شده' ? `<button type="button" class="task-done-btn no-print text-[10px] bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded-lg font-bold">انجام شد</button>` : ''}
+            return `<div class="task-row" data-task-id="${task.id}">
+                <div class="flex items-center justify-between gap-2 text-xs bg-slate-50 rounded-lg px-3 py-2 flex-wrap">
+                    <div class="min-w-0">
+                        <p class="font-bold truncate ${isDone ? 'line-through text-slate-400' : ''}">${esc(task.title)}</p>
+                        <p class="text-slate-500">👤 ${esc(task.responsible_name)} — مهلت: ${formatJalali(task.due_date)}</p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        ${badge}
+                        <span class="no-print flex items-center gap-1">
+                            ${isAdmin && !isDone ? `<button type="button" class="task-done-btn text-[10px] bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded-lg font-bold">انجام شد</button>` : ''}
+                            ${isAdmin ? `<button type="button" class="task-edit-btn text-[10px] bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded-lg font-bold" title="ویرایش تسک">✏️</button>` : ''}
+                            ${isAdmin ? `<button type="button" class="task-delete-btn text-[10px] bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded-lg font-bold" title="حذف تسک">🗑</button>` : ''}
+                        </span>
+                    </div>
                 </div>
             </div>`;
+        }
+
+        function quickWinTaskEditFormHtml(task) {
+            return `<div class="task-row" data-task-id="${task.id}">
+                <div class="no-print bg-slate-50 rounded-lg p-2.5 space-y-2 text-xs">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <input class="task-edit-title border rounded-lg p-2 md:col-span-2" type="text" value="${esc(task.title)}" placeholder="عنوان تسک">
+                        <input class="task-edit-resp-name border rounded-lg p-2" type="text" value="${esc(task.responsible_name)}" placeholder="نام مسئول">
+                        <input class="task-edit-resp-email border rounded-lg p-2" type="email" dir="ltr" value="${esc(task.responsible_email)}" placeholder="ایمیل مسئول">
+                        <input class="task-edit-due border rounded-lg p-2 text-center md:col-span-2" type="text" dir="ltr" value="${formatJalali(task.due_date)}" placeholder="۱۴۰۵/۰۶/۳۰">
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="button" class="task-save-btn flex-1 bg-blue-900 hover:bg-blue-800 text-white rounded-lg py-1.5 font-bold">ذخیره</button>
+                        <button type="button" class="task-cancel-btn flex-1 bg-slate-200 hover:bg-slate-300 rounded-lg py-1.5 font-bold">انصراف</button>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        // Event delegation on a project's .tasks-list container — handles
+        // done/edit/delete/save/cancel for every task row, including rows
+        // swapped into edit mode after the list was first rendered.
+        function wireTasksList(listEl, tasksById, isAdmin) {
+            listEl.addEventListener('click', (e) => {
+                const row = e.target.closest('.task-row');
+                if (!row) return;
+                const taskId = Number(row.dataset.taskId);
+                const task = tasksById[taskId];
+                if (!task) return;
+
+                if (e.target.closest('.task-done-btn')) {
+                    completeQuickWinTask(taskId);
+                } else if (e.target.closest('.task-delete-btn')) {
+                    if (confirm(`آیا از حذف تسک «${task.title}» مطمئنید؟`)) deleteQuickWinTask(taskId);
+                } else if (e.target.closest('.task-edit-btn')) {
+                    row.outerHTML = quickWinTaskEditFormHtml(task);
+                    const newRow = listEl.querySelector(`[data-task-id="${taskId}"]`);
+                    attachJalaliDatePicker(newRow.querySelector('.task-edit-due'));
+                } else if (e.target.closest('.task-cancel-btn')) {
+                    row.outerHTML = quickWinTaskItemHtml(task, isAdmin);
+                } else if (e.target.closest('.task-save-btn')) {
+                    updateQuickWinTask(
+                        taskId,
+                        row.querySelector('.task-edit-title').value.trim(),
+                        row.querySelector('.task-edit-resp-name').value.trim(),
+                        row.querySelector('.task-edit-resp-email').value.trim(),
+                        row.querySelector('.task-edit-due').value.trim(),
+                    );
+                }
+            });
         }
 
         async function completeQuickWinTask(taskId) {
@@ -3234,6 +3424,26 @@
                 .update({ status: 'انجام‌شده', completed_at: new Date().toISOString() })
                 .eq('id', taskId);
             if (error) { alert('خطا در ثبت اتمام تسک: ' + error.message); return; }
+            loadTrackingData();
+        }
+
+        async function deleteQuickWinTask(taskId) {
+            const { error } = await _supabase.from('quick_win_tasks').delete().eq('id', taskId);
+            if (error) { alert('خطا در حذف تسک: ' + error.message); return; }
+            loadTrackingData();
+        }
+
+        async function updateQuickWinTask(taskId, title, responsibleName, responsibleEmail, dueDateJalali) {
+            const dueDateIso = jalaliInputToIso(dueDateJalali);
+            if (!title || !responsibleName || !responsibleEmail || !dueDateIso) {
+                alert('عنوان، مسئول، ایمیل مسئول و مهلت انجام (به‌صورت ۱۴۰۵/۰۶/۳۰) الزامی است.');
+                return;
+            }
+            const { error } = await _supabase.from('quick_win_tasks').update({
+                title, responsible_name: responsibleName, responsible_email: responsibleEmail, due_date: dueDateIso,
+                overdue_notified_at: null,
+            }).eq('id', taskId);
+            if (error) { alert('خطا در ذخیره ویرایش: ' + error.message); return; }
             loadTrackingData();
         }
 
@@ -3251,6 +3461,54 @@
             loadTrackingData();
         }
 
+        function taskReportRowHtml(task, extraCol) {
+            return `<tr>
+                <td class="p-2 border-b border-slate-100">${esc(task.project_name)}</td>
+                <td class="p-2 border-b border-slate-100">${esc(task.title)}</td>
+                <td class="p-2 border-b border-slate-100">${esc(task.responsible_name)}</td>
+                <td class="p-2 border-b border-slate-100 whitespace-nowrap">${extraCol}</td>
+            </tr>`;
+        }
+
+        function taskReportTableHtml(rows, extraHeader, extraGetter, emptyMsg) {
+            return rows.length
+                ? `<div class="overflow-x-auto"><table class="w-full text-xs text-right">
+                    <thead><tr class="text-slate-500 border-b border-slate-200">
+                        <th class="p-2">پروژه</th><th class="p-2">عنوان تسک</th><th class="p-2">مسئول</th><th class="p-2">${extraHeader}</th>
+                    </tr></thead>
+                    <tbody>${rows.map(t => taskReportRowHtml(t, extraGetter(t))).join('')}</tbody>
+                </table></div>`
+                : `<p class="text-xs text-slate-400">${emptyMsg}</p>`;
+        }
+
+        // Cross-project report of overdue + completed tasks. Admins see every
+        // project's tasks together here (same query, no per-project filter);
+        // a manager's own report is naturally scoped to their project(s) by
+        // the RLS policy on quick_win_tasks, so no extra filtering is needed.
+        function renderTaskSummaryReport(tasks, isAdmin) {
+            const reportEl = document.getElementById('trackingTaskReport');
+            const overdueTasks = (tasks || []).filter(isTaskOverdue);
+            const doneTasks = (tasks || []).filter(t => t.status === 'انجام‌شده')
+                .slice().sort((a, b) => new Date(b.completed_at || 0) - new Date(a.completed_at || 0));
+
+            if (!tasks || tasks.length === 0) { reportEl.innerHTML = ''; return; }
+
+            reportEl.innerHTML = `<div class="print-card bg-white p-5 rounded-2xl shadow-sm border space-y-4">
+                <div class="flex justify-between items-center flex-wrap gap-2">
+                    <h3 class="font-bold text-blue-900">📋 گزارش تسک‌های معوق و انجام‌شده${isAdmin ? ' (همه پروژه‌ها)' : ''}</h3>
+                    <button type="button" onclick="window.print()" class="no-print bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-lg font-bold">🖨 چاپ گزارش</button>
+                </div>
+                <div class="space-y-2">
+                    <p class="text-xs font-bold text-red-700">⏰ تسک‌های معوق (${toPersianDigits(overdueTasks.length)})</p>
+                    ${taskReportTableHtml(overdueTasks, 'مهلت', t => formatJalali(t.due_date), 'تسک معوقی وجود ندارد.')}
+                </div>
+                <div class="space-y-2">
+                    <p class="text-xs font-bold text-emerald-700">✅ تسک‌های انجام‌شده (${toPersianDigits(doneTasks.length)})</p>
+                    ${taskReportTableHtml(doneTasks, 'تاریخ انجام', t => formatJalali(t.completed_at), 'هنوز تسکی انجام نشده.')}
+                </div>
+            </div>`;
+        }
+
         async function loadTrackingData() {
             const container = document.getElementById('trackingContainer');
             container.innerHTML = '<p class="text-center text-slate-400 p-4">در حال دریافت اطلاعات پایش...</p>';
@@ -3263,6 +3521,7 @@
 
             if (!decisions || decisions.length === 0) {
                 document.getElementById('trackingOverdueBanner').innerHTML = '';
+                document.getElementById('trackingTaskReport').innerHTML = '';
                 container.innerHTML = '<p class="text-center text-slate-400 p-4">هنوز هیچ Quick Win‌ی انتخاب نشده.</p>';
                 return;
             }
@@ -3279,6 +3538,7 @@
                 : '';
 
             const isAdmin = currentProfile.role === 'admin';
+            renderTaskSummaryReport(tasks, isAdmin);
             container.innerHTML = '';
             const today = new Date(); today.setHours(0, 0, 0, 0);
 
@@ -3312,6 +3572,8 @@
                     </div>`).join('') || '<p class="text-xs text-slate-400">هنوز بروزرسانی‌ای ثبت نشده.</p>';
 
                 const projectTasks = tasksByProject[dec.project_name] || [];
+                const tasksById = {};
+                projectTasks.forEach(t => { tasksById[t.id] = t; });
                 const tasksHtml = projectTasks.length
                     ? projectTasks.map(t => quickWinTaskItemHtml(t, isAdmin)).join('')
                     : '<p class="text-xs text-slate-400">هنوز تسکی برای این Quick Win ثبت نشده.</p>';
@@ -3354,20 +3616,19 @@
                 </div>`;
 
                 const cardEl = wrap.firstElementChild;
-                cardEl.querySelectorAll('.task-done-btn').forEach(btn => {
-                    const taskId = Number(btn.closest('[data-task-id]').dataset.taskId);
-                    btn.addEventListener('click', () => completeQuickWinTask(taskId));
-                });
+                wireTasksList(cardEl.querySelector('.tasks-list'), tasksById, isAdmin);
                 if (isAdmin) {
                     const taskAddBtn = cardEl.querySelector('.task-add-btn');
                     if (taskAddBtn) {
+                        const taskDueInput = cardEl.querySelector('.task-due-input');
+                        attachJalaliDatePicker(taskDueInput);
                         taskAddBtn.addEventListener('click', () => {
                             addQuickWinTask(
                                 dec.project_name,
                                 cardEl.querySelector('.task-title-input').value.trim(),
                                 cardEl.querySelector('.task-resp-name-input').value.trim(),
                                 cardEl.querySelector('.task-resp-email-input').value.trim(),
-                                cardEl.querySelector('.task-due-input').value.trim(),
+                                taskDueInput.value.trim(),
                             );
                         });
                     }
