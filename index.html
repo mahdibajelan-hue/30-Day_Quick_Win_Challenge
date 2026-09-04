@@ -3164,14 +3164,10 @@
             const container = document.getElementById('trackingContainer');
             container.innerHTML = '<p class="text-center text-slate-400 p-4">در حال دریافت اطلاعات پایش...</p>';
 
-            const { data: rawDecisions, error: e1 } = await _supabase.from('quick_win_decisions').select('*').order('target_date', { ascending: true });
-            const { data: rawLogs, error: e2 } = await _supabase.from('quick_win_progress').select('*').order('created_at', { ascending: true });
-            const { data: rawCheckins, error: e3 } = await _supabase.from('check_ins').select('*').order('created_at', { ascending: true });
+            const { data: decisions, error: e1 } = await _supabase.from('quick_win_decisions').select('*').order('target_date', { ascending: true });
+            const { data: logs, error: e2 } = await _supabase.from('quick_win_progress').select('*').order('created_at', { ascending: true });
+            const { data: checkins, error: e3 } = await _supabase.from('check_ins').select('*').order('created_at', { ascending: true });
             if (e1 || e2 || e3) { container.innerHTML = '<p class="text-red-600 p-4">خطا در دریافت داده‌ها.</p>'; return; }
-            const guideNames = await getGuideProjectNames();
-            const decisions = (rawDecisions || []).filter(d => !guideNames.has(d.project_name));
-            const logs = (rawLogs || []).filter(l => !guideNames.has(l.project_name));
-            const checkins = (rawCheckins || []).filter(c => !guideNames.has(c.project_name));
 
             if (!decisions || decisions.length === 0) {
                 container.innerHTML = '<p class="text-center text-slate-400 p-4">هنوز هیچ Quick Win‌ی انتخاب نشده.</p>';
