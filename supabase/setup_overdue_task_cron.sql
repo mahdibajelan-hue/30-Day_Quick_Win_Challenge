@@ -16,7 +16,7 @@
 --
 -- Steps:
 --   1. Deploy the notify-overdue-tasks Edge Function and set its
---      RESEND_API_KEY, RESEND_FROM, and CRON_SECRET secrets.
+--      GMAIL_USER, GMAIL_APP_PASSWORD, and CRON_SECRET secrets.
 --   2. Replace both placeholders below with your real values.
 --   3. Run the resulting SQL once in the Supabase SQL Editor.
 --

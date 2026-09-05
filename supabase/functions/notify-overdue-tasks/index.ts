@@ -4,32 +4,51 @@
 // triggered once a day by a Supabase Cron schedule (pg_cron + pg_net,
 // see supabase/setup_overdue_task_cron.sql). It finds every
 // quick_win_tasks row that's still open past its due_date and hasn't
-// been notified about yet, and emails via Resend whoever still owes an
-// action: the responsible person (cc admins) while the task hasn't been
-// submitted yet, or admins directly once it's «در انتظار تایید» — their
-// final approval is the only thing left — then stamps overdue_notified_at
-// so the same task is only ever emailed about once.
+// been notified about yet, and emails via Gmail SMTP whoever still owes
+// an action: the responsible person (cc admins) while the task hasn't
+// been submitted yet, or admins directly once it's «در انتظار تایید» —
+// their final approval is the only thing left — then stamps
+// overdue_notified_at so the same task is only ever emailed about once.
 //
 // There is no logged-in caller here (it's a scheduled job, not a user
 // action), so — unlike analyze-project — using the service-role key is
 // the correct choice: it needs to read across every project's tasks and
 // every admin's email regardless of who (if anyone) is logged in.
 //
+// Sends mail through the same Gmail account already configured as
+// Supabase Auth's custom SMTP sender, instead of a separate provider
+// (Resend) — fine at this app's actual alarm volume (a handful of
+// overdue-task emails a day, at most), but note Gmail's ~500/day sending
+// cap and that it isn't really built for automated/server-side sending
+// the way a dedicated transactional provider is — worth revisiting if
+// this app's email volume ever grows meaningfully.
+//
+// Uses nodemailer (via Deno's npm: specifier) rather than a Deno-native
+// SMTP client — this is the library Supabase's own official edge-function
+// email example uses (supabase/examples/edge-functions .../send-email-smtp),
+// and outgoing connections on port 465 (implicit TLS, used below) are
+// confirmed working from Edge Functions in practice, despite older docs
+// listing SMTP ports as unsupported.
+//
 // Deploy: `supabase functions deploy notify-overdue-tasks` (or paste into
 // the Supabase dashboard). Required secrets:
-//   - RESEND_API_KEY: API key from resend.com (used to actually send mail)
-//   - RESEND_FROM: the "from" address, e.g. "پیگیری Quick Win <alerts@yourdomain.com>"
-//     (must be on a domain verified in Resend)
+//   - GMAIL_USER: the Gmail address to send from, e.g. you@gmail.com
+//   - GMAIL_APP_PASSWORD: a Google *App Password* for that account (Gmail
+//     requires 2-Step Verification to be on, then generate one at
+//     https://myaccount.google.com/apppasswords) — never the account's
+//     normal login password. Reuse the same one already generated for
+//     Supabase Auth's SMTP settings, if that's already set up.
 //   - CRON_SECRET: any random string you choose — the cron job must send
 //     it back in the x-cron-secret header, so this endpoint can't be
 //     triggered (and made to send mail) by anyone who finds its URL.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import nodemailer from "npm:nodemailer@9";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const RESEND_FROM = Deno.env.get("RESEND_FROM") ?? "پیگیری Quick Win <onboarding@resend.dev>";
+const GMAIL_USER = Deno.env.get("GMAIL_USER");
+const GMAIL_APP_PASSWORD = Deno.env.get("GMAIL_APP_PASSWORD");
 const CRON_SECRET = Deno.env.get("CRON_SECRET");
 
 function jsonResponse(body: unknown, status = 200) {
@@ -72,8 +91,8 @@ Deno.serve(async (req) => {
     if (!CRON_SECRET || req.headers.get("x-cron-secret") !== CRON_SECRET) {
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
-    if (!RESEND_API_KEY) {
-      return jsonResponse({ error: "کلید RESEND_API_KEY هنوز در تنظیمات Supabase (Secrets) ثبت نشده است." }, 500);
+    if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
+      return jsonResponse({ error: "GMAIL_USER و GMAIL_APP_PASSWORD هنوز در تنظیمات Supabase (Secrets) ثبت نشده‌اند." }, 500);
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -94,6 +113,13 @@ Deno.serve(async (req) => {
     // deno-lint-ignore no-explicit-any
     const adminEmails = (admins || []).map((a: any) => a.email).filter(Boolean);
 
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
+    });
+
     let notified = 0;
     const errors: string[] = [];
 
@@ -107,23 +133,16 @@ Deno.serve(async (req) => {
       const ccEmails = pendingApproval ? [] : adminEmails;
       if (toEmails.length === 0) continue;
 
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          Authorization: `Bearer ${RESEND_API_KEY}`,
-        },
-        body: JSON.stringify({
-          from: RESEND_FROM,
+      try {
+        await transporter.sendMail({
+          from: `"پیگیری Quick Win" <${GMAIL_USER}>`,
           to: toEmails,
-          cc: ccEmails,
+          ...(ccEmails.length ? { cc: ccEmails } : {}),
           subject,
           html,
-        }),
-      });
-
-      if (!res.ok) {
-        errors.push(`task ${task.id}: ${await res.text()}`);
+        });
+      } catch (sendErr) {
+        errors.push(`task ${task.id}: ${String(sendErr)}`);
         continue;
       }
 
