@@ -1,7 +1,7 @@
 -- ============================================================
 -- ONE-TIME MANUAL SETUP — do not run this as-is, it will fail.
 -- This is not part of the automatic migration sequence (016 only
--- enables the pg_cron/pg_net extensions) because it needs two values
+-- enables the pg_cron/pg_net extensions) because it needs three values
 -- that are specific to YOUR Supabase project and must never be
 -- committed to git as real secrets:
 --
@@ -13,11 +13,19 @@
 --      Edge Function (Project Settings → Edge Functions → Secrets),
 --      so the function can tell this scheduled call apart from a
 --      random person hitting its URL directly.
+--   3. <YOUR-ANON-KEY>  — the project's public "anon" key, from
+--      Project Settings → API → Project API keys. This is NOT a
+--      secret (it's the same key the frontend already ships to every
+--      browser) — it's required only because every Edge Function sits
+--      behind Supabase's own gateway, which rejects any request with
+--      no Authorization header at all before it ever reaches your
+--      function's code. The x-cron-secret header above is still what
+--      actually authorizes this call inside the function itself.
 --
 -- Steps:
 --   1. Deploy the notify-overdue-tasks Edge Function and set its
 --      GMAIL_USER, GMAIL_APP_PASSWORD, and CRON_SECRET secrets.
---   2. Replace both placeholders below with your real values.
+--   2. Replace all three placeholders below with your real values.
 --   3. Run the resulting SQL once in the Supabase SQL Editor.
 --
 -- This schedules the function to run every day at 06:00 UTC; adjust
@@ -32,6 +40,7 @@ select cron.schedule(
         url := 'https://<YOUR-PROJECT-REF>.supabase.co/functions/v1/notify-overdue-tasks',
         headers := jsonb_build_object(
             'Content-Type', 'application/json',
+            'Authorization', 'Bearer <YOUR-ANON-KEY>',
             'x-cron-secret', '<YOUR-CRON-SECRET>'
         ),
         body := '{}'::jsonb
