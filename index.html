@@ -289,11 +289,35 @@
             </div>
             <p class="text-xs font-bold text-yellow-600">«هر پروژه، یک مسئله؛ هر مسئله، یک اقدام؛ هر اقدام، یک نتیجه.»</p>
             <h2 class="text-lg font-bold text-blue-900">ورود به سامانه</h2>
-            <input id="loginEmail" type="email" placeholder="ایمیل شما" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center bg-slate-50">
-            <input id="loginPassword" type="password" placeholder="رمز عبور" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center bg-slate-50">
-            <button id="loginBtn" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-2.5 rounded-xl transition">ورود</button>
-            <p id="loginMsg" class="text-xs"></p>
-            <p id="loginHint" class="text-xs text-slate-500">ایمیل و رمز عبوری که ادمین سامانه برایتان تنظیم کرده را وارد کنید.</p>
+            <div id="loginFieldsSection" class="space-y-4">
+                <input id="loginEmail" type="email" placeholder="ایمیل شما" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center bg-slate-50">
+                <input id="loginPassword" type="password" placeholder="رمز عبور" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center bg-slate-50">
+                <button id="loginBtn" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-2.5 rounded-xl transition">ورود</button>
+                <p id="loginMsg" class="text-xs"></p>
+                <p id="loginHint" class="text-xs text-slate-500">ایمیل و رمز عبوری که ادمین سامانه برایتان تنظیم کرده را وارد کنید.</p>
+                <button type="button" id="forgotPasswordLink" class="text-xs text-blue-700 hover:underline">رمز عبور را فراموش کرده‌اید؟</button>
+            </div>
+            <div id="forgotPasswordSection" class="hidden space-y-4">
+                <p class="text-xs text-slate-500">ایمیل خود را وارد کنید تا لینک بازیابی رمز عبور برایتان ارسال شود.</p>
+                <input id="forgotEmail" type="email" placeholder="ایمیل شما" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center bg-slate-50">
+                <button id="sendResetLinkBtn" type="button" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-2.5 rounded-xl transition">ارسال لینک بازیابی</button>
+                <p id="forgotMsg" class="text-xs"></p>
+                <button type="button" id="backToLoginLink" class="text-xs text-blue-700 hover:underline">بازگشت به ورود</button>
+            </div>
+        </div>
+
+        <!-- PASSWORD RECOVERY SCREEN (reached only via the reset-password email link) -->
+        <div id="resetPasswordScreen" class="hidden max-w-md mx-auto bg-white rounded-2xl shadow-sm border p-8 space-y-4 text-center mt-10">
+            <div class="flex flex-col items-center gap-1.5 pb-2">
+                <img src="logo.png" alt="لوگوی شرکت" class="h-20 w-20 object-contain" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
+                <p class="font-bold text-sm text-slate-800">شرکت مهندسی و توسعه گاز ایران</p>
+                <p class="text-xs text-slate-500">طرح خط لوله ششم سراسری</p>
+            </div>
+            <h2 class="text-lg font-bold text-blue-900">تنظیم رمز عبور جدید</h2>
+            <p class="text-xs text-slate-500">رمز عبور جدید خود را وارد کنید تا وارد سامانه شوید.</p>
+            <input id="resetNewPassword" type="password" placeholder="رمز عبور جدید (حداقل ۶ کاراکتر)" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center bg-slate-50">
+            <button id="resetPasswordBtn" type="button" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-2.5 rounded-xl transition">ثبت رمز عبور جدید</button>
+            <p id="resetPasswordMsg" class="text-xs"></p>
         </div>
 
         <!-- NOT AUTHORIZED SCREEN -->
@@ -1266,6 +1290,14 @@
         let currentProfile = null;
         let lastProfileError = null;
         let hasResolvedOnce = false;
+        // Read synchronously from the raw URL rather than waiting on the
+        // PASSWORD_RECOVERY auth event: supabase-js starts processing a
+        // recovery-link token the instant the client is created (line
+        // ~1004), which can finish before initApp() ever registers the
+        // onAuthStateChange listener below — relying on the event alone
+        // risks a missed flag on that first render() and a flash of the
+        // normal login/app screen before the recovery screen is shown.
+        let isPasswordRecovery = /type=recovery/.test(window.location.hash);
         let pickedProjectContext = null; // { project_name, organization } — explicitly chosen by an admin, or by a manager with more than one project/org grant
         let myProjectAccess = []; // [{ project_name, organization }, ...] — this manager's grants (empty for admins, who aren't project-scoped)
 
@@ -1314,7 +1346,16 @@
         async function initApp() {
             const { data: { session } } = await _supabase.auth.getSession();
             await handleSession(session);
-            _supabase.auth.onAuthStateChange((_event, s) => { handleSession(s); });
+            _supabase.auth.onAuthStateChange((event, s) => {
+                if (event === 'PASSWORD_RECOVERY') {
+                    isPasswordRecovery = true;
+                    // The recovery token has done its job (supabase-js already
+                    // exchanged it for a session) — drop it from the visible
+                    // URL/history now rather than leaving an access token sitting there.
+                    history.replaceState(null, '', window.location.pathname + window.location.search);
+                }
+                handleSession(s);
+            });
         }
 
         async function handleSession(session) {
@@ -1358,6 +1399,20 @@
         }
 
         function render() {
+            document.getElementById('resetPasswordScreen').classList.toggle('hidden', !isPasswordRecovery);
+            if (isPasswordRecovery) {
+                // While setting a new password, show only that screen —
+                // never the normal logged-in app, even though the recovery
+                // link did leave a real (temporary) session in place.
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('notAuthorizedScreen').classList.add('hidden');
+                document.getElementById('appShell').classList.add('hidden');
+                document.getElementById('profileBtn').classList.add('hidden');
+                document.getElementById('logoutBtn').classList.add('hidden');
+                document.getElementById('topbarUserEmail').classList.add('hidden');
+                return;
+            }
+
             const noUsableAccess = !!currentUser && (!currentProfile || (currentProfile.role !== 'admin' && myProjectAccess.length === 0));
 
             document.getElementById('authScreen').classList.toggle('hidden', !!currentUser);
@@ -1498,6 +1553,52 @@
 
         document.getElementById('loginBtn').addEventListener('click', login);
         document.getElementById('unauthLogoutBtn').addEventListener('click', logout);
+
+        document.getElementById('forgotPasswordLink').addEventListener('click', () => {
+            document.getElementById('forgotEmail').value = document.getElementById('loginEmail').value.trim();
+            document.getElementById('forgotMsg').textContent = '';
+            document.getElementById('loginFieldsSection').classList.add('hidden');
+            document.getElementById('forgotPasswordSection').classList.remove('hidden');
+        });
+        document.getElementById('backToLoginLink').addEventListener('click', () => {
+            document.getElementById('forgotPasswordSection').classList.add('hidden');
+            document.getElementById('loginFieldsSection').classList.remove('hidden');
+        });
+
+        document.getElementById('sendResetLinkBtn').addEventListener('click', async () => {
+            const email = document.getElementById('forgotEmail').value.trim().toLowerCase();
+            const msg = document.getElementById('forgotMsg');
+            if (!email) { msg.textContent = 'ایمیل را وارد کنید.'; msg.className = 'text-xs text-red-600'; return; }
+
+            msg.textContent = 'در حال ارسال...';
+            msg.className = 'text-xs text-slate-500';
+            // Sends the visitor back to this exact app (whatever domain it's
+            // hosted on) with a recovery token in the URL — must also be
+            // added to Supabase's Authentication → URL Configuration →
+            // Redirect URLs allowlist, or Supabase will reject/ignore it.
+            const redirectTo = window.location.origin + window.location.pathname;
+            const { error } = await _supabase.auth.resetPasswordForEmail(email, { redirectTo });
+            // Supabase deliberately never reveals whether the email exists
+            // (this call "succeeds" either way) — same generic message either way.
+            msg.textContent = error
+                ? 'خطا: ' + error.message
+                : 'اگر این ایمیل در سامانه ثبت باشد، لینک بازیابی رمز عبور برایش ارسال شد. صندوق ورودی (و پوشه اسپم) را بررسی کنید.';
+            msg.className = error ? 'text-xs text-red-600' : 'text-xs text-emerald-700';
+        });
+
+        document.getElementById('resetPasswordBtn').addEventListener('click', async () => {
+            const password = document.getElementById('resetNewPassword').value;
+            const msg = document.getElementById('resetPasswordMsg');
+            if (!password || password.length < 6) { msg.textContent = 'رمز عبور باید حداقل ۶ کاراکتر باشد.'; msg.className = 'text-xs text-red-600'; return; }
+
+            msg.textContent = 'در حال ثبت...';
+            msg.className = 'text-xs text-slate-500';
+            const { error } = await _supabase.auth.updateUser({ password });
+            if (error) { msg.textContent = 'خطا: ' + error.message; msg.className = 'text-xs text-red-600'; return; }
+
+            isPasswordRecovery = false;
+            render();
+        });
 
         function openProfileModal() {
             document.getElementById('profFirstName').value = currentProfile.first_name || '';
