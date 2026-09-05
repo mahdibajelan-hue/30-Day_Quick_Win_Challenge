@@ -272,6 +272,7 @@
                         <h3 class="text-sm font-bold text-slate-700">تغییر رمز عبور</h3>
                         <p class="text-xs text-slate-500">برای ورود سریع‌تر در دفعات بعد (بدون نیاز به لینک ایمیل)، یک رمز عبور تنظیم کنید.</p>
                         <input id="newPassword" type="password" placeholder="رمز عبور جدید (حداقل ۶ کاراکتر)" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
+                        <input id="newPasswordConfirm" type="password" placeholder="تکرار رمز عبور جدید" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
                         <button id="savePasswordBtn" type="button" class="w-full bg-slate-800 hover:bg-slate-700 text-white text-sm py-2 rounded-xl font-bold">ذخیره رمز عبور</button>
                         <p id="setPasswordMsg" class="text-xs"></p>
                     </div>
@@ -316,6 +317,7 @@
             <h2 class="text-lg font-bold text-blue-900">تنظیم رمز عبور جدید</h2>
             <p class="text-xs text-slate-500">رمز عبور جدید خود را وارد کنید تا وارد سامانه شوید.</p>
             <input id="resetNewPassword" type="password" placeholder="رمز عبور جدید (حداقل ۶ کاراکتر)" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center bg-slate-50">
+            <input id="resetNewPasswordConfirm" type="password" placeholder="تکرار رمز عبور جدید" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center bg-slate-50">
             <button id="resetPasswordBtn" type="button" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-2.5 rounded-xl transition">ثبت رمز عبور جدید</button>
             <p id="resetPasswordMsg" class="text-xs"></p>
         </div>
@@ -1588,8 +1590,10 @@
 
         document.getElementById('resetPasswordBtn').addEventListener('click', async () => {
             const password = document.getElementById('resetNewPassword').value;
+            const passwordConfirm = document.getElementById('resetNewPasswordConfirm').value;
             const msg = document.getElementById('resetPasswordMsg');
             if (!password || password.length < 6) { msg.textContent = 'رمز عبور باید حداقل ۶ کاراکتر باشد.'; msg.className = 'text-xs text-red-600'; return; }
+            if (password !== passwordConfirm) { msg.textContent = 'رمز عبور و تکرار آن یکسان نیستند.'; msg.className = 'text-xs text-red-600'; return; }
 
             msg.textContent = 'در حال ثبت...';
             msg.className = 'text-xs text-slate-500';
@@ -1608,6 +1612,7 @@
             document.getElementById('profJobTitle').value = currentProfile.job_title || '';
             document.getElementById('profileMsg').textContent = '';
             document.getElementById('newPassword').value = '';
+            document.getElementById('newPasswordConfirm').value = '';
             document.getElementById('setPasswordMsg').textContent = '';
             document.getElementById('profileModal').classList.remove('hidden');
         }
@@ -1637,12 +1642,14 @@
 
         document.getElementById('savePasswordBtn').addEventListener('click', async () => {
             const password = document.getElementById('newPassword').value;
+            const passwordConfirm = document.getElementById('newPasswordConfirm').value;
             const msg = document.getElementById('setPasswordMsg');
             if (!password || password.length < 6) { msg.textContent = 'رمز عبور باید حداقل ۶ کاراکتر باشد.'; msg.className = 'text-xs text-red-600'; return; }
+            if (password !== passwordConfirm) { msg.textContent = 'رمز عبور و تکرار آن یکسان نیستند.'; msg.className = 'text-xs text-red-600'; return; }
             const { error } = await _supabase.auth.updateUser({ password });
             msg.textContent = error ? 'خطا: ' + error.message : 'رمز عبور با موفقیت تنظیم شد. از این پس می‌توانید با ایمیل و همین رمز وارد شوید.';
             msg.className = error ? 'text-xs text-red-600' : 'text-xs text-emerald-700';
-            if (!error) document.getElementById('newPassword').value = '';
+            if (!error) { document.getElementById('newPassword').value = ''; document.getElementById('newPasswordConfirm').value = ''; }
         });
 
         // --------------------------------------------------
