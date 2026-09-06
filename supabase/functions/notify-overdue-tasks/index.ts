@@ -58,6 +58,24 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
+// task.title / .project_name / .responsible_name are free text set by
+// whoever created or is submitting the task (not necessarily an admin —
+// see migration 018/020) and land verbatim in this HTML email body sent
+// to admins and the responsible person. Without escaping, a task titled
+// e.g. `<img src=x onerror=...>` would be stored HTML injection delivered
+// as a trusted-looking system email — the exact same risk the app's own
+// esc() (index.html) already guards against for every other rendering of
+// this same data; this function just needs its own copy since it runs in
+// Deno, not a browser.
+function escapeHtml(str: string): string {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 const PERSIAN_DIGITS = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
 function toPersianDigits(str: string): string {
   return str.replace(/[0-9]/g, (d) => PERSIAN_DIGITS[Number(d)]);
@@ -111,9 +129,9 @@ function buildEmail(task: any): { subject: string; html: string } {
     <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:14px;line-height:1.8;color:#1e293b">
       <p>یک اقدام از تایم‌لاین پیگیری اجرای Quick Win هنوز تا موعد مقررش به تایید نهایی نرسیده است:</p>
       <ul>
-        <li><b>پروژه:</b> ${task.project_name}</li>
-        <li><b>عنوان اقدام:</b> ${task.title}</li>
-        <li><b>مسئول:</b> ${task.responsible_name}</li>
+        <li><b>پروژه:</b> ${escapeHtml(task.project_name)}</li>
+        <li><b>عنوان اقدام:</b> ${escapeHtml(task.title)}</li>
+        <li><b>مسئول:</b> ${escapeHtml(task.responsible_name)}</li>
         <li><b>موعد انجام:</b> ${formatJalali(task.due_date)}</li>
         <li><b>مدت تأخیر:</b> ${toPersianDigits(String(daysOverdue))} روز</li>
       </ul>
