@@ -1,0 +1,652 @@
+<title>بازطراحی سامانه Quick Win</title>
+<style>
+  :root{
+    --paper:#faf8f4; --paper-raised:#ffffff; --paper-sunken:#f3efe6;
+    --ink:#1c1912; --ink-soft:#57503f; --ink-faint:#8a8271;
+    --line:#e7e1d3; --line-strong:#d6cdb8;
+    --accent:#b45309; --accent-soft:#fef3c7; --accent-ink:#78350f;
+    --accent2:#0e7490; --accent2-soft:#cffafe; --accent2-ink:#164e63;
+    --keep:#15803d; --keep-soft:#dcfce7;
+    --merge:#b45309; --merge-soft:#fef3c7;
+    --remove:#b91c1c; --remove-soft:#fee2e2;
+    --automate:#1d4ed8; --automate-soft:#dbeafe;
+    --conditional:#7e22ce; --conditional-soft:#f3e8ff;
+    --new:#0e7490; --new-soft:#cffafe;
+    --shadow: 0 1px 2px rgba(28,25,18,.04), 0 8px 24px -12px rgba(28,25,18,.12);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#16140f; --paper-raised:#1e1b14; --paper-sunken:#131110;
+      --ink:#f3efe4; --ink-soft:#b8ae98; --ink-faint:#7d7562;
+      --line:#332d1f; --line-strong:#453d29;
+      --accent:#f0a557; --accent-soft:#3a2a12; --accent-ink:#ffd9a0;
+      --accent2:#5fd4e6; --accent2-soft:#0f2b30; --accent2-ink:#a6ecf4;
+      --keep:#4ade80; --keep-soft:#0f2b1a;
+      --merge:#f0a557; --merge-soft:#3a2a12;
+      --remove:#f87171; --remove-soft:#3a1414;
+      --automate:#7fa9f7; --automate-soft:#13203a;
+      --conditional:#cd93f5; --conditional-soft:#2a1733;
+      --new:#5fd4e6; --new-soft:#0f2b30;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#16140f; --paper-raised:#1e1b14; --paper-sunken:#131110;
+    --ink:#f3efe4; --ink-soft:#b8ae98; --ink-faint:#7d7562;
+    --line:#332d1f; --line-strong:#453d29;
+    --accent:#f0a557; --accent-soft:#3a2a12; --accent-ink:#ffd9a0;
+    --accent2:#5fd4e6; --accent2-soft:#0f2b30; --accent2-ink:#a6ecf4;
+    --keep:#4ade80; --keep-soft:#0f2b1a;
+    --merge:#f0a557; --merge-soft:#3a2a12;
+    --remove:#f87171; --remove-soft:#3a1414;
+    --automate:#7fa9f7; --automate-soft:#13203a;
+    --conditional:#cd93f5; --conditional-soft:#2a1733;
+    --new:#5fd4e6; --new-soft:#0f2b30;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+  }
+
+  @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap');
+
+  *{box-sizing:border-box;}
+  body{
+    direction:rtl; background:var(--paper); color:var(--ink);
+    font-family:'Vazirmatn',Tahoma,sans-serif; line-height:1.75;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{ font-family:'JetBrains Mono',ui-monospace,monospace; direction:ltr; unicode-bidi:isolate; }
+  h1,h2,h3,h4{ text-wrap:balance; font-weight:800; }
+  a{ color:var(--accent2); }
+
+  .shell{ display:grid; grid-template-columns: 250px 1fr; gap:0; max-width:1320px; margin:0 auto; }
+  @media (max-width:920px){ .shell{ grid-template-columns: 1fr; } }
+
+  /* ---------- TOC ---------- */
+  .toc{
+    position:sticky; top:0; align-self:start; height:100vh; overflow-y:auto;
+    padding:28px 18px 40px 8px; border-left:1px solid var(--line);
+    scrollbar-width:thin;
+  }
+  @media (max-width:920px){
+    .toc{ position:static; height:auto; border-left:none; border-bottom:1px solid var(--line);
+      padding:14px 16px; display:flex; gap:8px; overflow-x:auto; white-space:nowrap; }
+    .toc .toc-title, .toc .toc-group-label{ display:none; }
+    .toc ul{ display:flex; gap:6px; }
+    .toc li{ margin:0; }
+  }
+  .toc-title{ font-size:11px; font-weight:700; letter-spacing:.06em; color:var(--ink-faint); text-transform:uppercase; margin-bottom:14px; }
+  .toc-group-label{ font-size:10.5px; color:var(--ink-faint); font-weight:700; margin:16px 0 4px; letter-spacing:.04em; }
+  .toc ul{ list-style:none; margin:0; padding:0; }
+  .toc li{ margin-bottom:1px; }
+  .toc a{
+    display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:8px;
+    color:var(--ink-soft); text-decoration:none; font-size:12.5px; font-weight:600;
+  }
+  .toc a:hover{ background:var(--paper-sunken); color:var(--ink); }
+  .toc .code{ font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--accent); font-weight:700;
+    background:var(--accent-soft); border-radius:5px; padding:1px 5px; direction:ltr; flex-shrink:0; }
+
+  /* ---------- MAIN ---------- */
+  main{ padding:40px clamp(20px,4vw,64px) 100px; min-width:0; }
+
+  .masthead{ padding-bottom:32px; margin-bottom:40px; border-bottom:2px solid var(--ink); }
+  .masthead .eyebrow{ font-family:'JetBrains Mono',monospace; direction:ltr; unicode-bidi:isolate; font-size:12px; font-weight:700;
+    color:var(--accent); letter-spacing:.08em; margin-bottom:14px; display:block; }
+  .masthead h1{ font-size:clamp(28px,4vw,42px); margin:0 0 12px; line-height:1.25; }
+  .masthead p.lede{ font-size:16px; color:var(--ink-soft); max-width:62ch; margin:0 0 20px; }
+  .meta-row{ display:flex; flex-wrap:wrap; gap:10px 28px; font-size:12.5px; color:var(--ink-faint); }
+  .meta-row b{ color:var(--ink); font-weight:700; }
+
+  section.block{ margin-bottom:56px; scroll-margin-top:24px; }
+  .sec-head{ display:flex; align-items:baseline; gap:12px; margin-bottom:18px; }
+  .sec-head .letter{ font-family:'JetBrains Mono',monospace; direction:ltr; font-weight:700; font-size:14px;
+    color:var(--paper); background:var(--ink); border-radius:7px; width:30px; height:30px;
+    display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .sec-head h2{ font-size:22px; margin:0; }
+  .sec-sub{ color:var(--ink-soft); font-size:13.5px; margin:-8px 0 20px 42px; max-width:70ch; }
+
+  p{ margin:0 0 14px; max-width:72ch; }
+  ul.plain, ol.plain{ margin:0 0 14px; padding-inline-start:22px; }
+  ul.plain li, ol.plain li{ margin-bottom:7px; max-width:70ch; }
+
+  /* ---------- persona cards ---------- */
+  .persona-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
+  .persona{ background:var(--paper-raised); border:1px solid var(--line); border-radius:14px; padding:18px 20px;
+    box-shadow:var(--shadow); }
+  .persona .role{ font-size:13.5px; font-weight:800; margin-bottom:2px; }
+  .persona .focus{ font-size:11px; color:var(--ink-faint); margin-bottom:10px; }
+  .persona ul{ margin:0; padding-inline-start:18px; font-size:13px; color:var(--ink-soft); }
+  .persona li{ margin-bottom:6px; }
+  .persona li b{ color:var(--ink); font-weight:700; }
+
+  /* ---------- tables ---------- */
+  .twrap{ overflow-x:auto; border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); background:var(--paper-raised); }
+  table{ width:100%; border-collapse:collapse; font-size:13px; min-width:560px; }
+  thead th{ background:var(--paper-sunken); color:var(--ink-soft); font-size:11px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.03em; padding:11px 14px; text-align:right; white-space:nowrap; border-bottom:1px solid var(--line); }
+  tbody td{ padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:top; }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr:hover{ background:var(--paper-sunken); }
+  td.num, th.num{ font-family:'JetBrains Mono',monospace; direction:ltr; text-align:center; }
+
+  /* ---------- tags ---------- */
+  .tag{ display:inline-flex; align-items:center; font-family:'JetBrains Mono',monospace; direction:ltr; unicode-bidi:isolate;
+    font-size:10.5px; font-weight:700; letter-spacing:.02em; padding:3px 8px; border-radius:6px; white-space:nowrap; }
+  .tag-KEEP{ color:var(--keep); background:var(--keep-soft); }
+  .tag-MERGE{ color:var(--merge); background:var(--merge-soft); }
+  .tag-REMOVE{ color:var(--remove); background:var(--remove-soft); }
+  .tag-AUTOMATE{ color:var(--automate); background:var(--automate-soft); }
+  .tag-CONDITIONAL{ color:var(--conditional); background:var(--conditional-soft); }
+  .tag-NEW{ color:var(--new); background:var(--new-soft); }
+  .tag-P0{ color:var(--remove); background:var(--remove-soft); }
+  .tag-P1{ color:var(--merge); background:var(--merge-soft); }
+  .tag-P2{ color:var(--automate); background:var(--automate-soft); }
+
+  /* ---------- score dots ---------- */
+  .dots{ display:inline-flex; gap:2.5px; direction:ltr; vertical-align:middle; }
+  .dots i{ width:7px; height:7px; border-radius:50%; background:var(--line-strong); display:inline-block; }
+  .dots i.on{ background:var(--accent2); }
+  .dots.warn i.on{ background:var(--remove); }
+
+  /* ---------- callout ---------- */
+  .callout{ background:var(--accent-soft); border-inline-start:4px solid var(--accent); border-radius:10px;
+    padding:14px 18px; font-size:13.5px; color:var(--accent-ink); margin:0 0 18px; max-width:74ch; }
+  .callout b{ font-weight:800; }
+  .callout.blue{ background:var(--accent2-soft); border-color:var(--accent2); color:var(--accent2-ink); }
+
+  /* ---------- flow diagram ---------- */
+  .flow{ display:flex; align-items:stretch; gap:0; flex-wrap:wrap; margin:22px 0 10px; }
+  .flow-step{ background:var(--paper-raised); border:1.5px solid var(--line-strong); border-radius:12px;
+    padding:16px 18px; min-width:150px; flex:1; box-shadow:var(--shadow); }
+  .flow-step .n{ font-family:'JetBrains Mono',monospace; direction:ltr; font-size:10px; color:var(--accent); font-weight:700; margin-bottom:6px; display:block; }
+  .flow-step h4{ font-size:14.5px; margin:0 0 6px; }
+  .flow-step p{ font-size:12px; color:var(--ink-soft); margin:0; max-width:none; }
+  .flow-arrow{ display:flex; align-items:center; justify-content:center; padding:0 8px; color:var(--ink-faint); font-size:20px; flex-shrink:0; }
+  @media (max-width:760px){ .flow{ flex-direction:column; } .flow-arrow{ transform:rotate(90deg); padding:4px 0; } }
+
+  /* ---------- journey levels ---------- */
+  .levels{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; margin-bottom:10px; }
+  .level{ border-radius:14px; padding:18px 20px; border:1px solid var(--line); background:var(--paper-raised); box-shadow:var(--shadow); }
+  .level .lvl-badge{ font-family:'JetBrains Mono',monospace; direction:ltr; font-size:10.5px; font-weight:700; color:var(--paper);
+    background:var(--ink); border-radius:6px; padding:2px 8px; display:inline-block; margin-bottom:10px; }
+  .level h4{ font-size:15px; margin:0 0 4px; }
+  .level .time{ font-size:11.5px; color:var(--accent); font-weight:700; margin-bottom:10px; }
+  .level ul{ margin:0; padding-inline-start:18px; font-size:12.5px; color:var(--ink-soft); }
+  .level li{ margin-bottom:5px; }
+  .level li.cut{ text-decoration:line-through; color:var(--ink-faint); }
+  .level li.add b{ color:var(--new); }
+
+  /* ---------- dashboard mock ---------- */
+  .dash-mock{ background:var(--paper-sunken); border:1px solid var(--line); border-radius:16px; padding:22px; }
+  .dash-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; }
+  .dash-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:14px 16px; box-shadow:var(--shadow); }
+  .dash-card .q{ font-size:11px; font-weight:700; color:var(--ink-faint); margin-bottom:6px; }
+  .dash-card .a{ font-size:13px; color:var(--ink); }
+  .dash-card .a b{ color:var(--accent2); }
+
+  /* ---------- backlog ---------- */
+  .backlog-item{ display:flex; gap:12px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--line); }
+  .backlog-item:last-child{ border-bottom:none; }
+  .backlog-item .txt{ flex:1; font-size:13.5px; }
+  .backlog-item .txt b{ display:block; margin-bottom:2px; }
+  .backlog-item .txt span{ color:var(--ink-soft); font-size:12.5px; }
+
+  hr.rule{ border:none; border-top:1px solid var(--line); margin:0 0 40px; }
+  .foot{ font-size:11.5px; color:var(--ink-faint); text-align:center; padding-top:20px; }
+</style>
+
+<div class="shell">
+  <nav class="toc">
+    <span class="toc-title">فهرست گزارش</span>
+    <ul>
+      <li><a href="#exec"><span class="code">A</span> Executive Summary</a></li>
+      <li><a href="#panel"><span class="code">B</span> دیدگاه پنل</a></li>
+      <li><a href="#dup"><span class="code">C</span> ماتریس تکرار</a></li>
+      <li><a href="#fields"><span class="code">D</span> فیلدهای غیرضروری</a></li>
+      <li><a href="#pages-rm"><span class="code">E</span> صفحات قابل حذف</a></li>
+      <li><a href="#pages-merge"><span class="code">F</span> صفحات قابل ادغام</a></li>
+      <li><a href="#auto-list"><span class="code">G</span> Auto Calculate</a></li>
+      <li><a href="#process"><span class="code">H</span> فرآیند پیشنهادی</a></li>
+      <li><a href="#arch"><span class="code">I</span> معماری جدید</a></li>
+      <li><a href="#journey"><span class="code">J</span> User Journey</a></li>
+      <li><a href="#qw-form"><span class="code">K</span> فرم Quick Win</a></li>
+      <li><a href="#pa-form"><span class="code">L</span> فرم Problem Analysis</a></li>
+      <li><a href="#dash"><span class="code">M</span> داشبورد مدیریتی</a></li>
+      <li><a href="#automation"><span class="code">N</span> Automation</a></li>
+      <li><a href="#ai-opp"><span class="code">O</span> AI Opportunities</a></li>
+      <li><a href="#kpi"><span class="code">P</span> KPI خلق ارزش</a></li>
+    </ul>
+    <div class="toc-group-label">جمع‌بندی</div>
+    <ul>
+      <li><a href="#before-after">Before / After</a></li>
+      <li><a href="#scoring">امتیازدهی فیلدها</a></li>
+      <li><a href="#golden">قانون ۸۰/۲۰</a></li>
+      <li><a href="#ia">معماری اطلاعاتی نهایی</a></li>
+      <li><a href="#backlog">Backlog اولویت‌بندی‌شده</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <header class="masthead">
+      <span class="eyebrow">PRODUCT REDESIGN BOARD — INTERNAL REVIEW</span>
+      <h1>بازطراحی سامانه پیگیری Quick Win و تحلیل مسائل پروژه</h1>
+      <p class="lede">هدف این بررسی افزودن قابلیت نیست؛ هدف این است که سامانه با کمترین ورودی، کمترین زمان کاربر و کمترین پیچیدگی، بیشترین ارزش مدیریتی و عملیاتی را بسازد. این گزارش صرفاً پیشنهاد است — هیچ تغییری در کد اعمال نشده.</p>
+      <div class="meta-row">
+        <span><b>دامنه بررسی:</b> ۹ صفحه، ۹ جدول داده، ۱۲۱ فیلد ورودی فعال</span>
+        <span><b>پنل:</b> ۸ نقش ذی‌نفع</span>
+        <span><b>روش:</b> ممیزی فیلد‌به‌فیلد کد فعلی + قاعده «حذف در صورت شک»</span>
+      </div>
+    </header>
+
+    <!-- A -->
+    <section class="block" id="exec">
+      <div class="sec-head"><span class="letter">A</span><h2>Executive Summary</h2></div>
+      <ol class="plain">
+        <li>سامانه فعلی <b>معماری درستی دارد</b> (Problem → Proposal → Decision → Action) اما آن را در <b>۵ جدول و ۳ فرم جدا</b> با فیلدهای هم‌پوشان پیاده کرده؛ همین همپوشانی، ۷۰٪ پیچیدگی فعلی را می‌سازد، نه خودِ فرآیند.</li>
+        <li>ثبت یک چرخه کامل («اطلاعات تکمیلی» + «پیشنهاد Quick Win») امروز به <b>حدود ۷۵ فیلد</b> نیاز دارد؛ هدف این بازطراحی رساندن آن به <b>زیر ۱۲ فیلد در ثبت سریع</b> است.</li>
+        <li>مهم‌ترین شکاف ساختاری: سامانه «اثر برآوردی» را در لحظه پیشنهاد می‌گیرد (۷ فیلد impact_*) اما هیچ‌جا «ارزش واقعاً محقق‌شده» را در پایان کار ثبت نمی‌کند. یعنی چرخه در Action متوقف می‌شود، به Value نمی‌رسد.</li>
+        <li>«بطالت‌سنج» (bottleneck) در فرم اطلاعات تکمیلی و «شناسایی مسئله» در فرم Quick Win، عملاً یک سؤال را دو بار در دو فرم متفاوت از یک نفر می‌پرسند.</li>
+        <li>مسئول/مدیر پروژه در <b>۶ نقطه مختلف</b> به‌صورت متن آزاد تایپ می‌شود (نه از پروفایل کاربران موجود) — منبع اصلی خطای املا و گزارش‌های غیرقابل تطبیق.</li>
+        <li>«۳ ایشو» + «۳ ریسک» + «مهم‌ترین ریسک» در یک فرم، سه‌بار همان «چه چیزی خراب است؟» را می‌پرسند.</li>
+        <li>وضعیت «۱۰ جبهه کاری» برای هر پروژه در هر دوره پرسیده می‌شود، حتی برای پروژه‌ای که هنوز وارد فاز اجرا نشده — این باید شرطی شود.</li>
+        <li>هیچ صفحه‌ای امروز در ۳۰ ثانیه به مدیرعامل پاسخ «مهم‌ترین مشکلات چیست؟ چه اقدامی در جریان است؟ چقدر ارزش ساختیم؟» را نمی‌دهد؛ داده‌اش هست، چیدمانش نیست.</li>
+        <li>معماری فنی فعلی (RLS + Edge Functions + کش تحلیل هوش مصنوعی) <b>درست و امن پیاده شده</b> — بازطراحی پیشنهادی مدل داده را ساده می‌کند، نه زیرساخت را.</li>
+        <li>پیشنهاد اصلی: ادغام ۵ جدول (check_ins bottleneck-بخش + quick_win_decisions + quick_win_progress + quick_win_tasks + quick_win_evaluations) حول <b>یک موجودیت واحد «Case»</b> با چرخه‌عمر مشخص، به‌جای ۵ رکورد پراکنده برای یک داستان واحد.</li>
+      </ol>
+    </section>
+
+    <!-- B -->
+    <section class="block" id="panel">
+      <div class="sec-head"><span class="letter">B</span><h2>مشکلات فعلی از دید پنل</h2></div>
+      <p class="sec-sub">هر عضو پنل، سامانه فعلی را از زاویه مسئولیت خودش نقد کرده — بدون فرض اینکه فیلد یا صفحه‌ای «بدیهتاً لازم» است.</p>
+      <div class="persona-grid">
+        <div class="persona"><div class="role">مدیر PMO</div><div class="focus">استانداردسازی · مقایسه پروژه‌ها · KPI</div>
+          <ul>
+            <li><b>مثبت:</b> رابرک ۵معیاره ارزیابی Quick Win (زمان/هزینه/فوریت/تحقق/اهرم) دقیقاً همان چیزی است که PMO نیاز دارد.</li>
+            <li>اما پیشرفت «برنامه‌ای/واقعی» دو بار جدا ثبت می‌شود (فرم اطلاعات پایه پروژه توسط PMO، فرم اطلاعات تکمیلی توسط هر سازمان) بدون مقایسه خودکار در لحظه ثبت.</li>
+            <li>هیچ KPI تجمیعی «نرخ موفقیت Quick Win» یا «میانگین زمان تا اقدام» در حال حاضر محاسبه نمی‌شود، با اینکه همه داده‌اش هست.</li>
+          </ul>
+        </div>
+        <div class="persona"><div class="role">مدیر پروژه</div><div class="focus">سرعت · کاربرد واقعی · کاهش دوباره‌کاری</div>
+          <ul>
+            <li>برای ثبت یک وضعیت دوره‌ای باید ۳ فرم جدا (اطلاعات تکمیلی، پیشنهاد Quick Win، گاهی اطلاعات پایه) را در ۳ صفحه جدا باز کند و در هرکدام دوباره پروژه/سازمان را انتخاب کند.</li>
+            <li>«علت ریشه‌ای گلوگاه» را در فرم اول می‌نویسد و دقیقه بعد در فرم Quick Win دوباره «این گلوگاه مربوط به کدام حوزه است» را از صفر انتخاب می‌کند.</li>
+            <li>فرم به‌جای اینکه بپرسد «چه کاری باید بکنم»، می‌پرسد «چه چیزهایی را باید توصیف کنم» — طراحی فرم‌محور، نه فرآیندمحور.</li>
+          </ul>
+        </div>
+        <div class="persona"><div class="role">مدیرعامل</div><div class="focus">ارزش اقتصادی · تصمیم در ثانیه</div>
+          <ul>
+            <li>نمای کلی امروز کارت‌های زیادی نشان می‌دهد اما پاسخ مستقیم «مهم‌ترین ۳ مشکل الان چیست و چه کسی مسئول آن است» را در یک نگاه نمی‌دهد.</li>
+            <li>«ارزش ایجادشده» فقط در لحظه پیشنهاد (تخمینی) وجود دارد، هیچ عدد «واقعی/محقق‌شده» برای گزارش به مدیرعامل قابل استخراج نیست.</li>
+            <li>گزارش تحلیلی مدیریتی ارزشمند است ولی به فراخوانی هوش مصنوعی وابسته است؛ یک نسخه لحظه‌ای و رایگان (بدون AI) از همان ۳ سؤال کلیدی باید همیشه در دسترس باشد.</li>
+          </ul>
+        </div>
+        <div class="persona"><div class="role">مدیر برنامه‌ریزی و کنترل پروژه</div><div class="focus">اتصال به زمان/هزینه/برنامه</div>
+          <ul>
+            <li>فرم «اطلاعات پایه پروژه» تنها منبع رسمی زمان/هزینه/پیشرفت است، ولی به فرم‌های دیگر (Quick Win impact_*) متصل نیست — دو منبع عدد، بدون تطبیق.</li>
+            <li>مبلغ قرارداد (ریالی/ارزی) و درصد پیشرفت مهندسی/تأمین/اجرا فقط این‌جا معنا دارد؛ این بخش را باید <b>دست‌نخورده</b> نگه داشت، فقط اتصالش به بقیه سامانه را باید ساخت.</li>
+            <li>«مدت سپری‌شده (ماه)» را کاربر دستی وارد می‌کند در حالی‌که از تاریخ شروع قرارداد قابل محاسبه خودکار است.</li>
+          </ul>
+        </div>
+        <div class="persona"><div class="role">کاربر نهایی</div><div class="focus">تعداد کلیک · وضوح · زمان ثبت</div>
+          <ul>
+            <li>فرم «اطلاعات تکمیلی» به‌تنهایی حدود <b>۴۵ فیلد</b> دارد؛ فرم «پیشنهاد Quick Win» حدود <b>۳۰ فیلد</b> — هر دو در یک صفحه بدون ذخیره‌ی مرحله‌ای.</li>
+            <li>اگر کاربر وسط فرم مرورگر را ببندد یا اینترنت قطع شود، کل فرم از دست می‌رود؛ ریسک واقعی ترک سامانه.</li>
+            <li>عبارت‌هایی مثل «اهرم مدیریتی / اثرگذاری بین‌واحدی» برای کاربر غیرمتخصص PMO مبهم است.</li>
+          </ul>
+        </div>
+        <div class="persona"><div class="role">مدیر کیفیت / بهبود فرآیند</div><div class="focus">RCA · CAPA · Lessons Learned</div>
+          <ul>
+            <li>«علت ریشه‌ای» فقط یک جعبه متن آزاد است — نه ۵Why، نه Fishbone، نه حتی یک انتخاب دسته‌بندی؛ برای اقلام بحرانی کافی نیست.</li>
+            <li>هیچ موجودیت CAPA یا Lessons Learned وجود ندارد؛ وقتی یک Quick Win بسته می‌شود، هیچ «درس گرفته‌شده» جایی ثبت/جستجو نمی‌شود و همان مسئله در پروژه بعدی از صفر کشف می‌شود.</li>
+            <li>اثربخشی اقدام هرگز پس از اجرا سنجیده نمی‌شود (فیلد «نتیجه واقعی» وجود ندارد) — سامانه نمی‌داند آیا Quick Winِ گذشته واقعاً اثر داشته یا نه.</li>
+          </ul>
+        </div>
+        <div class="persona"><div class="role">مدیر IT / توسعه‌دهنده</div><div class="focus">سادگی معماری · نگهداری</div>
+          <ul>
+            <li>۵ جدول (check_ins، quick_win_decisions، quick_win_progress، quick_win_tasks، quick_win_evaluations) همگی درباره «همان یک پیشنهاد» هستند؛ هر تغییر منطق باید در چند جا هم‌زمان اعمال شود.</li>
+            <li>«مسئول» در هر جدول یک ستون متن آزاد جدا دارد (responsible_name/plan_responsible/client_pm_name/…)، بدون foreign key به app_users — عدم یکپارچگی داده تضمین‌شده است.</li>
+            <li>نکته مثبت فنی: RLS، ممیزی امنیتی اخیر، و معماری Edge Function (کلید anon+JWT برای تحلیل، service-role فقط برای cron) دقیقاً طبق best-practice است — این لایه نباید در بازطراحی دست بخورد.</li>
+          </ul>
+        </div>
+        <div class="persona"><div class="role">متخصص UX/UI</div><div class="focus">Cognitive Load · Progressive Disclosure</div>
+          <ul>
+            <li>الگوی خوب موجود: فیلد «توضیح رویداد HSE» فقط وقتی نمایش داده می‌شود که «بله» انتخاب شود — این دقیقاً Progressive Disclosure درست است؛ باید همین الگو در کل سامانه تعمیم یابد، نه اینکه استثنا بماند.</li>
+            <li>۱۰ ردیف «جبهه کاری» و ۷ ردیف «حوزه X-Ray» در یک اسکرول بلند و یکنواخت — هیچ اولویت بصری بین یک ردیف 🔴 بحرانی و یک ردیف 🟢 عادی وجود ندارد.</li>
+            <li>سه فرم جدا برای یک روایت واحد یعنی کاربر باید سه بار «فکر کردن به همان مسئله» را از نو شروع کند — بار شناختی، نه فقط بار تایپی.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- C -->
+    <section class="block" id="dup">
+      <div class="sec-head"><span class="letter">C</span><h2>ماتریس تکرار اطلاعات</h2></div>
+      <p class="sec-sub">اطلاعاتی که در بیش از یک نقطه از سامانه، با نام یا فرمت متفاوت، همان مفهوم را می‌گیرند.</p>
+      <div class="twrap"><table>
+        <thead><tr><th>مفهوم</th><th>محل‌های تکرار</th><th>مشکل</th><th>تصمیم</th></tr></thead>
+        <tbody>
+          <tr><td>هویت مسئول/PM</td><td class="mono">ci_respondent، cr_client_pm، cr_contractor_pm، cr_consultant_pm، ci_plan_responsible، responsible_name (task)، evaluated_by</td><td>۷ فیلد متن آزاد جدا، بدون اتصال به app_users؛ املای ناهماهنگ در گزارش‌ها</td><td><span class="tag tag-MERGE">MERGE</span> به یک انتخابگر «شخص» متصل به پروفایل کاربران</td></tr>
+          <tr><td>شرح مسئله/گلوگاه</td><td class="mono">ci_bottleneck + ci_bottleneck_root_cause (اطلاعات تکمیلی) در برابر ci_qw_area + ci_qw_consequence_desc (Quick Win)</td><td>همان مسئله در همان جلسه، در دو فرم با ساختار متفاوت دوباره توصیف می‌شود</td><td><span class="tag tag-MERGE">MERGE</span> یک «شرح مسئله» با ارجاع دوطرفه</td></tr>
+          <tr><td>پیشرفت برنامه‌ای/واقعی</td><td class="mono">ci_planned_progress/ci_physical_progress (به تفکیک سازمان) در برابر cr_progress_planned/cr_progress_physical (رسمی PMO)</td><td>دو منبع عدد پیشرفت که هرگز خودکار مقایسه نمی‌شوند</td><td><span class="tag tag-KEEP">KEEP</span> هر دو، ولی <span class="tag tag-AUTOMATE">AUTOMATE</span> نمایش انحراف بین‌شان</td></tr>
+          <tr><td>«چه چیزی خراب است؟»</td><td class="mono">ci_issues[×3] + ci_risks[×3] + ci_top_risk/ci_risk_severity</td><td>سه ساختار متفاوت برای یک سؤال؛ top_risk عملاً باید از ci_risks استخراج شود</td><td><span class="tag tag-MERGE">MERGE</span> issues+risks، <span class="tag tag-REMOVE">REMOVE</span> top_risk جدا</td></tr>
+          <tr><td>«چرا این کار را می‌کنیم؟»</td><td class="mono">ci_qw_rationale، ci_qw_counter_commitment، ci_final_reflection</td><td>سه فیلد روایی جدا برای یک نیت واحد در یک فرم</td><td><span class="tag tag-MERGE">MERGE</span> به یک فیلد + یک شرطی</td></tr>
+          <tr><td>اثر/ارزش پیشنهاد</td><td class="mono">ci_impact_delay/progress/cost/issues/docs/fronts/other (۷ فیلد، فقط تخمین در لحظه پیشنهاد)</td><td>هیچ فیلد نظیر آن برای «ارزش واقعاً محقق‌شده» در پایان کار وجود ندارد</td><td><span class="tag tag-MERGE">MERGE</span> به ۲ فیلد + <span class="tag tag-NEW">NEW</span> ارزش واقعی در بستن پرونده</td></tr>
+          <tr><td>انتخاب پروژه/سازمان</td><td>سه ویجت adminPicker/managerPicker جدا در checkin، qwProposal، clientReport</td><td>کاربر در هر فرم دوباره پروژه را انتخاب می‌کند حتی در همان نشست</td><td><span class="tag tag-AUTOMATE">AUTOMATE</span> یک context انتخاب‌شده در سطح نشست</td></tr>
+          <tr><td>وضعیت اجرا / پیشرفت پرونده</td><td class="mono">quick_win_progress (status,percent,note) + quick_win_tasks.status + quick_win_decisions</td><td>سه جدول برای وضعیت یک پیشنهاد واحد پس از انتخاب شدن</td><td><span class="tag tag-MERGE">MERGE</span> در یک موجودیت Case (بخش I)</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- D -->
+    <section class="block" id="fields">
+      <div class="sec-head"><span class="letter">D</span><h2>فهرست فیلدهای غیرضروری</h2></div>
+      <p class="sec-sub">آزمون هر ردیف: «اگر این فیلد حذف شود، تصمیم‌گیری یا پیگیری واقعاً دچار مشکل می‌شود؟» — پاسخ منفی یعنی حذف.</p>
+      <div class="twrap"><table>
+        <thead><tr><th>فیلد</th><th>فرم</th><th>چرا غیرضروری</th><th>Value</th><th>Effort</th><th>تصمیم</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">ci_top_risk / ci_risk_severity</td><td>اطلاعات تکمیلی</td><td>عیناً باید بالاترین شدت از ci_risks باشد</td><td class="num"><span class="dots warn"><i class="on"></i><i></i><i></i><i></i><i></i></span></td><td class="num"><span class="dots warn"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></td><td><span class="tag tag-REMOVE">REMOVE</span></td></tr>
+          <tr><td class="mono">ci_one_thing</td><td>اطلاعات تکمیلی</td><td>همپوشان با «گلوگاه فعلی» و «راه باز کردن گلوگاه»</td><td class="num"><span class="dots warn"><i class="on"></i><i></i><i></i><i></i><i></i></span></td><td class="num"><span class="dots warn"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span></td><td><span class="tag tag-REMOVE">REMOVE</span></td></tr>
+          <tr><td class="mono">ci_qw_consequences / consequence_other / consequence_desc</td><td>Quick Win</td><td>همان «چرا مهم است» که در rationale دوباره پرسیده می‌شود</td><td class="num"><span class="dots warn"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span></td><td class="num"><span class="dots warn"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></td><td><span class="tag tag-MERGE">MERGE</span></td></tr>
+          <tr><td class="mono">ci_plan_units / ci_plan_prerequisite / ci_plan_decision / ci_plan_deliverable</td><td>Quick Win</td><td>جزئیات اجرایی سطح ادمین، نه چیزی که پیشنهاددهنده باید اول پر کند</td><td class="num"><span class="dots warn"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span></td><td class="num"><span class="dots warn"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></td><td><span class="tag tag-CONDITIONAL">CONDITIONAL</span> (سطح ۲، فقط ادمین)</td></tr>
+          <tr><td class="mono">ci_kpi_name / ci_kpi_current / ci_kpi_target</td><td>Quick Win</td><td>عملاً تکرار impact_* با واحد متفاوت؛ در عمل اغلب خالی می‌ماند</td><td class="num"><span class="dots warn"><i class="on"></i><i></i><i></i><i></i><i></i></span></td><td class="num"><span class="dots warn"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span></td><td><span class="tag tag-REMOVE">REMOVE</span></td></tr>
+          <tr><td class="mono">ci_impact_docs / ci_impact_fronts / ci_impact_other</td><td>Quick Win</td><td>سه فیلد کم‌کاربرد در کنار ۴ فیلد impact اصلی؛ اغلب پروژه‌ها فقط ۱-۲ مورد را پر می‌کنند</td><td class="num"><span class="dots warn"><i class="on"></i><i></i><i></i><i></i><i></i></span></td><td class="num"><span class="dots warn"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span></td><td><span class="tag tag-CONDITIONAL">CONDITIONAL</span> («سایر اثر» یک فیلد باز به‌جای ۳تا)</td></tr>
+          <tr><td class="mono">ci_qw_counter_commitment</td><td>Quick Win</td><td>فقط وقتی معنا دارد که حمایتی از مجری طرح خواسته شده باشد</td><td class="num"><span class="dots warn"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span></td><td class="num"><span class="dots warn"><i class="on"></i><i></i><i></i><i></i><i></i></span></td><td><span class="tag tag-CONDITIONAL">CONDITIONAL</span></td></tr>
+          <tr><td class="mono">ci_final_reflection</td><td>Quick Win</td><td>روایت آزاد بدون ساختار قابل گزارش‌گیری؛ همپوشان با qw_result</td><td class="num"><span class="dots warn"><i class="on"></i><i></i><i></i><i></i><i></i></span></td><td class="num"><span class="dots warn"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span></td><td><span class="tag tag-REMOVE">REMOVE</span></td></tr>
+          <tr><td>وضعیت ۱۰ جبهه کاری</td><td>اطلاعات تکمیلی</td><td>برای پروژه در فاز مهندسی/تأمین، ۱۰ ردیف بی‌ربط را مجبور است رد کند</td><td class="num"><span class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></td><td class="num"><span class="dots warn"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></td><td><span class="tag tag-CONDITIONAL">CONDITIONAL</span> (فقط فاز اجرا)</td></tr>
+          <tr><td class="mono">cr_elapsed</td><td>اطلاعات پایه پروژه</td><td>از cr_start_date تا امروز محاسبه‌پذیر است</td><td class="num"><span class="dots"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span></td><td class="num"><span class="dots warn"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span></td><td><span class="tag tag-AUTOMATE">AUTOMATE</span></td></tr>
+        </tbody>
+      </table></div>
+      <p style="font-size:12px;color:var(--ink-faint);margin-top:10px">نمرات به‌صورت نسبی‌اند (نقطه پرشده = بالاتر)؛ فهرست کامل کلاستری در بخش «امتیازدهی فیلدها» در پایان گزارش آمده.</p>
+    </section>
+
+    <!-- E -->
+    <section class="block" id="pages-rm">
+      <div class="sec-head"><span class="letter">E</span><h2>صفحات قابل حذف</h2></div>
+      <div class="callout">هیچ صفحه‌ای به‌طور کامل حذف نمی‌شود. سامانه فعلی صفحه اضافه ندارد — مشکل تکرارِ <b>درونِ</b> صفحات است، نه تعداد صفحات. تنها مورد قابل حذفِ مستقل: پنجره‌ی جدا برای «۳ ایشو» و «۳ ریسک» به‌عنوان یک بلوکِ کاملاً مجزا از «گلوگاه/ریسک پیشرو» — این باید در همان کارت «مسئله این دوره» ادغام شود (نه صفحه، بلکه یک بلوک درون‌صفحه).</div>
+    </section>
+
+    <!-- F -->
+    <section class="block" id="pages-merge">
+      <div class="sec-head"><span class="letter">F</span><h2>صفحات قابل ادغام</h2></div>
+      <div class="twrap"><table>
+        <thead><tr><th>صفحات فعلی</th><th>پیشنهاد</th><th>دلیل</th></tr></thead>
+        <tbody>
+          <tr><td>اطلاعات تکمیلی + پیشنهاد Quick Win</td><td>یک فرم «ثبت وضعیت دوره» با دکمه اختیاری «تبدیل به Quick Win» در انتها</td><td>هر دو از یک نفر، در یک نشست، درباره یک مسئله پر می‌شوند</td></tr>
+          <tr><td>انتخاب Quick Win (ارزیابی) + پیگیری اجرا</td><td>یک صفحه «مدیریت Case» با تب‌های «در انتظار تصمیم / در حال اجرا / بسته‌شده»</td><td>هر دو، چرخه‌عمر یک پرونده واحد را نشان می‌دهند، نه دو مرحله مستقل</td></tr>
+          <tr><td>نمای کلی + گزارش تحلیلی مدیریتی</td><td>نمای کلی به‌عنوان لایه اول داشبورد باقی می‌ماند؛ گزارش مدیریتی «Drill-down» همان صفحه شود، نه صفحه جدا</td><td>مدیرعامل معمولاً از نمای کلی مستقیم به جزئیات همان مسئله می‌رود</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- G -->
+    <section class="block" id="auto-list">
+      <div class="sec-head"><span class="letter">G</span><h2>اطلاعاتی که باید Auto Calculate شوند</h2></div>
+      <div class="twrap"><table>
+        <thead><tr><th>خروجی</th><th>امروز</th><th>منبع محاسبه خودکار</th></tr></thead>
+        <tbody>
+          <tr><td>مدت سپری‌شده (ماه)</td><td>ورود دستی (cr_elapsed)</td><td>امروز − cr_start_date</td></tr>
+          <tr><td>٪ مدت سپری‌شده از قرارداد</td><td>ورود دستی وجود ندارد، فقط در AI محاسبه می‌شود</td><td>مدت سپری‌شده ÷ cr_duration</td></tr>
+          <tr><td>انحراف پیشرفت (واقعی − برنامه‌ای)</td><td>فقط در گزارش‌ها نمایش، نه هشدار زنده</td><td>cr_progress_physical − cr_progress_planned (زنده در فرم)</td></tr>
+          <tr><td>مغایرت پیشرفت خودگزارش‌شده در برابر رسمی</td><td>فقط با تحلیل هوش مصنوعی قابل دیدن</td><td>ci_physical_progress هر سازمان در برابر cr_progress_physical</td></tr>
+          <tr><td>مهم‌ترین ریسک/شدت</td><td>فیلد جدا (ci_top_risk)</td><td>max(ci_risks[].level)</td></tr>
+          <tr><td>وضعیت کلی پروژه (🟢🟡🔴)</td><td>فقط از AI</td><td>قاعده ساده: هر حوزه 🔴 یا انحراف پیشرفت > آستانه → 🔴</td></tr>
+          <tr><td>تعداد روز تأخیر تسک</td><td>محاسبه‌شده در JS نمایش (isTaskOverdue) — خوب</td><td>همین الگو <span class="tag tag-KEEP">KEEP</span>، الگو باید تعمیم یابد</td></tr>
+          <tr><td>پروژه/سازمان فعال فرم</td><td>انتخاب دستی در هر فرم</td><td>Context نشست، از آخرین انتخاب یا تنها دسترسی کاربر</td></tr>
+          <tr><td>مسئول/PM</td><td>تایپ آزاد</td><td>انتخاب از فهرست app_users همان پروژه (نام/ایمیل خودکار پر می‌شود)</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- H -->
+    <section class="block" id="process">
+      <div class="sec-head"><span class="letter">H</span><h2>معماری مفهومی پیشنهادی</h2></div>
+      <p class="sec-sub">به‌جای موجودیت‌های جدا (Proposal / Problem / Issue / RCA / Action / CAPA / Lesson)، همه‌چیز یک <b>Case</b> است که از یک وضعیت به وضعیت بعدی حرکت می‌کند.</p>
+      <div class="flow">
+        <div class="flow-step"><span class="n">01 · PROBLEM</span><h4>مسئله</h4><p>وضعیت X-Ray یا یک گزارش دوره‌ای، یک نقطه ضعف را نشان می‌دهد.</p></div>
+        <div class="flow-arrow">←</div>
+        <div class="flow-step"><span class="n">02 · INSIGHT</span><h4>بینش</h4><p>چرا این‌طور شده (علت ریشه‌ای) و اهمیتش چقدر است.</p></div>
+        <div class="flow-arrow">←</div>
+        <div class="flow-step"><span class="n">03 · ACTION</span><h4>اقدام</h4><p>راه‌حل، مسئول، سررسید — همان چیزی که امروز Quick Win نام دارد.</p></div>
+        <div class="flow-arrow">←</div>
+        <div class="flow-step"><span class="n">04 · RESULT</span><h4>نتیجه</h4><p>اقدام انجام شد یا نه؛ نتیجه واقعی چه بود (فیلدی که امروز وجود ندارد).</p></div>
+        <div class="flow-arrow">←</div>
+        <div class="flow-step"><span class="n">05 · VALUE</span><h4>ارزش</h4><p>مقایسه خودکار نتیجه واقعی با اثر تخمینی — عدد نهایی برای گزارش مدیرعامل.</p></div>
+      </div>
+      <p style="font-size:12.5px;color:var(--ink-faint)">جهت پیکان‌ها راست‌به‌چپ، مطابق جهت خواندن فارسی؛ در عمل زمان از «مسئله» (راست) به «ارزش» (چپ) جریان دارد.</p>
+    </section>
+
+    <!-- I -->
+    <section class="block" id="arch">
+      <div class="sec-head"><span class="letter">I</span><h2>معماری جدید داده</h2></div>
+      <p>پنج جدول امروز (quick_win_decisions، quick_win_progress، quick_win_tasks، quick_win_evaluations، و بخش Quick Win از check_ins) در یک جدول <span class="mono tag" style="background:var(--paper-sunken);color:var(--ink)">cases</span> ادغام می‌شوند؛ لایه امنیتی (RLS به تفکیک پروژه/سازمان/نقش) که همین امروز درست پیاده شده، بدون تغییر روی جدول جدید هم اعمال می‌شود.</p>
+      <div class="twrap"><table>
+        <thead><tr><th>جدول/بخش امروز</th><th>در معماری جدید</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">check_ins (بخش X-Ray + issues/risks)</td><td>می‌ماند — منبع «Problem» (بدون تغییر ساختاری بزرگ، فقط ادغام issues/risks/top_risk)</td></tr>
+          <tr><td class="mono">check_ins (بخش qw_*) + quick_win_decisions</td><td>می‌شود <span class="mono">cases</span> — status: پیشنهاد → ارزیابی‌شده → انتخاب‌شده → در حال اجرا → بسته‌شده</td></tr>
+          <tr><td class="mono">quick_win_progress + quick_win_tasks</td><td>می‌شود <span class="mono">case_updates</span> — یک لاگ رویداد پیوسته به‌جای دو جدول جدا (پیشرفت درصدی و چک‌لیست وظایف، هر دو یک «به‌روزرسانی روی یک Case»اند)</td></tr>
+          <tr><td class="mono">quick_win_evaluations</td><td>می‌شود ستون‌های امتیاز روی خودِ <span class="mono">cases</span> در وضعیت «ارزیابی‌شده» — نیازی به جدول جدا نیست چون هر Case فقط یک ارزیابی فعال دارد</td></tr>
+          <tr><td class="mono">client_reports</td><td>می‌ماند بدون تغییر ساختاری — تنها منبع رسمی قرارداد/زمان/هزینه؛ فقط به cases متصل می‌شود (نه ادغام)</td></tr>
+          <tr><td>—</td><td><span class="tag tag-NEW">NEW</span> ستون <span class="mono">actual_value_json</span> روی cases: نتیجه واقعی + ارزش محقق‌شده، پر می‌شود در وضعیت «بسته‌شده»</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- J -->
+    <section class="block" id="journey">
+      <div class="sec-head"><span class="letter">J</span><h2>User Journey سه‌سطحی</h2></div>
+      <div class="levels">
+        <div class="level"><span class="lvl-badge">LEVEL 1</span><h4>ثبت سریع</h4><div class="time">هدف: زیر ۲ دقیقه</div>
+          <ul>
+            <li>وضعیت X-Ray (تپ روی ۷ حوزه)</li>
+            <li>٪ پیشرفت برنامه‌ای/واقعی</li>
+            <li>مهم‌ترین مسئله این دوره (۱ متن + ۱ شدت)</li>
+            <li class="add"><b>خودکار:</b> پروژه/سازمان/تاریخ/پاسخ‌دهنده از نشست</li>
+          </ul>
+        </div>
+        <div class="level"><span class="lvl-badge">LEVEL 2</span><h4>تحلیل</h4><div class="time">فقط اگر شدت ≥ متوسط</div>
+          <ul>
+            <li>علت ریشه‌ای (متن + گزینه ۵Why اختیاری)</li>
+            <li>حوزه/جبهه مرتبط (فقط اگر پروژه در فاز اجراست)</li>
+            <li>نیاز به تصمیم مدیریت ارشد؟</li>
+            <li class="cut">حذف: ۱۰ ردیف جبهه کاری برای پروژه غیرِ در حال اجرا</li>
+          </ul>
+        </div>
+        <div class="level"><span class="lvl-badge">LEVEL 3</span><h4>اقدام و ارزش</h4><div class="time">هنگام تبدیل به Case</div>
+          <ul>
+            <li>راه‌حل، مسئول (از فهرست کاربران)، سررسید</li>
+            <li>اثر تخمینی (۱-۲ عدد کلیدی، نه ۷ فیلد)</li>
+            <li class="add"><b>NEW:</b> نتیجه واقعی + ارزش محقق‌شده، در بستن پرونده</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- K -->
+    <section class="block" id="qw-form">
+      <div class="sec-head"><span class="letter">K</span><h2>فرم پیشنهادی Quick Win</h2></div>
+      <div class="flow">
+        <div class="flow-step"><h4>مشکل/فرصت چیست؟</h4><p>۱ فیلد متن</p></div>
+        <div class="flow-arrow">←</div>
+        <div class="flow-step"><h4>راه‌حل پیشنهادی؟</h4><p>۱ فیلد متن</p></div>
+        <div class="flow-arrow">←</div>
+        <div class="flow-step"><h4>مسئول اجرا؟</h4><p>انتخاب از کاربران پروژه</p></div>
+        <div class="flow-arrow">←</div>
+        <div class="flow-step"><h4>سررسید؟</h4><p>تقویم شمسی</p></div>
+        <div class="flow-arrow">←</div>
+        <div class="flow-step"><h4>نتیجه چه بود؟</h4><p>پس از اجرا</p></div>
+        <div class="flow-arrow">←</div>
+        <div class="flow-step"><h4>چه ارزشی ساخت؟</h4><p><span class="tag tag-AUTOMATE">AUTOMATE</span> عدد پیشنهادی</p></div>
+      </div>
+      <p>۵ فیلد ثبت اولیه (به‌جای ۳۰ فیلد امروز). زمان/هزینه صرفه‌جویی‌شده، کاهش ریسک/تأخیر و افزایش بهره‌وری در انتها به‌صورت پیشنهادی محاسبه می‌شوند (بر پایه اثر تخمینی × نتیجه واقعی)، کاربر فقط تأیید یا اصلاح می‌کند.</p>
+    </section>
+
+    <!-- L -->
+    <section class="block" id="pa-form">
+      <div class="sec-head"><span class="letter">L</span><h2>فرم پیشنهادی Problem Analysis</h2></div>
+      <p>مسیر: <span class="mono">Problem → Impact → Root Cause → Action → Owner → Due Date → Result → Value</span></p>
+      <div class="callout blue"><b>روش RCA:</b> ۵Why به‌عنوان پیش‌فرض (سریع‌ترین، بدون نیاز به ابزار جانبی)؛ Fishbone فقط برای موارد با «شدت بحرانی + بیش از یک حوزه درگیر» به‌صورت اختیاری فعال شود. Pareto در سطح گزارش تجمیعی (کدام دسته مسئله بیشترین تکرار را دارد)، نه در سطح فرم فردی. Fault Tree برای این سامانه بیش از پیچیدگی خودِ مسائل است — استفاده نشود.</div>
+      <ul class="plain">
+        <li><b>سطح ۱ (همیشه):</b> شرح مسئله، شدت، حوزه/جبهه مرتبط</li>
+        <li><b>سطح ۲ (شرط: شدت ≥ متوسط):</b> علت ریشه‌ای، تصمیم مدیریت ارشد لازم است؟</li>
+        <li><b>سطح ۳ (اقدام):</b> دقیقاً همان جریان Case در بخش K — یک مسئله جدی، به یک Case تبدیل می‌شود، نه فرم جدا</li>
+      </ul>
+    </section>
+
+    <!-- M -->
+    <section class="block" id="dash">
+      <div class="sec-head"><span class="letter">M</span><h2>داشبورد مدیریتی پیشنهادی</h2></div>
+      <p class="sec-sub">۸ سؤال مدیرعامل، ۸ کارت — بدون اسکرول، بدون نمودار اضافه.</p>
+      <div class="dash-mock"><div class="dash-grid">
+        <div class="dash-card"><div class="q">چه مشکلی داریم؟</div><div class="a"><b>۳</b> Case با شدت بحرانی</div></div>
+        <div class="dash-card"><div class="q">کجا داریم؟</div><div class="a">خط لوله <b>قطعه ۴</b>، حوزه تأمین</div></div>
+        <div class="dash-card"><div class="q">چقدر مهم است؟</div><div class="a">۲ مورد نیازمند تصمیم مدیریت ارشد</div></div>
+        <div class="dash-card"><div class="q">مسئول کیست؟</div><div class="a"><b>۴</b> نفر، ۱ نفر با ۲ Case معوق</div></div>
+        <div class="dash-card"><div class="q">چه اقدامی جاری است؟</div><div class="a"><b>۷</b> Case در حال اجرا</div></div>
+        <div class="dash-card"><div class="q">نتیجه چه بوده؟</div><div class="a"><b>۱۲</b> بسته‌شده این ماه</div></div>
+        <div class="dash-card"><div class="q">چقدر ارزش ساختیم؟</div><div class="a"><b>۱۸</b> روز صرفه‌جویی، <b>۴.۲</b> میلیارد ریال</div></div>
+        <div class="dash-card"><div class="q">چه چیزی تکرار می‌شود؟</div><div class="a">«تأخیر تأمین والو» در ۳ پروژه</div></div>
+      </div></div>
+      <p style="margin-top:14px">این نسخه هیچ فراخوانی هوش مصنوعی لازم ندارد (محاسبه مستقیم از cases)؛ گزارش تحلیلی مدیریتی مبتنی بر AI به‌عنوان لایه Drill-down پشت همین کارت‌ها می‌ماند.</p>
+    </section>
+
+    <!-- N -->
+    <section class="block" id="automation">
+      <div class="sec-head"><span class="letter">N</span><h2>Automation Opportunities</h2></div>
+      <div class="twrap"><table>
+        <thead><tr><th>مورد</th><th>نوع اتوماسیون</th><th>اولویت</th></tr></thead>
+        <tbody>
+          <tr><td>پر کردن پروژه/سازمان/تاریخ از نشست کاربر</td><td>Context خودکار فرم</td><td><span class="tag tag-P0">P0</span></td></tr>
+          <tr><td>انتخاب مسئول از app_users به‌جای تایپ آزاد</td><td>Lookup + auto-fill ایمیل</td><td><span class="tag tag-P0">P0</span></td></tr>
+          <tr><td>هشدار تسک معوق (notify-overdue-tasks)</td><td>از قبل پیاده‌سازی‌شده</td><td><span class="tag tag-KEEP">KEEP</span></td></tr>
+          <tr><td>محاسبه انحراف پیشرفت و مدت سپری‌شده</td><td>فرمول زنده در فرم/گزارش</td><td><span class="tag tag-P1">P1</span></td></tr>
+          <tr><td>تشخیص وضعیت 🟢🟡🔴 پروژه</td><td>قاعده آستانه به‌جای فقط AI</td><td><span class="tag tag-P1">P1</span></td></tr>
+          <tr><td>پیشنهاد ارزش محقق‌شده در بستن Case</td><td>فرمول بر پایه اثر تخمینی</td><td><span class="tag tag-P1">P1</span></td></tr>
+          <tr><td>کشف Caseهای تکراری بین پروژه‌ها</td><td>تطبیق متنی/برچسبی + هوش مصنوعی</td><td><span class="tag tag-P2">P2</span></td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- O -->
+    <section class="block" id="ai-opp">
+      <div class="sec-head"><span class="letter">O</span><h2>AI Opportunities</h2></div>
+      <p>سامانه همین امروز یک موتور تحلیل قوی دارد (analyze-project: تشخیص تناقض بین دیدگاه‌ها، ریسک‌رجیستر، اولویت‌بندی). فرصت‌های بعدی، امتداد همین موتور است، نه ابزار جدید:</p>
+      <div class="twrap"><table>
+        <thead><tr><th>فرصت</th><th>ورودی</th><th>اولویت</th></tr></thead>
+        <tbody>
+          <tr><td>پیشنهاد Root Cause بر اساس متن مسئله</td><td>شرح مسئله + سابقه Caseهای مشابه</td><td><span class="tag tag-P1">P1</span></td></tr>
+          <tr><td>تشخیص Case مشابه قبلی (همین یا پروژه دیگر)</td><td>عنوان/شرح Case جدید در برابر آرشیو</td><td><span class="tag tag-P1">P1</span></td></tr>
+          <tr><td>پیشنهاد اقدام اصلاحی مشابه موفق</td><td>Caseهای بسته‌شده با ارزش محقق‌شده بالا</td><td><span class="tag tag-P2">P2</span></td></tr>
+          <tr><td>تشخیص روند افزایشی یک نوع مسئله در چند پروژه</td><td>برچسب حوزه/جبهه در طول زمان</td><td><span class="tag tag-P2">P2</span></td></tr>
+          <tr><td>جمع‌بندی خودکار «درس‌آموخته» هنگام بستن Case بحرانی</td><td>کل چرخه Case (مسئله→اقدام→نتیجه)</td><td><span class="tag tag-P2">P2</span></td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- P -->
+    <section class="block" id="kpi">
+      <div class="sec-head"><span class="letter">P</span><h2>KPIهای واقعی خلق ارزش</h2></div>
+      <div class="twrap"><table>
+        <thead><tr><th>KPI</th><th>فرمول</th><th>وضعیت امروز</th></tr></thead>
+        <tbody>
+          <tr><td>نرخ موفقیت Quick Win</td><td>Caseهای «نتیجه محقق‌شده» ÷ کل بسته‌شده</td><td><span class="tag tag-NEW">NEW</span> — داده ناقص است</td></tr>
+          <tr><td>میانگین زمان تا اقدام</td><td>تاریخ انتخاب − تاریخ ثبت مسئله</td><td><span class="tag tag-AUTOMATE">AUTOMATE</span> — از تاریخ‌های موجود قابل استخراج</td></tr>
+          <tr><td>ارزش مالی محقق‌شده (تجمیعی)</td><td>Σ ارزش واقعی Caseهای بسته‌شده</td><td><span class="tag tag-NEW">NEW</span></td></tr>
+          <tr><td>نرخ تکرار مسئله</td><td>تعداد Case با برچسب یکسان در >۱ پروژه</td><td><span class="tag tag-NEW">NEW</span></td></tr>
+          <tr><td>میانگین انحراف پیشرفت خودگزارش‌شده در برابر رسمی</td><td>|ci_physical_progress − cr_progress_physical|</td><td><span class="tag tag-AUTOMATE">AUTOMATE</span></td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <hr class="rule">
+
+    <!-- Before/After -->
+    <section class="block" id="before-after">
+      <h2 style="margin-bottom:18px">Before / After</h2>
+      <div class="twrap"><table>
+        <thead><tr><th>بخش</th><th>وضعیت فعلی</th><th>مشکل</th><th>پیشنهاد</th><th>نتیجه</th></tr></thead>
+        <tbody>
+          <tr><td>ثبت Quick Win</td><td>۳۰ فیلد، ۱ فرم بلند</td><td>زمان ثبت بالا، ترک احتمالی فرم</td><td>۵ فیلد سطح ۱ + جزئیات اختیاری سطح ۲</td><td>کاهش زمان از ~۱۰ به &lt;۲ دقیقه</td></tr>
+          <tr><td>اطلاعات تکمیلی</td><td>۴۵ فیلد در یک صفحه</td><td>بار شناختی بالا، جبهه‌های بی‌ربط اجباری</td><td>X-Ray + ۲ عدد پیشرفت + ۱ مسئله در سطح ۱</td><td>ساده‌سازی؛ سطح ۲ فقط هنگام نیاز</td></tr>
+          <tr><td>RCA</td><td>یک متن آزاد</td><td>کافی نیست برای موارد بحرانی، زیاد است برای موارد جزئی</td><td>۵Why شرطی برای شدت≥متوسط</td><td>حذف اطلاعات زائد برای اکثر موارد</td></tr>
+          <tr><td>Action / پیگیری</td><td>۳ جدول جدا (decisions/progress/tasks)</td><td>وضعیت یک پرونده در ۳ جا پخش است</td><td>یک Case با چرخه‌عمر واحد</td><td>تمرکز بر اقدام، نه ثبت پراکنده</td></tr>
+          <tr><td>ارزیابی Quick Win</td><td>رابرک ۵معیاره جدا از پرونده</td><td>ارزیابی و پرونده در دو جدول مجزا</td><td>ستون امتیاز روی خودِ Case</td><td>یک منبع حقیقت</td></tr>
+          <tr><td>گزارش مدیریتی</td><td>وابسته به فراخوانی AI</td><td>بدون AI، پاسخ سریع وجود ندارد</td><td>داشبورد ۸سؤالی محاسبه‌محور + AI برای عمق</td><td>تصمیم‌گیری در &lt;۳۰ ثانیه</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- Scoring -->
+    <section class="block" id="scoring">
+      <h2 style="margin-bottom:18px">امتیازدهی خوشه‌ای فیلدها</h2>
+      <p class="sec-sub">میانگین هر خوشه فیلد (۰ تا ۵)؛ خوشه‌هایی با Value پایین و Effort/Duplication بالا، کاندید حذف فوری‌اند (بخش D).</p>
+      <div class="twrap"><table>
+        <thead><tr><th>خوشه فیلد</th><th class="num">Value</th><th class="num">Usage</th><th class="num">Automation</th><th class="num">Duplication</th><th class="num">User Effort</th></tr></thead>
+        <tbody>
+          <tr><td>X-Ray ۷حوزه</td><td class="num">۵</td><td class="num">۵</td><td class="num">۱</td><td class="num">۰</td><td class="num">۱</td></tr>
+          <tr><td>۱۰ جبهه کاری</td><td class="num">۳</td><td class="num">۲</td><td class="num">۱</td><td class="num">۱</td><td class="num">۴</td></tr>
+          <tr><td>۳ ایشو + ۳ ریسک + top_risk</td><td class="num">۳</td><td class="num">۲</td><td class="num">۲</td><td class="num">۴</td><td class="num">۴</td></tr>
+          <tr><td>سؤالات کلیدی مدیریت (۸ فیلد)</td><td class="num">۴</td><td class="num">۳</td><td class="num">۱</td><td class="num">۲</td><td class="num">۴</td></tr>
+          <tr><td>شناسایی مسئله Quick Win</td><td class="num">۲</td><td class="num">۲</td><td class="num">۲</td><td class="num">۴</td><td class="num">۳</td></tr>
+          <tr><td>برنامه تحقق (۸ فیلد)</td><td class="num">۳</td><td class="num">۲</td><td class="num">۱</td><td class="num">۲</td><td class="num">۴</td></tr>
+          <tr><td>اندازه‌گیری اثر (۷ فیلد impact)</td><td class="num">۴</td><td class="num">۲</td><td class="num">۳</td><td class="num">۳</td><td class="num">۴</td></tr>
+          <tr><td>روایت پایانی (rationale/commitment/reflection)</td><td class="num">۱</td><td class="num">۱</td><td class="num">۱</td><td class="num">۴</td><td class="num">۳</td></tr>
+          <tr><td>اطلاعات پایه قرارداد (Form 1، بخش ۱)</td><td class="num">۵</td><td class="num">۴</td><td class="num">۱</td><td class="num">۰</td><td class="num">۲</td></tr>
+          <tr><td>رابرک ارزیابی ۵معیاره</td><td class="num">۵</td><td class="num">۴</td><td class="num">۱</td><td class="num">۰</td><td class="num">۲</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- Golden rule -->
+    <section class="block" id="golden">
+      <h2 style="margin-bottom:18px">قانون ۸۰/۲۰</h2>
+      <p class="sec-sub">«اگر کاربر فقط ۲۰٪ فیلدهای این صفحه را پر کند، ۸۰٪ ارزش مورد نیاز ساخته می‌شود؟»</p>
+      <div class="twrap"><table>
+        <thead><tr><th>صفحه</th><th>۲۰٪ طلایی</th><th>پاسخ</th></tr></thead>
+        <tbody>
+          <tr><td>اطلاعات تکمیلی</td><td>X-Ray + دو عدد پیشرفت + یک شرح مسئله</td><td><b style="color:var(--keep)">بله</b> — بقیه توضیح است، نه تصمیم</td></tr>
+          <tr><td>پیشنهاد Quick Win</td><td>عنوان + راه‌حل + مسئول + سررسید</td><td><b style="color:var(--keep)">بله</b></td></tr>
+          <tr><td>اطلاعات پایه پروژه</td><td>مبالغ + تاریخ‌ها + پیشرفت برنامه‌ای/واقعی</td><td><b style="color:var(--merge)">تقریباً</b> — Milestone هم لازم است برای PMO</td></tr>
+          <tr><td>ارزیابی Quick Win</td><td>هر ۵ معیار لازم است، قابل کاهش نیست</td><td><b style="color:var(--remove)">خیر</b> — این فرم از قبل حداقلی است</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- Final IA -->
+    <section class="block" id="ia">
+      <h2 style="margin-bottom:6px">معماری اطلاعاتی نهایی پیشنهادی</h2>
+      <p class="sec-sub">Menu → Pages → Forms → Fields → Workflow → Dashboard، آماده به‌عنوان مبنای بازطراحی.</p>
+      <div class="twrap"><table>
+        <thead><tr><th>منو</th><th>صفحه</th><th>محتوا</th><th>وضعیت</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="2">نمای کلی</td><td>داشبورد اجرایی</td><td>۸ کارت سؤال‌محور (بخش M)</td><td><span class="tag tag-NEW">NEW</span></td></tr>
+          <tr><td>گزارش تحلیلی مدیریتی (AI)</td><td>Drill-down پشت داشبورد، بدون تغییر منطق</td><td><span class="tag tag-KEEP">KEEP</span></td></tr>
+          <tr><td rowspan="2">ثبت وضعیت</td><td>اطلاعات تکمیلی</td><td>X-Ray + پیشرفت + مسئله (سطح ۱/۲)</td><td><span class="tag tag-MERGE">MERGE</span> فیلدهای مسئله</td></tr>
+          <tr><td>اطلاعات پایه پروژه</td><td>بدون تغییر ساختاری، فقط cr_elapsed خودکار</td><td><span class="tag tag-KEEP">KEEP</span></td></tr>
+          <tr><td rowspan="2">Case ها</td><td>ثبت Case جدید</td><td>فرم ۵فیلدی (بخش K)</td><td><span class="tag tag-MERGE">MERGE</span></td></tr>
+          <tr><td>مدیریت Case (ارزیابی + اجرا + بستن)</td><td>تب‌بندی وضعیت، جایگزین ۳ صفحه فعلی</td><td><span class="tag tag-MERGE">MERGE</span></td></tr>
+          <tr><td>مدیریت کاربران</td><td>مدیریت کاربران</td><td>بدون تغییر — پایه لازم برای auto-fill مسئول</td><td><span class="tag tag-KEEP">KEEP</span></td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- Backlog -->
+    <section class="block" id="backlog">
+      <h2 style="margin-bottom:18px">Backlog اولویت‌بندی‌شده</h2>
+      <div class="twrap" style="padding:6px 20px">
+        <div class="backlog-item"><span class="tag tag-P0">P0</span><div class="txt"><b>Context نشست برای پروژه/سازمان</b><span>حذف انتخاب تکراری در ۳ فرم — کمترین ریسک، بیشترین کاهش کلیک روزانه</span></div></div>
+        <div class="backlog-item"><span class="tag tag-P0">P0</span><div class="txt"><b>مسئول از فهرست کاربران، نه تایپ آزاد</b><span>پیش‌نیاز یکپارچگی داده در سراسر سامانه</span></div></div>
+        <div class="backlog-item"><span class="tag tag-P0">P0</span><div class="txt"><b>ادغام ۳ فیلد «چه چیزی خراب است» + حذف top_risk</b><span>بیشترین کاهش فیلد با کمترین تغییر منطق</span></div></div>
+        <div class="backlog-item"><span class="tag tag-P1">P1</span><div class="txt"><b>شرطی‌سازی ۱۰ جبهه کاری بر اساس فاز پروژه</b><span>نیازمند افزودن «فاز فعلی» به projects</span></div></div>
+        <div class="backlog-item"><span class="tag tag-P1">P1</span><div class="txt"><b>فیلد «نتیجه واقعی + ارزش محقق‌شده» در بستن Case</b><span>مهم‌ترین شکاف مفهومی گزارش (بخش A، بند ۳)</span></div></div>
+        <div class="backlog-item"><span class="tag tag-P1">P1</span><div class="txt"><b>داشبورد اجرایی ۸کارتی بدون‌AI</b><span>مستقل از هزینه/تأخیر فراخوانی هوش مصنوعی</span></div></div>
+        <div class="backlog-item"><span class="tag tag-P1">P1</span><div class="txt"><b>ادغام سه جدول اجرا (decisions/progress/tasks) در یک Case</b><span>بازنویسی مدل داده — نیازمند migration دقیق و بازتست RLS</span></div></div>
+        <div class="backlog-item"><span class="tag tag-P2">P2</span><div class="txt"><b>ادغام کامل «اطلاعات تکمیلی» و «Quick Win» در یک جریان</b><span>بزرگ‌ترین تغییر تجربه کاربری — بعد از تثبیت مدل داده جدید</span></div></div>
+        <div class="backlog-item"><span class="tag tag-P2">P2</span><div class="txt"><b>پیشنهاد Root Cause و تشخیص Case مشابه با AI</b><span>امتداد موتور تحلیل موجود</span></div></div>
+        <div class="backlog-item"><span class="tag tag-P2">P2</span><div class="txt"><b>۵Why ساختاریافته برای Caseهای بحرانی</b><span>ویجت اختیاری، فقط سطح ۲</span></div></div>
+      </div>
+    </section>
+
+    <p class="foot">این گزارش صرفاً پیشنهاد پنل است. تا تأیید صریح، هیچ تغییری در کد یا داده اعمال نشده.</p>
+  </main>
+</div>
