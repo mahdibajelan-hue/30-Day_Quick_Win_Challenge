@@ -4208,6 +4208,16 @@
             ].join('');
         }
 
+        // Every other Jalali date field in the app (اطلاعات تکمیلی + اطلاعات
+        // پایه پروژه) was a free-typed text input relying on the user matching
+        // the placeholder format exactly — attach the same calendar picker
+        // already used for Quick Win task due dates, so every date in the app
+        // is now picked, never typed. These inputs are static (always in the
+        // DOM from page load, only their .value is read/written elsewhere),
+        // so this needs to run once, not on every render.
+        ['ci_forecast_date', 'ci_plan_start_date', 'ci_plan_target_date', 'cr_start_date', 'cr_end_date', 'cr_milestone_date']
+            .forEach(id => attachJalaliDatePicker(document.getElementById(id)));
+
         initApp();
     </script>
 </body>
