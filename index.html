@@ -427,6 +427,20 @@
                             <div><label class="block text-xs font-semibold mb-1">علت ریشه‌ای این گلوگاه *</label><textarea id="ci_bottleneck_root_cause" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500"></textarea></div>
                             <div><label class="block text-xs font-semibold mb-1">چه تصمیم یا اقدامی می‌تواند این گلوگاه را باز کند؟ *</label><textarea id="ci_bottleneck_unlock" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500"></textarea></div>
                         </div>
+                        <div id="ci_five_why_prompt" class="hidden">
+                            <button type="button" id="ci_five_why_toggle_btn" class="text-xs text-red-700 underline">🔍 برای یافتن علت ریشه‌ای دقیق‌تر، از تکنیک ۵Why استفاده کنید (چون شدت این مورد قابل‌توجه است)</button>
+                        </div>
+                        <div id="ci_five_why_panel" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 space-y-2">
+                            <p class="text-xs font-bold text-red-800">۵Why — هر «چرا» باید پاسخ سؤال قبلی را ریشه‌یابی کند</p>
+                            <div class="space-y-1.5">
+                                <input type="text" class="ci_five_why_input w-full p-2 border rounded-lg text-xs" data-n="1" placeholder="چرا؟ (۱) — مثلاً: چرا این گلوگاه پیش آمد؟">
+                                <input type="text" class="ci_five_why_input w-full p-2 border rounded-lg text-xs" data-n="2" placeholder="چرا؟ (۲) — چرا پاسخ بالا اتفاق افتاد؟">
+                                <input type="text" class="ci_five_why_input w-full p-2 border rounded-lg text-xs" data-n="3" placeholder="چرا؟ (۳)">
+                                <input type="text" class="ci_five_why_input w-full p-2 border rounded-lg text-xs" data-n="4" placeholder="چرا؟ (۴)">
+                                <input type="text" class="ci_five_why_input w-full p-2 border rounded-lg text-xs" data-n="5" placeholder="چرا؟ (۵) — معمولاً همین‌جا به علت ریشه‌ای واقعی می‌رسید">
+                            </div>
+                            <button type="button" id="ci_five_why_apply_btn" class="text-xs bg-red-700 hover:bg-red-800 text-white px-3 py-1.5 rounded-lg font-bold">استفاده به‌عنوان علت ریشه‌ای</button>
+                        </div>
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div class="md:col-span-3"><label class="block text-xs font-semibold mb-1">نیاز به تصمیم مدیریت ارشد *</label><textarea id="ci_senior_decision" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500"></textarea></div>
                             <div>
@@ -2089,6 +2103,20 @@
             document.getElementById('ci_qw_quick_fields').classList.toggle('hidden', !e.target.checked);
         });
 
+        document.getElementById('ci_five_why_toggle_btn').addEventListener('click', () => {
+            document.getElementById('ci_five_why_panel').classList.toggle('hidden');
+        });
+        document.getElementById('ci_five_why_apply_btn').addEventListener('click', () => {
+            const answers = Array.from(document.querySelectorAll('.ci_five_why_input'))
+                .map(inp => inp.value.trim())
+                .filter(Boolean);
+            if (!answers.length) { alert('حداقل یک «چرا» را تکمیل کنید.'); return; }
+            const composed = answers.map((a, i) => `چرا ${toPersianDigits(String(i + 1))}: ${a}`).join('\n');
+            const rootCauseEl = document.getElementById('ci_bottleneck_root_cause');
+            rootCauseEl.value = rootCauseEl.value.trim() ? rootCauseEl.value.trim() + '\n\n' + composed : composed;
+            document.getElementById('ci_five_why_panel').classList.add('hidden');
+        });
+
         function updateContractorRequired() {
             // Engineering-only (E) contracts have no contractor yet, so don't force the field.
             const isEngineeringOnly = document.getElementById('cr_contract_type').value === 'E';
@@ -2256,6 +2284,14 @@
             el.textContent = top_risk
                 ? `مهم‌ترین ریسک (محاسبه خودکار از فهرست بالا): «${top_risk}» — شدت ${toPersianDigits(String(risk_severity))} از ۵`
                 : 'با تکمیل فهرست بالا، مهم‌ترین ریسک به‌صورت خودکار اینجا نمایش داده می‌شود.';
+
+            // Redesign backlog (P2): "۵Why شرطی برای شدت≥متوسط" — offered, not
+            // forced, and only once there's an actual signal it's worth the
+            // extra structure.
+            const promptEl = document.getElementById('ci_five_why_prompt');
+            const showPrompt = (risk_severity || 0) >= riskLevelRank('متوسط');
+            promptEl.classList.toggle('hidden', !showPrompt);
+            if (!showPrompt) document.getElementById('ci_five_why_panel').classList.add('hidden');
         }
 
         function collectCheckboxGroup(cls) {
