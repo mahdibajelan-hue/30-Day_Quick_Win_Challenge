@@ -427,9 +427,13 @@
                             <div><label class="block text-xs font-semibold mb-1">علت ریشه‌ای این گلوگاه *</label><textarea id="ci_bottleneck_root_cause" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500"></textarea></div>
                             <div><label class="block text-xs font-semibold mb-1">چه تصمیم یا اقدامی می‌تواند این گلوگاه را باز کند؟ *</label><textarea id="ci_bottleneck_unlock" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500"></textarea></div>
                         </div>
-                        <div id="ci_five_why_prompt" class="hidden">
-                            <button type="button" id="ci_five_why_toggle_btn" class="text-xs text-red-700 underline">🔍 برای یافتن علت ریشه‌ای دقیق‌تر، از تکنیک ۵Why استفاده کنید (چون شدت این مورد قابل‌توجه است)</button>
+                        <div class="flex flex-wrap gap-3 items-center">
+                            <button type="button" id="ci_ai_root_cause_btn" class="text-xs text-purple-700 underline">💡 پیشنهاد هوش مصنوعی برای علت ریشه‌ای و موارد مشابه قبلی</button>
+                            <div id="ci_five_why_prompt" class="hidden">
+                                <button type="button" id="ci_five_why_toggle_btn" class="text-xs text-red-700 underline">🔍 استفاده از تکنیک ۵Why (چون شدت این مورد قابل‌توجه است)</button>
+                            </div>
                         </div>
+                        <div id="ci_ai_root_cause_panel" class="hidden bg-purple-50 border border-purple-200 rounded-xl p-4 space-y-2 text-xs"></div>
                         <div id="ci_five_why_panel" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 space-y-2">
                             <p class="text-xs font-bold text-red-800">۵Why — هر «چرا» باید پاسخ سؤال قبلی را ریشه‌یابی کند</p>
                             <div class="space-y-1.5">
@@ -1977,6 +1981,8 @@
             document.getElementById('ci_hse_note_wrap').classList.add('hidden');
             document.getElementById('ci_official_progress_hint').textContent = '';
             document.getElementById('ci_qw_quick_fields').classList.add('hidden');
+            document.getElementById('ci_ai_root_cause_panel').classList.add('hidden');
+            document.getElementById('ci_five_why_panel').classList.add('hidden');
             await refreshResponsibleOptions('ci_qwq_responsible', project_name);
             await applyWorkFrontsVisibility(project_name);
             await refreshOfficialProgress(project_name);
@@ -2101,6 +2107,38 @@
         // both write to the same cases table, so nothing is lost either way.
         document.getElementById('ci_convert_to_qw').addEventListener('change', (e) => {
             document.getElementById('ci_qw_quick_fields').classList.toggle('hidden', !e.target.checked);
+        });
+
+        // Redesign backlog (P2, section O): "پیشنهاد Root Cause" + "تشخیص
+        // Case مشابه" — an extension of the same AI engine analyze-project
+        // uses, available to whoever is filling in the form (not admin-only)
+        // since it only ever runs through the caller's own JWT — RLS already
+        // scopes the "similar past cases" search to what they can see.
+        document.getElementById('ci_ai_root_cause_btn').addEventListener('click', async () => {
+            const problemText = document.getElementById('ci_bottleneck').value.trim();
+            const panel = document.getElementById('ci_ai_root_cause_panel');
+            if (!problemText) { alert('ابتدا «مهم‌ترین گلوگاه فعلی پروژه» را بنویسید تا پیشنهاد بگیرید.'); return; }
+            panel.classList.remove('hidden');
+            panel.innerHTML = '<p class="text-slate-500">در حال دریافت پیشنهاد هوش مصنوعی...</p>';
+            const { data, error } = await _supabase.functions.invoke('suggest-root-cause', { body: { problem_text: problemText, provider: 'gemini' } });
+            if (error || !data || data.error) {
+                panel.innerHTML = `<p class="text-red-600">خطا در دریافت پیشنهاد: ${esc(error?.message || data?.error || 'نامشخص')}</p>`;
+                return;
+            }
+            const s = data.suggestion || {};
+            const similarHtml = (s.similar_cases || []).length
+                ? '<ul class="list-disc pr-4 space-y-1">' + s.similar_cases.map(c => `<li><b>${esc(c.project_name)}</b> — ${esc(c.reference)}: <span class="text-slate-600">${esc(c.why_similar)}</span></li>`).join('') + '</ul>'
+                : '<p class="text-slate-400">مورد مشابه‌ای در سابقه یافت نشد.</p>';
+            panel.innerHTML = `
+                <p class="font-bold text-purple-800">علت ریشه‌ای پیشنهادی:</p>
+                <p class="text-slate-700">${esc(s.suggested_root_cause || '-')}</p>
+                <button type="button" id="ci_ai_root_cause_use_btn" class="text-xs bg-purple-700 hover:bg-purple-800 text-white px-3 py-1.5 rounded-lg font-bold">استفاده از این پیشنهاد</button>
+                <p class="font-bold text-purple-800 pt-2">موارد مشابه قبلی:</p>
+                ${similarHtml}`;
+            document.getElementById('ci_ai_root_cause_use_btn').addEventListener('click', () => {
+                const rootCauseEl = document.getElementById('ci_bottleneck_root_cause');
+                rootCauseEl.value = rootCauseEl.value.trim() ? rootCauseEl.value.trim() + '\n\n' + s.suggested_root_cause : (s.suggested_root_cause || '');
+            });
         });
 
         document.getElementById('ci_five_why_toggle_btn').addEventListener('click', () => {
