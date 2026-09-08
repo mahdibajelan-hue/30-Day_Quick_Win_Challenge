@@ -99,17 +99,24 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "برای این پروژه هنوز گزارشی ثبت نشده است." }, 404);
     }
 
-    const { data: decision } = await supabase
-      .from("quick_win_decisions")
+    const { data: allCases } = await supabase
+      .from("cases")
       .select("*")
       .eq("project_name", project_name)
-      .maybeSingle();
+      .order("proposed_at", { ascending: true });
 
-    const { data: progress } = await supabase
-      .from("quick_win_progress")
-      .select("*")
-      .eq("project_name", project_name)
-      .order("created_at", { ascending: true });
+    const DECIDED_STATUSES = ["انتخاب‌شده", "در حال اجرا", "بسته‌شده"];
+    // deno-lint-ignore no-explicit-any
+    const decision = (allCases || []).find((c: any) => DECIDED_STATUSES.includes(c.status)) || null;
+
+    const { data: progress } = decision
+      ? await supabase
+        .from("case_updates")
+        .select("*")
+        .eq("case_id", decision.id)
+        .eq("kind", "progress")
+        .order("created_at", { ascending: true })
+      : { data: [] };
 
     const { data: clientReport } = await supabase
       .from("client_reports")
@@ -124,7 +131,9 @@ Deno.serve(async (req) => {
     const timestamps: string[] = [];
     // deno-lint-ignore no-explicit-any
     checkins.forEach((c: any) => c.created_at && timestamps.push(c.created_at));
-    if (decision?.created_at) timestamps.push(decision.created_at);
+    // deno-lint-ignore no-explicit-any
+    (allCases || []).forEach((c: any) => c.proposed_at && timestamps.push(c.proposed_at));
+    if (decision?.decided_at) timestamps.push(decision.decided_at);
     // deno-lint-ignore no-explicit-any
     (progress || []).forEach((p: any) => p.created_at && timestamps.push(p.created_at));
     if (clientReport?.created_at) timestamps.push(clientReport.created_at);
@@ -172,6 +181,30 @@ Deno.serve(async (req) => {
       }
     }
 
+    // A Quick Win proposal now lives in `cases`, not in a qw_* check_ins row
+    // (only historical, pre-cutover proposals still do) — map it back onto
+    // the field names the prompt-building code below already reads, same
+    // translation the frontend's caseToLegacyQwShape() does.
+    // deno-lint-ignore no-explicit-any
+    function caseToLegacyQwShape(kase: any) {
+      if (!kase) return null;
+      return {
+        created_at: kase.proposed_at,
+        quick_win_title: kase.title,
+        action_details: kase.action_details,
+        qw_rationale: kase.rationale,
+        tangible_result: kase.expected_result,
+        plan_responsible: kase.plan_responsible,
+        plan_target_date: kase.plan_target_date,
+        plan_deliverable: kase.plan_deliverable,
+        impact_delay_days: kase.impact_delay_days,
+        impact_progress_increase: kase.impact_progress_increase,
+        impact_cost_avoided: kase.impact_cost_avoided,
+        support_needed: kase.support_needed,
+        time_estimate: kase.time_estimate,
+      };
+    }
+
     // The app's check-in form was split into two independent forms (a
     // periodic status report and a Quick Win proposal), so a given
     // organization's "current perspective" is now spread across two rows
@@ -184,14 +217,26 @@ Deno.serve(async (req) => {
     // deno-lint-ignore no-explicit-any
     const rowsByOrg: Record<string, any[]> = {};
     for (const c of checkins) (rowsByOrg[c.organization] ??= []).push(c);
-    for (const [org, rows] of Object.entries(rowsByOrg)) {
+    // deno-lint-ignore no-explicit-any
+    const latestCaseByOrg: Record<string, any> = {};
+    for (const c of (allCases || [])) {
+      if (!latestCaseByOrg[c.organization] || c.proposed_at > latestCaseByOrg[c.organization].proposed_at) {
+        latestCaseByOrg[c.organization] = c;
+      }
+    }
+    const orgs = new Set([...Object.keys(rowsByOrg), ...Object.keys(latestCaseByOrg)]);
+    for (const org of orgs) {
+      const rows = rowsByOrg[org] || [];
       const periodic = [...rows].reverse().find((r) => r.main_bottleneck != null);
       const qw = [...rows].reverse().find((r) => r.quick_win_title != null);
-      if (!periodic) { latestByOrg[org] = qw; continue; }
-      if (!qw) { latestByOrg[org] = periodic; continue; }
-      const merged = { ...periodic };
-      for (const [k, v] of Object.entries(qw)) if (v !== null && v !== undefined) merged[k] = v;
-      latestByOrg[org] = merged;
+      const kase = caseToLegacyQwShape(latestCaseByOrg[org]);
+      let merged = periodic ? { ...periodic } : null;
+      for (const layer of [qw, kase]) {
+        if (!layer) continue;
+        if (!merged) { merged = { ...layer }; continue; }
+        for (const [k, v] of Object.entries(layer)) if (v !== null && v !== undefined) merged[k] = v;
+      }
+      if (merged) latestByOrg[org] = merged;
     }
 
     // deno-lint-ignore no-explicit-any
@@ -237,7 +282,7 @@ Deno.serve(async (req) => {
       .join("\n");
 
     const decisionText = decision
-      ? `\nQuick Win برگزیده فعلی: ${decision.selected_title} (${decision.selected_organization}) — دلیل: ${decision.rationale || "-"} — مهلت: ${decision.target_date}`
+      ? `\nQuick Win برگزیده فعلی: ${decision.title} (${decision.organization}) — دلیل: ${decision.rationale || "-"} — مهلت: ${decision.execution_target_date || decision.plan_target_date}`
       : "\nهنوز Quick Win‌ی برای این پروژه انتخاب نشده است.";
 
     const progressText = progress && progress.length > 0
