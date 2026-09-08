@@ -201,7 +201,7 @@
 
     <template id="logoFallbackTpl"><div class="h-9 w-9 rounded-xl bg-blue-900 text-white flex items-center justify-center font-bold text-xs mx-auto shrink-0">گاز</div></template>
 
-    <div class="flex flex-row-reverse min-h-screen">
+    <div class="flex min-h-screen">
 
         <!-- SIDEBAR (desktop) -->
         <aside id="sidebar" class="hidden md:flex md:flex-col w-64 shrink-0 bg-white border-l border-slate-800 h-screen sticky top-0 overflow-y-auto scroll-thin">
@@ -223,7 +223,10 @@
                     <div class="absolute -top-8 -left-8 h-28 w-28 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(251,191,36,.22), transparent 70%);"></div>
                     <p class="relative text-[11px] font-extrabold tracking-wide mb-1.5" style="color:#fbbf24;">🎯 هدف ما</p>
                     <p class="relative text-xs leading-relaxed font-medium" style="color:#f1f5f9;">تحقق پروژه‌ها، به‌موقع، با کیفیت و با کمترین هزینه</p>
-                    <p class="relative text-[11px] leading-relaxed mt-2.5 pt-2.5" style="color:#bfdbfe; border-top:1px solid rgba(251,191,36,.25);">هر پروژه، یک مسئله؛ هر مسئله، یک اقدام؛ هر اقدام، یک نتیجه.</p>
+                    <div class="relative mt-2.5 pt-2.5 text-center" style="border-top:1px solid rgba(251,191,36,.25);">
+                        <p class="text-[10px] font-semibold mb-1" style="color:#bfdbfe;">توسعه‌دهنده: مهدی باجلان</p>
+                        <img src="signature.png" alt="امضای توسعه‌دهنده مهدی باجلان" class="h-9 mx-auto object-contain" onerror="this.style.display='none'">
+                    </div>
                 </div>
             </div>
         </aside>
@@ -342,11 +345,17 @@
         <div id="appShell" class="hidden space-y-8">
 
             <!-- MANAGER: CHECK-IN FORM -->
-            <div id="checkinView" class="hidden space-y-6">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-1">
-                    <h2 class="text-xl font-bold text-blue-900">📝 اطلاعات تکمیلی پروژه</h2>
-                    <p class="text-xs text-slate-500">پروژه: <b id="ciProjectName"></b> — سازمان: <b id="ciOrganization"></b></p>
-                    <p class="text-[11px] text-amber-700 bg-amber-100 rounded-lg px-3 py-2 mt-1">⚠️ اطلاعات این فرم صرفاً جهت عارضه‌یابی و کمک مدیریتی به پروژه است و هیچ‌گونه استناد حقوقی یا ادعای قراردادی (Claim) بر اساس آن مسموع نخواهد بود.</p>
+            <div id="checkinView" class="hidden space-y-4">
+                <div class="relative overflow-hidden p-6 md:p-7 rounded-2xl shadow-lg" style="background: linear-gradient(135deg, #1e3a8a 0%, #4c1d95 100%);">
+                    <div class="absolute -top-10 -left-10 h-40 w-40 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(251,191,36,.25), transparent 70%);"></div>
+                    <div class="relative flex items-center gap-3 min-w-0">
+                        <div class="shrink-0 h-11 w-11 rounded-2xl flex items-center justify-center text-xl" style="background: rgba(255,255,255,.15); backdrop-filter: blur(4px);">📝</div>
+                        <div class="min-w-0">
+                            <h2 class="text-lg md:text-xl font-extrabold text-[#ffffff]">اطلاعات تکمیلی پروژه</h2>
+                            <p class="text-xs" style="color: rgba(219,234,254,.9);">پروژه: <b id="ciProjectName" class="text-[#ffffff]"></b> — سازمان: <b id="ciOrganization" class="text-[#ffffff]"></b></p>
+                        </div>
+                    </div>
+                    <p class="relative text-[11px] mt-3 rounded-lg px-3 py-2" style="background: rgba(0,0,0,.18); color: #fde68a;">⚠️ اطلاعات این فرم صرفاً جهت عارضه‌یابی و کمک مدیریتی به پروژه است و هیچ‌گونه استناد حقوقی یا ادعای قراردادی (Claim) بر اساس آن مسموع نخواهد بود.</p>
                 </div>
 
                 <div id="ci_adminPicker" class="hidden bg-white p-4 rounded-2xl shadow-sm border space-y-2">
@@ -368,75 +377,71 @@
                     </div>
                 </div>
 
-                <form id="checkinForm" class="space-y-6">
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-2">
-                        <h3 class="text-sm font-bold border-r-4 border-blue-900 pr-3">مشخصات پاسخ‌دهنده</h3>
+                <form id="checkinForm" class="space-y-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-2">
+                        <div class="flex items-center gap-2.5">
+                            <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-xs font-extrabold text-[#ffffff]" style="background: linear-gradient(135deg, #1e3a8a, #4c1d95);">۱</span>
+                            <h3 class="text-sm font-bold text-slate-800">مشخصات پاسخ‌دهنده</h3>
+                        </div>
                         <p id="ci_respondent_display" class="text-sm text-slate-600" dir="auto">—</p>
                         <p class="text-[11px] text-slate-400">این اطلاعات از «مشخصات من» شما گرفته می‌شود. برای اصلاح نام، سمت یا شماره تماس، از همان صفحه اقدام کنید.</p>
                     </div>
 
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                        <h3 class="text-sm font-bold border-r-4 border-blue-900 pr-3">ارزیابی سریع وضعیت پروژه (X-Ray)</h3>
-                        <p class="text-xs text-slate-500">🟢 تحت کنترل — 🟡 نیازمند توجه/مداخله — 🔴 بحرانی/نیازمند تصمیم</p>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-xs font-extrabold text-[#ffffff]" style="background: linear-gradient(135deg, #1e3a8a, #4c1d95);">۲</span>
+                            <h3 class="text-sm font-bold text-slate-800">ارزیابی سریع وضعیت پروژه (X-Ray)</h3>
+                        </div>
+                        <p class="text-[11px] text-slate-500">🟢 تحت کنترل — 🟡 نیازمند توجه/مداخله — 🔴 بحرانی/نیازمند تصمیم</p>
                         <div id="ci_area_status" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
                     </div>
 
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                        <h3 class="text-sm font-bold border-r-4 border-blue-900 pr-3">رویداد HSE</h3>
-                        <div class="max-w-xs">
-                            <label class="block text-xs font-semibold mb-1">رویداد HSE در این دوره؟</label>
-                            <select id="ci_hse_incident" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
-                                <option value="false">خیر</option>
-                                <option value="true">بله</option>
-                            </select>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-xs font-extrabold text-[#ffffff]" style="background: linear-gradient(135deg, #f59e0b, #db2777);">۳</span>
+                            <h3 class="text-sm font-bold text-slate-800">رویداد HSE</h3>
                         </div>
-                        <div id="ci_hse_note_wrap" class="hidden">
-                            <label class="block text-xs font-semibold mb-1">توضیح رویداد HSE *</label>
-                            <input type="text" id="ci_hse_note" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div><label class="block text-xs font-semibold mb-1">رویداد HSE در این دوره؟</label>
+                                <select id="ci_hse_incident" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
+                                    <option value="false">خیر</option>
+                                    <option value="true">بله</option>
+                                </select>
+                            </div>
+                            <div id="ci_hse_note_wrap" class="hidden">
+                                <label class="block text-xs font-semibold mb-1">توضیح رویداد HSE *</label>
+                                <input type="text" id="ci_hse_note" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500">
+                            </div>
                         </div>
                     </div>
 
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                        <h3 class="text-sm font-bold border-r-4 border-amber-500 pr-3">سه مسئله اصلی پروژه</h3>
-                        <p class="text-xs text-slate-500">حداکثر سه مورد — ردیف‌های خالی نادیده گرفته می‌شوند.</p>
-                        <div id="ci_issues" class="space-y-4"></div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-xs font-extrabold text-[#ffffff]" style="background: linear-gradient(135deg, #f59e0b, #db2777);">۴</span>
+                            <h3 class="text-sm font-bold text-slate-800">سه مسئله اصلی پروژه</h3>
+                        </div>
+                        <p class="text-[11px] text-slate-500">حداکثر سه مورد — ردیف‌های خالی نادیده گرفته می‌شوند.</p>
+                        <div id="ci_issues" class="space-y-3"></div>
                     </div>
 
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                        <h3 class="text-sm font-bold border-r-4 border-amber-500 pr-3">سه ریسک اصلی پروژه</h3>
-                        <div id="ci_risks" class="space-y-3"></div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-xs font-extrabold text-[#ffffff]" style="background: linear-gradient(135deg, #f59e0b, #db2777);">۵</span>
+                            <h3 class="text-sm font-bold text-slate-800">سه ریسک اصلی پروژه</h3>
+                        </div>
+                        <div id="ci_risks" class="space-y-2.5"></div>
                     </div>
 
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                        <h3 class="text-sm font-bold border-r-4 border-red-600 pr-3">سؤالات کلیدی مدیریت</h3>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-xs font-extrabold text-[#ffffff]" style="background: linear-gradient(135deg, #dc2626, #7f1d1d);">۶</span>
+                            <h3 class="text-sm font-bold text-slate-800">سؤالات کلیدی مدیریت</h3>
+                        </div>
                         <div>
                             <label class="block text-xs font-semibold mb-1">اگر هیچ اقدام اصلاحی انجام نشود، مهم‌ترین اتفاق منفی که طی سه ماه آینده رخ خواهد داد چیست؟ *</label>
                             <textarea id="ci_negative_event" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500"></textarea>
                         </div>
-                        <div><label class="block text-xs font-semibold mb-1">مهم‌ترین گلوگاه فعلی پروژه *</label><textarea id="ci_bottleneck" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500"></textarea></div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label class="block text-xs font-semibold mb-1">علت ریشه‌ای این گلوگاه *</label><textarea id="ci_bottleneck_root_cause" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500"></textarea></div>
-                            <div><label class="block text-xs font-semibold mb-1">چه تصمیم یا اقدامی می‌تواند این گلوگاه را باز کند؟ *</label><textarea id="ci_bottleneck_unlock" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500"></textarea></div>
-                        </div>
-                        <div class="flex flex-wrap gap-3 items-center">
-                            <button type="button" id="ci_ai_root_cause_btn" class="text-xs text-purple-700 underline">💡 پیشنهاد هوش مصنوعی برای علت ریشه‌ای و موارد مشابه قبلی</button>
-                            <div id="ci_five_why_prompt">
-                                <button type="button" id="ci_five_why_toggle_btn" class="text-xs text-red-700 underline">🔍 استفاده از تکنیک ۵Why برای ریشه‌یابی</button>
-                            </div>
-                        </div>
-                        <div id="ci_ai_root_cause_panel" class="hidden bg-purple-50 border border-purple-200 rounded-xl p-4 space-y-2 text-xs"></div>
-                        <div id="ci_five_why_panel" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 space-y-2">
-                            <p class="text-xs font-bold text-red-800">۵Why — هر «چرا» باید پاسخ سؤال قبلی را ریشه‌یابی کند</p>
-                            <div class="space-y-1.5">
-                                <input type="text" class="ci_five_why_input w-full p-2 border rounded-lg text-xs" data-n="1" placeholder="چرا؟ (۱) — مثلاً: چرا این گلوگاه پیش آمد؟">
-                                <input type="text" class="ci_five_why_input w-full p-2 border rounded-lg text-xs" data-n="2" placeholder="چرا؟ (۲) — چرا پاسخ بالا اتفاق افتاد؟">
-                                <input type="text" class="ci_five_why_input w-full p-2 border rounded-lg text-xs" data-n="3" placeholder="چرا؟ (۳)">
-                                <input type="text" class="ci_five_why_input w-full p-2 border rounded-lg text-xs" data-n="4" placeholder="چرا؟ (۴)">
-                                <input type="text" class="ci_five_why_input w-full p-2 border rounded-lg text-xs" data-n="5" placeholder="چرا؟ (۵) — معمولاً همین‌جا به علت ریشه‌ای واقعی می‌رسید">
-                            </div>
-                            <button type="button" id="ci_five_why_apply_btn" class="text-xs bg-red-700 hover:bg-red-800 text-white px-3 py-1.5 rounded-lg font-bold">استفاده به‌عنوان علت ریشه‌ای</button>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
                             <div class="md:col-span-3"><label class="block text-xs font-semibold mb-1">نیاز به تصمیم مدیریت ارشد *</label><textarea id="ci_senior_decision" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500"></textarea></div>
                             <div>
                                 <label class="block text-xs font-semibold mb-1">اولویت تصمیم *</label>
@@ -450,7 +455,12 @@
                         <div><label class="block text-xs font-semibold mb-1">اگر فقط یک موضوع را می‌توانستید در این پروژه تغییر دهید، چه چیزی را تغییر می‌دادید؟ *</label><textarea id="ci_one_thing" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500"></textarea></div>
                     </div>
 
-                    <div class="bg-emerald-50 border border-emerald-200 p-6 rounded-2xl shadow-sm space-y-3">
+                    <!-- «تحلیل و آنالیز مشکلات پروژه» — Problem -> Root Cause -> CAPA -> Result -> Effectiveness.
+                         Fully rendered by renderRcaAll(); listeners are delegated on this stable
+                         container so re-renders (button clicks) never need to be re-bound. -->
+                    <div id="rcaCapaModule" class="space-y-4"></div>
+
+                    <div class="bg-emerald-50 border border-emerald-200 p-5 rounded-2xl shadow-sm space-y-2.5">
                         <h3 class="text-sm font-bold border-r-4 border-emerald-600 pr-3">🎯 تبدیل به Quick Win (اختیاری)</h3>
                         <p class="text-xs text-slate-600">اگر مسئله‌ای که بالا توصیف کردید یک راه‌حل سریع و مشخص دارد، همین‌جا به‌عنوان پیشنهاد Quick Win هم ثبتش کنید — نیازی به رفتن به فرم جداگانه نیست.</p>
                         <label class="inline-flex items-center gap-2 text-xs font-semibold cursor-pointer">
@@ -1779,6 +1789,751 @@
             document.getElementById('ci_respondent_display').textContent = `${r.name} — ${r.position} — ${r.contact}`;
         }
 
+        // ==================================================
+        // «تحلیل و آنالیز مشکلات پروژه» — Problem -> Root Cause -> CAPA ->
+        // Result -> Effectiveness. One in-memory state object per form-open,
+        // rendered entirely by renderRcaAll() into the static #rcaCapaModule
+        // container. Listeners are delegated on that stable container (never
+        // itself replaced) so re-renders never need re-binding; any field the
+        // user TYPES into updates state directly without re-rendering (to
+        // keep focus/cursor position), while every click/select re-renders.
+        // ==================================================
+        const RCA_FISHBONE_CATEGORIES = [
+            ['people', 'نیروی انسانی', 'People'],
+            ['process', 'فرآیند و روش اجرا', 'Process'],
+            ['equipment', 'ماشین‌آلات و تجهیزات', 'Equipment'],
+            ['material', 'مواد و مصالح', 'Material'],
+            ['engineering', 'مهندسی و طراحی', 'Engineering'],
+            ['management', 'مدیریت و تصمیم‌گیری', 'Management'],
+            ['contractor', 'پیمانکار', 'Contractor'],
+            ['external', 'عوامل بیرونی', 'External'],
+        ];
+        const RCA_STATUS_OPTIONS = ['باز', 'در حال بررسی', 'در حال اقدام', 'حل‌شده'];
+        const RCA_CRITICALITY_OPTIONS = ['کم', 'متوسط', 'زیاد', 'بحرانی'];
+        const RCA_IMPACT_OPTIONS = ['کم', 'متوسط', 'زیاد'];
+        const CAPA_PRIORITY_OPTIONS = ['فوری – کمتر از ۷ روز', 'مهم – کمتر از ۱۴ روز', 'عادی – کمتر از ۳۰ روز'];
+        const CAPA_STATUS_OPTIONS = ['شروع‌نشده', 'در حال انجام', 'انجام‌شده'];
+        const RCA_METHOD_CARDS = [
+            { key: 'ai', num: '۰۱', icon: '🤖', title: 'تحلیل هوشمند با AI', subtitle: 'AI Root Cause Analysis', desc: 'هوش مصنوعی بر اساس اطلاعات پروژه، علائم، Impact و داده‌های موجود، علل احتمالی ریشه‌ای را شناسایی و اولویت‌بندی می‌کند.' },
+            { key: 'five_why', num: '۰۲', icon: '🔍', title: 'تکنیک ۵ Why', subtitle: '5 Whys', desc: 'با پرسش متوالی «چرا؟» از مشکل ظاهری به علت ریشه‌ای برسید.' },
+            { key: 'fishbone', num: '۰۳', icon: '🐟', title: 'نمودار استخوان ماهی', subtitle: 'Fishbone / Ishikawa', desc: 'بررسی علت مشکل در دسته‌های مختلف مانند نیروی انسانی، روش، ماشین‌آلات، مواد، محیط و مدیریت.' },
+        ];
+
+        let rcaState = null;
+        let rcaProjectPeople = [];
+
+        function resetRcaState() {
+            rcaState = {
+                problem: { impact: 'متوسط', status: 'باز', criticality: 'متوسط' },
+                method: null,
+                ai: { candidates: [], loading: false, error: null, similarCases: [], newCause: '', newEvidence: '' },
+                fiveWhy: { steps: [], done: false },
+                fishbone: { activeCategories: ['engineering', 'process', 'contractor', 'management'], causes: {}, openCategory: null, newCauseText: {} },
+                confirmedCauses: [],
+                corrective: { action: '', owner: '', due_date: '', priority: 'مهم – کمتر از ۱۴ روز', status: 'شروع‌نشده', evidence: '', completion_date: '' },
+                preventive: { action: '', owner: '', due_date: '', priority: 'مهم – کمتر از ۱۴ روز', status: 'شروع‌نشده', evidence: '', completion_date: '' },
+                effectiveness: null,
+                recurrenceReduced: null,
+                value: { solved: '', timeSavedDays: '', costAvoidedRial: '', riskReduced: false, reworkReduced: false, productivityIncreased: false },
+            };
+        }
+
+        function hydrateRcaStateFromRow(row) {
+            rcaState.problem.impact = row.bottleneck_impact || rcaState.problem.impact;
+            rcaState.problem.status = row.bottleneck_status || rcaState.problem.status;
+            rcaState.problem.criticality = row.bottleneck_criticality || rcaState.problem.criticality;
+            rcaState.method = row.rca_method || null;
+            rcaState.ai.candidates = (row.rca_ai_candidates || []).map(c => ({ ...c, editing: false }));
+            rcaState.fiveWhy.steps = row.rca_five_why_steps || [];
+            rcaState.confirmedCauses = row.rca_confirmed_causes || [];
+            rcaState.fiveWhy.done = rcaState.fiveWhy.steps.length > 0 && rcaState.confirmedCauses.some(c => c.source === 'five_why');
+            if (row.rca_fishbone) {
+                rcaState.fishbone.activeCategories = row.rca_fishbone.activeCategories || rcaState.fishbone.activeCategories;
+                rcaState.fishbone.causes = row.rca_fishbone.causes || {};
+            }
+            if (row.capa_corrective) rcaState.corrective = { ...rcaState.corrective, ...row.capa_corrective };
+            if (row.capa_preventive) rcaState.preventive = { ...rcaState.preventive, ...row.capa_preventive };
+            rcaState.effectiveness = row.capa_effectiveness || null;
+            rcaState.recurrenceReduced = row.capa_recurrence_reduced ?? null;
+            if (row.capa_value) {
+                rcaState.value = {
+                    solved: row.capa_value.problem_solved || '',
+                    timeSavedDays: row.capa_value.time_saved_days ?? '',
+                    costAvoidedRial: row.capa_value.cost_avoided_rial ?? '',
+                    riskReduced: !!row.capa_value.risk_reduced,
+                    reworkReduced: !!row.capa_value.rework_reduced,
+                    productivityIncreased: !!row.capa_value.productivity_increased,
+                };
+            }
+        }
+
+        function collectRcaCapaFields() {
+            const confirmedText = rcaState.confirmedCauses.map(c => c.text).join('\n');
+            const correctiveText = rcaState.corrective.action.trim();
+            const hasValue = rcaState.value.solved || rcaState.value.timeSavedDays || rcaState.value.costAvoidedRial
+                || rcaState.value.riskReduced || rcaState.value.reworkReduced || rcaState.value.productivityIncreased;
+            return {
+                bottleneck_root_cause: confirmedText || null,
+                bottleneck_unlock_action: correctiveText || null,
+                bottleneck_impact: rcaState.problem.impact,
+                bottleneck_status: rcaState.problem.status,
+                bottleneck_criticality: rcaState.problem.criticality,
+                rca_method: rcaState.method,
+                rca_ai_candidates: rcaState.ai.candidates.length ? rcaState.ai.candidates : null,
+                rca_five_why_steps: rcaState.fiveWhy.steps.length ? rcaState.fiveWhy.steps : null,
+                rca_fishbone: (rcaState.fishbone.activeCategories.length || Object.keys(rcaState.fishbone.causes).length)
+                    ? { activeCategories: rcaState.fishbone.activeCategories, causes: rcaState.fishbone.causes } : null,
+                rca_confirmed_causes: rcaState.confirmedCauses.length ? rcaState.confirmedCauses : null,
+                capa_corrective: correctiveText ? rcaState.corrective : null,
+                capa_preventive: rcaState.preventive.action.trim() ? rcaState.preventive : null,
+                capa_effectiveness: rcaState.effectiveness,
+                capa_recurrence_reduced: rcaState.recurrenceReduced,
+                capa_value: hasValue ? {
+                    problem_solved: rcaState.value.solved || null,
+                    time_saved_days: rcaState.value.timeSavedDays !== '' ? Number(rcaState.value.timeSavedDays) : null,
+                    cost_avoided_rial: rcaState.value.costAvoidedRial !== '' ? Number(rcaState.value.costAvoidedRial) : null,
+                    risk_reduced: rcaState.value.riskReduced,
+                    rework_reduced: rcaState.value.reworkReduced,
+                    productivity_increased: rcaState.value.productivityIncreased,
+                } : null,
+            };
+        }
+
+        async function refreshRcaProjectPeople(projectName) {
+            if (!projectName) { rcaProjectPeople = []; return; }
+            const { data: users, error } = await _supabase.rpc('list_project_users', { p_project_name: projectName });
+            rcaProjectPeople = (error || !users) ? [] : users.map(u => ({ value: personDisplayName(u), label: `${personDisplayName(u)} — ${esc(u.organization)}` }));
+        }
+
+        function rcaBadgeClass(level) {
+            return { 'کم': 'bg-emerald-100 text-emerald-700', 'متوسط': 'bg-amber-100 text-amber-700', 'زیاد': 'bg-red-100 text-red-700', 'بحرانی': 'bg-red-200 text-red-800' }[level] || 'bg-slate-100 text-slate-600';
+        }
+
+        function rcaConfidenceBar(pct) {
+            const p = Math.max(0, Math.min(100, Number(pct) || 0));
+            const color = p >= 70 ? '#ef4444' : p >= 40 ? '#f59e0b' : '#64748b';
+            return `<div class="flex items-center gap-1.5">
+                <div class="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full" style="width:${p}%; background:${color};"></div></div>
+                <span class="text-[10px] font-bold tabular-nums shrink-0" style="color:${color};">${toPersianDigits(String(Math.round(p)))}٪</span>
+            </div>`;
+        }
+
+        function rcaAutoTitle(desc) {
+            const t = (desc || '').trim();
+            if (!t) return 'بدون عنوان — شرح گلوگاه را در کادر زیر بنویسید';
+            const firstLine = t.split('\n')[0];
+            return firstLine.length > 70 ? firstLine.slice(0, 70) + '…' : firstLine;
+        }
+
+        function rcaUid() { return 'rc' + Math.random().toString(36).slice(2, 9); }
+
+        // ---- Timeline ----
+        function renderRcaTimeline() {
+            const problemDone = !!(document.getElementById('ci_bottleneck')?.value || '').trim();
+            const steps = [
+                ['PROBLEM', problemDone],
+                ['ROOT CAUSE', rcaState.confirmedCauses.length > 0],
+                ['CAPA', !!(rcaState.corrective.action.trim() && rcaState.preventive.action.trim())],
+                ['RESULT', rcaState.value.solved !== ''],
+                ['EFFECTIVENESS', rcaState.effectiveness !== null],
+            ];
+            const firstPending = steps.findIndex(([, done]) => !done);
+            return `<div class="bg-white rounded-2xl shadow-sm border p-3.5 overflow-x-auto">
+                <div class="flex items-center gap-1.5 min-w-max text-[11px] font-extrabold">
+                    ${steps.map(([label, done], i) => {
+                        const isCurrent = i === firstPending;
+                        const icon = done ? '✓' : isCurrent ? '●' : '○';
+                        const cls = done ? 'text-emerald-600' : isCurrent ? 'text-amber-600' : 'text-slate-300';
+                        return `<span class="flex items-center gap-1 ${cls}">${icon} ${label}</span>${i < steps.length - 1 ? '<span class="text-slate-200">→</span>' : ''}`;
+                    }).join('')}
+                </div>
+            </div>`;
+        }
+
+        // ---- Problem card ----
+        function renderRcaProblemSection() {
+            const desc = document.getElementById('ci_bottleneck')?.value ?? '';
+            const owner = (typeof currentProfile !== 'undefined' && currentProfile) ? respondentInfo().name : '';
+            return `
+            <div class="relative overflow-hidden rounded-2xl shadow-lg p-5 md:p-6" style="background: linear-gradient(135deg, #7f1d1d 0%, #1e293b 100%);">
+                <div class="absolute -top-10 -left-10 h-40 w-40 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(251,191,36,.2), transparent 70%);"></div>
+                <div class="relative space-y-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="shrink-0 h-8 w-8 rounded-xl flex items-center justify-center text-base" style="background: rgba(255,255,255,.15);">🎯</span>
+                        <div class="min-w-0">
+                            <h3 class="text-sm md:text-base font-extrabold text-[#ffffff]">مهم‌ترین گلوگاه فعلی پروژه</h3>
+                            <p class="text-[11px] truncate" style="color: rgba(254,226,226,.85);">${esc(rcaAutoTitle(desc))}</p>
+                        </div>
+                    </div>
+                    <textarea data-rca-field="description" required rows="2" placeholder="شرح مهم‌ترین گلوگاه/مسئله فعلی پروژه را بنویسید..." id="ci_bottleneck" class="w-full p-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-400 text-slate-800 bg-[#ffffff]">${esc(desc)}</textarea>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                        <div><label class="block text-[10px] font-bold mb-1" style="color: rgba(254,226,226,.85);">Impact</label>
+                            <select data-rca-field="impact" class="w-full p-2 rounded-lg text-xs outline-none bg-[#ffffff]">
+                                ${RCA_IMPACT_OPTIONS.map(o => `<option value="${esc(o)}" ${rcaState.problem.impact === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div><label class="block text-[10px] font-bold mb-1" style="color: rgba(254,226,226,.85);">وضعیت فعلی</label>
+                            <select data-rca-field="status" class="w-full p-2 rounded-lg text-xs outline-none bg-[#ffffff]">
+                                ${RCA_STATUS_OPTIONS.map(o => `<option value="${esc(o)}" ${rcaState.problem.status === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div><label class="block text-[10px] font-bold mb-1" style="color: rgba(254,226,226,.85);">Criticality</label>
+                            <select data-rca-field="criticality" class="w-full p-2 rounded-lg text-xs outline-none bg-[#ffffff]">
+                                ${RCA_CRITICALITY_OPTIONS.map(o => `<option value="${esc(o)}" ${rcaState.problem.criticality === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="flex flex-col justify-center text-[10.5px] leading-relaxed" style="color: rgba(254,226,226,.85);">
+                            <p><b class="text-[#ffffff]">تاریخ شناسایی:</b> ${esc(todayJalali())}</p>
+                            <p class="truncate"><b class="text-[#ffffff]">مسئول پیگیری:</b> ${esc(owner)}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        // ---- Method picker + panels ----
+        function renderRcaMethodPicker() {
+            return `<div class="bg-white rounded-2xl shadow-sm border p-5 md:p-6 space-y-4">
+                <h4 class="text-sm font-bold text-slate-800">چگونه علت ریشه‌ای را پیدا کنیم؟</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    ${RCA_METHOD_CARDS.map(m => `
+                    <div class="border rounded-2xl p-4 space-y-2.5 hover:border-red-300 hover:shadow-md transition">
+                        <div class="flex items-center justify-between">
+                            <span class="text-2xl">${m.icon}</span>
+                            <span class="text-[11px] font-extrabold text-slate-300">${m.num}</span>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-slate-800">${esc(m.title)}</p>
+                            <p class="text-[11px] text-slate-400" dir="ltr">${esc(m.subtitle)}</p>
+                        </div>
+                        <p class="text-xs text-slate-500 leading-relaxed">${esc(m.desc)}</p>
+                        <button type="button" data-rca-action="choose-method" data-method="${m.key}" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 rounded-xl transition">شروع تحلیل</button>
+                    </div>`).join('')}
+                </div>
+            </div>`;
+        }
+
+        function renderRcaMethodHeader() {
+            const m = RCA_METHOD_CARDS.find(x => x.key === rcaState.method);
+            return `<div class="flex items-center justify-between">
+                <p class="text-xs font-bold text-slate-600">${m.icon} روش انتخاب‌شده: ${esc(m.title)}</p>
+                <button type="button" data-rca-action="change-method" class="text-[11px] text-red-700 underline">🔄 تغییر روش</button>
+            </div>`;
+        }
+
+        function renderRcaAiAddCauseForm() {
+            return `<div class="border-t pt-3 space-y-2">
+                <p class="text-[11px] font-bold text-slate-500">+ افزودن علت جدید (دستی)</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <input type="text" data-rca-field="ai-new-cause" value="${esc(rcaState.ai.newCause)}" placeholder="شرح علت جدید" class="w-full p-2 border rounded-lg text-xs">
+                    <input type="text" data-rca-field="ai-new-evidence" value="${esc(rcaState.ai.newEvidence)}" placeholder="شواهد (اختیاری)" class="w-full p-2 border rounded-lg text-xs">
+                </div>
+                <button type="button" data-rca-action="ai-add-manual" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-bold">افزودن و تأیید به‌عنوان علت ریشه‌ای</button>
+            </div>`;
+        }
+
+        function renderRcaAiPanel() {
+            const ai = rcaState.ai;
+            if (ai.loading) {
+                return `<div class="bg-white rounded-2xl shadow-sm border p-8 text-center space-y-2">
+                    <p class="text-2xl">🤖</p>
+                    <p class="text-xs text-slate-500">در حال تحلیل هوشمند گلوگاه...</p>
+                </div>`;
+            }
+            if (ai.error) {
+                return `<div class="bg-white rounded-2xl shadow-sm border p-6 space-y-3 text-center">
+                    <p class="text-xs text-red-600">${esc(ai.error)}</p>
+                    <button type="button" data-rca-action="ai-retry" class="text-xs bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-bold">تلاش مجدد</button>
+                </div>`;
+            }
+            const candidatesHtml = ai.candidates.map((c, i) => {
+                if (c.status === 'confirmed') {
+                    return `<div class="border border-emerald-300 bg-emerald-50 rounded-xl p-4 space-y-1">
+                        <p class="text-xs font-bold text-emerald-700">✓ علت ریشه‌ای تأییدشده #${toPersianDigits(i + 1)}</p>
+                        <p class="text-sm text-slate-800">${esc(c.cause)}</p>
+                    </div>`;
+                }
+                return `<div class="border rounded-2xl p-4 space-y-2.5">
+                    <div class="flex items-center justify-between flex-wrap gap-1.5">
+                        <p class="text-[11px] font-bold text-slate-400">Root Cause Candidate #${toPersianDigits(i + 1)}</p>
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${rcaBadgeClass(c.probability)}">احتمال: ${esc(c.probability || '-')}</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${rcaBadgeClass(c.impact)}">Impact: ${esc(c.impact || '-')}</span>
+                        </div>
+                    </div>
+                    ${c.editing
+                        ? `<textarea data-rca-field="ai-cause-edit" data-idx="${i}" rows="2" class="w-full p-2 border rounded-lg text-sm">${esc(c.cause)}</textarea>
+                           <textarea data-rca-field="ai-evidence-edit" data-idx="${i}" rows="2" placeholder="شواهد" class="w-full p-2 border rounded-lg text-xs">${esc(c.evidence || '')}</textarea>`
+                        : `<p class="text-sm font-bold text-slate-800">${esc(c.cause)}</p>
+                           <p class="text-xs text-slate-500">${esc(c.explanation || '')}</p>
+                           ${c.evidence ? `<p class="text-[11px] text-slate-400 italic">شواهد: ${esc(c.evidence)}</p>` : ''}`
+                    }
+                    <div class="flex items-center justify-between gap-2 pt-1 border-t">
+                        <p class="text-[11px] text-slate-400">Confidence</p>
+                        <div class="flex-1 max-w-[140px]">${rcaConfidenceBar(c.confidence)}</div>
+                    </div>
+                    ${c.suggested_action ? `<p class="text-[11px] text-purple-700"><b>پیشنهاد اقدام:</b> ${esc(c.suggested_action)}</p>` : ''}
+                    <div class="flex flex-wrap gap-2 pt-1">
+                        ${c.editing
+                            ? `<button type="button" data-rca-action="ai-save-edit" data-idx="${i}" class="text-xs bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg font-bold">ذخیره</button>`
+                            : `<button type="button" data-rca-action="ai-confirm" data-idx="${i}" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold">✓ تأیید علت</button>
+                               <button type="button" data-rca-action="ai-edit" data-idx="${i}" class="text-xs border border-slate-300 hover:bg-slate-50 px-3 py-1.5 rounded-lg font-bold">✎ اصلاح</button>
+                               <button type="button" data-rca-action="ai-dismiss" data-idx="${i}" class="text-xs text-slate-400 hover:text-red-600 px-2 py-1.5">حذف</button>`
+                        }
+                    </div>
+                </div>`;
+            }).join('');
+
+            const similarHtml = (ai.similarCases || []).length
+                ? `<div class="bg-slate-50 rounded-xl p-3 space-y-1">
+                    <p class="text-[11px] font-bold text-slate-500">موارد مشابه قبلی</p>
+                    <ul class="list-disc pr-4 space-y-1 text-[11px] text-slate-600">${ai.similarCases.map(c => `<li><b>${esc(c.project_name)}</b> — ${esc(c.reference)}: ${esc(c.why_similar)}</li>`).join('')}</ul>
+                </div>` : '';
+
+            return `<div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                <p class="text-xs text-slate-400">هوش مصنوعی این علل را به‌عنوان <b>علت ریشه‌ای پیشنهادی</b> تولید کرده — نه علت قطعی. هر مورد را تأیید یا اصلاح کنید.</p>
+                <div class="space-y-3">${candidatesHtml || '<p class="text-xs text-slate-400 text-center py-4">هیچ علتی پیشنهاد نشد.</p>'}</div>
+                ${similarHtml}
+                ${renderRcaAiAddCauseForm()}
+            </div>`;
+        }
+
+        function rcaFiveWhyNextQuestion() {
+            const fw = rcaState.fiveWhy;
+            if (fw.steps.length === 0) return 'چرا این مشکل اتفاق افتاد؟';
+            const prevAnswer = fw.steps[fw.steps.length - 1].answer.trim();
+            return prevAnswer ? `چرا «${prevAnswer}» اتفاق افتاد؟` : 'چرا؟';
+        }
+
+        function renderRcaFiveWhyPanel() {
+            const fw = rcaState.fiveWhy;
+            const desc = (document.getElementById('ci_bottleneck')?.value || '').trim() || '(شرح گلوگاه را در کارت بالا وارد کنید)';
+            const nodes = [`<div class="relative pr-8">
+                <span class="absolute right-0 top-0 h-6 w-6 rounded-full bg-slate-700 text-white text-[10px] font-bold flex items-center justify-center">P</span>
+                <div class="pb-4 ${fw.steps.length ? 'border-r-2 border-red-200 mr-3' : ''}">
+                    <p class="text-[10px] font-extrabold text-slate-400 tracking-wide">PROBLEM</p>
+                    <p class="text-sm font-bold text-slate-800">${esc(desc)}</p>
+                </div>
+            </div>`];
+
+            fw.steps.forEach((step, i) => {
+                const isLast = i === fw.steps.length - 1;
+                nodes.push(`<div class="relative pr-8">
+                    <span class="absolute right-0 top-0 h-6 w-6 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center">${toPersianDigits(i + 1)}</span>
+                    <div class="pb-4 ${(!fw.done || !isLast) ? 'border-r-2 border-red-200 mr-3' : ''} space-y-1.5">
+                        <p class="text-[10px] font-extrabold text-red-600 tracking-wide">WHY #${toPersianDigits(i + 1)}</p>
+                        <p class="text-xs text-slate-500">${esc(step.question)}</p>
+                        <textarea data-rca-field="five-why-answer" data-idx="${i}" rows="2" ${fw.done ? 'readonly' : ''} placeholder="پاسخ..." class="w-full p-2 border rounded-lg text-sm ${fw.done ? 'bg-slate-50 text-slate-500' : ''}">${esc(step.answer)}</textarea>
+                        ${(!fw.done && isLast) ? `<button type="button" data-rca-action="five-why-back" class="text-[11px] text-slate-400 hover:text-red-600">← بازگشت به Why قبل</button>` : ''}
+                    </div>
+                </div>`);
+            });
+
+            if (fw.done) {
+                const rootText = rcaState.confirmedCauses.find(c => c.source === 'five_why')?.text || '';
+                nodes.push(`<div class="relative pr-8">
+                    <span class="absolute right-0 top-0 h-6 w-6 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center">✓</span>
+                    <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3 space-y-1">
+                        <p class="text-[10px] font-extrabold text-emerald-700 tracking-wide">ROOT CAUSE</p>
+                        <p class="text-sm font-bold text-slate-800">${esc(rootText)}</p>
+                        <button type="button" data-rca-action="five-why-reopen" class="text-[11px] text-slate-400 underline">اصلاح</button>
+                    </div>
+                </div>`);
+            }
+
+            const controls = !fw.done ? `<div class="flex flex-wrap gap-2 pt-2">
+                ${fw.steps.length < 5 ? `<button type="button" data-rca-action="five-why-add" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-xl font-bold">+ افزودن Why بعدی</button>` : ''}
+                ${fw.steps.length ? `<button type="button" data-rca-action="five-why-done" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl font-bold">✓ به نظر می‌رسد به علت ریشه‌ای رسیدیم</button>` : ''}
+            </div>` : '';
+
+            return `<div class="bg-white rounded-2xl shadow-sm border p-5">
+                ${fw.steps.length === 0 ? `<button type="button" data-rca-action="five-why-add" class="text-xs bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-bold mb-4">شروع با WHY #۱</button>` : ''}
+                <div class="space-y-0">${nodes.join('')}</div>
+                ${controls}
+            </div>`;
+        }
+
+        function renderRcaFishboneSvg() {
+            const active = rcaState.fishbone.activeCategories;
+            const top = active.filter((_, i) => i % 2 === 0);
+            const bottom = active.filter((_, i) => i % 2 === 1);
+            const W = 720, H = 260, spineY = H / 2, headX = W - 60, tailX = 40;
+            const spine = `<line x1="${tailX}" y1="${spineY}" x2="${headX}" y2="${spineY}" stroke="#94a3b8" stroke-width="3"/>`;
+            const head = `<polygon points="${headX},${spineY - 34} ${headX + 46},${spineY} ${headX},${spineY + 34}" fill="#fef2f2" stroke="#dc2626" stroke-width="2.5"/>
+                <text x="${headX + 13}" y="${spineY + 4}" font-size="10" font-weight="800" fill="#991b1b" text-anchor="middle">EFFECT</text>`;
+
+            function bones(cats, above) {
+                const n = cats.length;
+                if (!n) return '';
+                const spacing = (headX - tailX - 60) / (n + 1);
+                return cats.map((catKey, i) => {
+                    const cat = RCA_FISHBONE_CATEGORIES.find(c => c[0] === catKey);
+                    const boneX = tailX + 60 + spacing * (i + 1);
+                    const tipY = above ? spineY - 78 : spineY + 78;
+                    const tipX = boneX - 50;
+                    const count = (rcaState.fishbone.causes[catKey] || []).length;
+                    const labelY = above ? tipY - 8 : tipY + 16;
+                    return `<line x1="${boneX}" y1="${spineY}" x2="${tipX}" y2="${tipY}" stroke="#cbd5e1" stroke-width="2"/>
+                        <text x="${tipX}" y="${labelY}" font-size="10" font-weight="700" fill="#475569" text-anchor="middle">${esc(cat[1])}${count ? ` (${toPersianDigits(count)})` : ''}</text>`;
+                }).join('');
+            }
+
+            return `<svg viewBox="0 0 ${W} ${H}" class="w-full h-auto" style="max-height:220px" preserveAspectRatio="xMidYMid meet">
+                ${spine}${head}${bones(top, true)}${bones(bottom, false)}
+            </svg>`;
+        }
+
+        function renderRcaFishboneCause(catKey, cause, idx) {
+            const whys = cause.whys || [];
+            return `<div class="bg-white border rounded-xl p-2.5 space-y-1.5">
+                <div class="flex items-start justify-between gap-2">
+                    <p class="text-xs text-slate-700 flex-1">${esc(cause.text)}</p>
+                    <button type="button" data-rca-action="fishbone-remove-cause" data-cat="${catKey}" data-idx="${idx}" class="text-slate-300 hover:text-red-600 text-xs shrink-0">✕</button>
+                </div>
+                ${whys.map(w => `<div class="mr-3 pr-2 border-r-2 border-slate-200 text-[11px] space-y-0.5">
+                    <p class="text-slate-400 font-bold">Why؟</p>
+                    <p class="text-slate-600">${esc(w)}</p>
+                </div>`).join('')}
+                <div class="flex flex-wrap items-center gap-2 pt-1">
+                    ${whys.length < 3 ? `<button type="button" data-rca-action="fishbone-why-prompt" data-cat="${catKey}" data-idx="${idx}" class="text-[11px] text-red-700 underline">+ Why؟</button>` : ''}
+                    ${cause.confirmed
+                        ? `<span class="text-[11px] font-bold text-emerald-700">✓ علت ریشه‌ای</span>`
+                        : `<button type="button" data-rca-action="fishbone-confirm-cause" data-cat="${catKey}" data-idx="${idx}" class="text-[11px] font-bold text-emerald-700 underline">علامت‌گذاری به‌عنوان علت ریشه‌ای</button>`}
+                </div>
+                ${cause.whyDraftOpen ? `<div class="flex gap-2 pt-1">
+                    <input type="text" data-rca-field="fishbone-why-answer" data-cat="${catKey}" data-idx="${idx}" value="${esc(cause.whyDraftText || '')}" placeholder="چرا؟" class="flex-1 p-1.5 border rounded-lg text-[11px]">
+                    <button type="button" data-rca-action="fishbone-why-add" data-cat="${catKey}" data-idx="${idx}" class="text-[11px] bg-slate-700 hover:bg-slate-800 text-white px-2 rounded-lg shrink-0">ثبت</button>
+                </div>` : ''}
+            </div>`;
+        }
+
+        function renderRcaFishbonePanel() {
+            const fb = rcaState.fishbone;
+            const inactiveCats = RCA_FISHBONE_CATEGORIES.filter(c => !fb.activeCategories.includes(c[0]));
+            const categoryCards = fb.activeCategories.map(catKey => {
+                const cat = RCA_FISHBONE_CATEGORIES.find(c => c[0] === catKey);
+                const causes = fb.causes[catKey] || [];
+                const isOpen = fb.openCategory === catKey;
+                return `<div class="border rounded-2xl overflow-hidden">
+                    <button type="button" data-rca-action="fishbone-toggle-cat" data-cat="${catKey}" class="w-full flex items-center justify-between p-3 hover:bg-slate-50">
+                        <span class="text-xs font-bold text-slate-700">${esc(cat[1])} <span class="text-slate-400 font-normal" dir="ltr">(${cat[2]})</span></span>
+                        <span class="flex items-center gap-2">
+                            ${causes.length ? `<span class="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">${toPersianDigits(causes.length)}</span>` : ''}
+                            <span class="text-slate-400">${isOpen ? '▲' : '▼'}</span>
+                        </span>
+                    </button>
+                    ${isOpen ? `<div class="p-3 border-t bg-slate-50 space-y-2">
+                        ${causes.map((c, ci) => renderRcaFishboneCause(catKey, c, ci)).join('') || '<p class="text-[11px] text-slate-400">هنوز علتی برای این دسته ثبت نشده.</p>'}
+                        <div class="flex gap-2 pt-1">
+                            <input type="text" data-rca-field="fishbone-new-cause" data-cat="${catKey}" value="${esc(fb.newCauseText[catKey] || '')}" placeholder="علت احتمالی در این دسته..." class="flex-1 p-2 border rounded-lg text-xs">
+                            <button type="button" data-rca-action="fishbone-add-cause" data-cat="${catKey}" class="text-xs bg-slate-700 hover:bg-slate-800 text-white px-3 rounded-lg font-bold shrink-0">افزودن</button>
+                        </div>
+                        <button type="button" data-rca-action="fishbone-remove-cat" data-cat="${catKey}" class="text-[11px] text-slate-400 hover:text-red-600">حذف این دسته از نمودار</button>
+                    </div>` : ''}
+                </div>`;
+            }).join('');
+
+            return `<div class="bg-white rounded-2xl shadow-sm border p-5 space-y-4">
+                <div class="overflow-x-auto">${renderRcaFishboneSvg()}</div>
+                <div class="space-y-2">${categoryCards}</div>
+                ${inactiveCats.length ? `<div class="flex flex-wrap items-center gap-1.5 pt-2 border-t">
+                    <span class="text-[11px] text-slate-400">+ افزودن دسته:</span>
+                    ${inactiveCats.map(c => `<button type="button" data-rca-action="fishbone-add-cat" data-cat="${c[0]}" class="text-[11px] border border-dashed border-slate-300 hover:border-red-400 hover:text-red-600 text-slate-500 px-2.5 py-1 rounded-full">${esc(c[1])}</button>`).join('')}
+                </div>` : ''}
+            </div>`;
+        }
+
+        function renderRcaMethodArea() {
+            if (!rcaState.method) return renderRcaMethodPicker();
+            const panel = rcaState.method === 'ai' ? renderRcaAiPanel() : rcaState.method === 'five_why' ? renderRcaFiveWhyPanel() : renderRcaFishbonePanel();
+            return `<div class="space-y-3">${renderRcaMethodHeader()}${panel}</div>`;
+        }
+
+        // ---- Confirmed root causes + CAPA board ----
+        function renderRcaConfirmedCauses() {
+            if (!rcaState.confirmedCauses.length) return '';
+            return `<div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                <h4 class="text-sm font-bold text-slate-800">Root Cause <span class="text-slate-400 font-normal">— علت‌(های) ریشه‌ای تأییدشده</span></h4>
+                <div class="space-y-2">
+                    ${rcaState.confirmedCauses.map((c, i) => `
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 space-y-1.5">
+                        <div class="flex items-start justify-between gap-2">
+                            <p class="text-sm font-bold text-slate-800 flex-1">${esc(c.text)}</p>
+                            <button type="button" data-rca-action="remove-confirmed-cause" data-idx="${i}" class="text-slate-300 hover:text-red-600 text-xs shrink-0">✕</button>
+                        </div>
+                        <input type="text" data-rca-field="confirmed-evidence" data-idx="${i}" value="${esc(c.evidence || '')}" placeholder="Evidence / توضیح شواهد (اختیاری)" class="w-full p-1.5 border rounded-lg text-[11px] bg-[#ffffff]">
+                    </div>`).join('')}
+                </div>
+            </div>`;
+        }
+
+        function renderRcaCapaCard(kind) {
+            const c = rcaState[kind];
+            const isCorrective = kind === 'corrective';
+            const ownerOptions = rcaProjectPeople.map(p => `<option value="${esc(p.value)}" ${c.owner === p.value ? 'selected' : ''}>${p.label}</option>`).join('');
+            return `<div class="rounded-2xl border-2 ${isCorrective ? 'border-blue-200' : 'border-purple-200'} p-4 space-y-2.5">
+                <p class="text-xs font-extrabold ${isCorrective ? 'text-blue-900' : 'text-purple-800'}">${isCorrective ? '🔧 اقدام اصلاحی' : '🛡 اقدام پیشگیرانه'}</p>
+                <p class="text-[11px] text-slate-400">${isCorrective ? 'برای اصلاح مشکل موجود چه اقدامی باید انجام شود؟' : 'برای جلوگیری از تکرار این مشکل در آینده چه اقدامی باید انجام شود؟'}</p>
+                <textarea data-rca-field="capa-action" data-kind="${kind}" rows="2" placeholder="${isCorrective ? 'اقدام اصلاحی...' : 'اقدام پیشگیرانه...'}" class="w-full p-2 border rounded-lg text-sm">${esc(c.action)}</textarea>
+                <div class="grid grid-cols-2 gap-2">
+                    <select data-rca-field="capa-owner" data-kind="${kind}" class="w-full p-1.5 border rounded-lg text-xs bg-white"><option value="">-- مسئول --</option>${ownerOptions}</select>
+                    <select data-rca-field="capa-priority" data-kind="${kind}" class="w-full p-1.5 border rounded-lg text-xs bg-white">${CAPA_PRIORITY_OPTIONS.map(o => `<option ${c.priority === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>
+                    <input type="text" data-rca-field="capa-due" data-kind="${kind}" data-jalali-picker value="${esc(formatJalali(c.due_date))}" placeholder="سررسید" dir="ltr" class="w-full p-1.5 border rounded-lg text-xs text-center">
+                    <select data-rca-field="capa-status" data-kind="${kind}" class="w-full p-1.5 border rounded-lg text-xs bg-white">${CAPA_STATUS_OPTIONS.map(o => `<option ${c.status === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>
+                </div>
+                <input type="text" data-rca-field="capa-evidence" data-kind="${kind}" value="${esc(c.evidence)}" placeholder="Evidence (اختیاری)" class="w-full p-1.5 border rounded-lg text-[11px]">
+                ${c.status === 'انجام‌شده' ? `<input type="text" data-rca-field="capa-completion" data-kind="${kind}" data-jalali-picker value="${esc(formatJalali(c.completion_date))}" placeholder="تاریخ تکمیل" dir="ltr" class="w-full p-1.5 border rounded-lg text-[11px] text-center">` : ''}
+            </div>`;
+        }
+
+        function renderRcaCapaBoard() {
+            if (!rcaState.confirmedCauses.length) return '';
+            return `<div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                <h4 class="text-sm font-bold text-slate-800">CAPA <span class="text-slate-400 font-normal">— Corrective Action & Preventive Action</span></h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">${renderRcaCapaCard('corrective')}${renderRcaCapaCard('preventive')}</div>
+            </div>`;
+        }
+
+        // ---- Effectiveness + Value ----
+        function renderRcaEffectivenessSection() {
+            if (!rcaState.confirmedCauses.length) return '';
+            const opts = [['مؤثر', '🟢'], ['تا حدی مؤثر', '🟡'], ['غیرمؤثر', '🔴']];
+            return `<div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                <h4 class="text-sm font-bold text-slate-800">آیا اقدام انجام‌شده مؤثر بوده است؟</h4>
+                <div class="flex flex-wrap gap-2">
+                    ${opts.map(([label, icon]) => `<button type="button" data-rca-action="set-effectiveness" data-value="${esc(label)}" class="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl border-2 ${rcaState.effectiveness === label ? 'border-slate-700 bg-slate-50' : 'border-slate-200'}">${icon} ${esc(label)}</button>`).join('')}
+                </div>
+                <div>
+                    <p class="text-xs font-semibold mb-1.5">آیا احتمال تکرار مشکل کاهش یافته است؟</p>
+                    <div class="flex gap-2">
+                        <button type="button" data-rca-action="set-recurrence" data-value="yes" class="text-xs font-bold px-4 py-1.5 rounded-xl border-2 ${rcaState.recurrenceReduced === true ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-slate-200'}">بله</button>
+                        <button type="button" data-rca-action="set-recurrence" data-value="no" class="text-xs font-bold px-4 py-1.5 rounded-xl border-2 ${rcaState.recurrenceReduced === false ? 'border-red-600 bg-red-50 text-red-700' : 'border-slate-200'}">خیر</button>
+                    </div>
+                    ${rcaState.recurrenceReduced === false ? `<button type="button" data-rca-action="reopen-rca" class="mt-2 text-xs text-red-700 underline">← بازگشت به تحلیل علت ریشه‌ای</button>` : ''}
+                </div>
+            </div>`;
+        }
+
+        function renderRcaValueSection() {
+            if (rcaState.effectiveness === null) return '';
+            const v = rcaState.value;
+            return `<div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                <h4 class="text-sm font-bold text-slate-800">Result <span class="text-slate-400 font-normal">— نتیجه و ارزش ایجادشده</span></h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div><label class="block text-xs font-semibold mb-1">مشکل حل شد؟</label>
+                        <select data-rca-field="value-solved" class="w-full p-2 border rounded-lg text-sm bg-white">
+                            <option value="">-- انتخاب --</option>
+                            <option value="بله" ${v.solved === 'بله' ? 'selected' : ''}>بله</option>
+                            <option value="تاحدی" ${v.solved === 'تاحدی' ? 'selected' : ''}>تا حدی</option>
+                            <option value="خیر" ${v.solved === 'خیر' ? 'selected' : ''}>خیر</option>
+                        </select>
+                    </div>
+                    <div><label class="block text-xs font-semibold mb-1">زمان صرفه‌جویی‌شده (روز)</label><input type="number" step="any" min="0" data-rca-field="value-time-saved" value="${esc(v.timeSavedDays)}" class="w-full p-2 border rounded-lg text-sm"></div>
+                    <div><label class="block text-xs font-semibold mb-1">هزینه جلوگیری‌شده (میلیون ریال)</label><input type="number" step="any" min="0" data-rca-field="value-cost-avoided" value="${esc(v.costAvoidedRial)}" class="w-full p-2 border rounded-lg text-sm"></div>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    ${[['riskReduced', 'کاهش ریسک'], ['reworkReduced', 'کاهش دوباره‌کاری'], ['productivityIncreased', 'افزایش بهره‌وری']].map(([key, label]) => `
+                    <label class="inline-flex items-center gap-1.5 text-xs font-semibold cursor-pointer">
+                        <input type="checkbox" data-rca-field="value-tag" data-key="${key}" ${v[key] ? 'checked' : ''} class="w-4 h-4"> ${label}
+                    </label>`).join('')}
+                </div>
+            </div>`;
+        }
+
+        // ---- Master render ----
+        function renderRcaAll() {
+            const container = document.getElementById('rcaCapaModule');
+            if (!container || !rcaState) return;
+            container.innerHTML = [
+                renderRcaTimeline(),
+                renderRcaProblemSection(),
+                renderRcaMethodArea(),
+                renderRcaConfirmedCauses(),
+                renderRcaCapaBoard(),
+                renderRcaEffectivenessSection(),
+                renderRcaValueSection(),
+            ].join('');
+            container.querySelectorAll('[data-jalali-picker]').forEach(el => attachJalaliDatePicker(el));
+        }
+
+        async function rcaRunAiAnalysis() {
+            const problemText = (document.getElementById('ci_bottleneck')?.value || '').trim();
+            if (!problemText) { alert('ابتدا «مهم‌ترین گلوگاه فعلی پروژه» را بنویسید.'); rcaState.method = null; renderRcaAll(); return; }
+            rcaState.ai.loading = true; rcaState.ai.error = null;
+            renderRcaAll();
+            const { data, error } = await _supabase.functions.invoke('suggest-root-cause', {
+                body: { problem_text: problemText, impact: rcaState.problem.impact, status: rcaState.problem.status, criticality: rcaState.problem.criticality, provider: 'gemini' }
+            });
+            rcaState.ai.loading = false;
+            if (error || !data || data.error) {
+                rcaState.ai.error = 'خطا در دریافت پیشنهاد: ' + (error?.message || data?.error || 'نامشخص');
+                renderRcaAll();
+                return;
+            }
+            const s = data.suggestion || {};
+            rcaState.ai.candidates = (s.candidates || []).map(c => ({ ...c, status: 'pending', editing: false }));
+            rcaState.ai.similarCases = s.similar_cases || [];
+            renderRcaAll();
+        }
+
+        // ---- Delegated listeners (bound once; container itself is never replaced) ----
+        document.getElementById('rcaCapaModule').addEventListener('input', (e) => {
+            const t = e.target;
+            const field = t.getAttribute('data-rca-field');
+            if (!field) return;
+            switch (field) {
+                case 'ai-cause-edit': rcaState.ai.candidates[+t.dataset.idx].cause = t.value; break;
+                case 'ai-evidence-edit': rcaState.ai.candidates[+t.dataset.idx].evidence = t.value; break;
+                case 'ai-new-cause': rcaState.ai.newCause = t.value; break;
+                case 'ai-new-evidence': rcaState.ai.newEvidence = t.value; break;
+                case 'five-why-answer': rcaState.fiveWhy.steps[+t.dataset.idx].answer = t.value; break;
+                case 'fishbone-new-cause': rcaState.fishbone.newCauseText[t.dataset.cat] = t.value; break;
+                case 'fishbone-why-answer': rcaState.fishbone.causes[t.dataset.cat][+t.dataset.idx].whyDraftText = t.value; break;
+                case 'confirmed-evidence': rcaState.confirmedCauses[+t.dataset.idx].evidence = t.value; break;
+                case 'capa-action': rcaState[t.dataset.kind].action = t.value; break;
+                case 'capa-evidence': rcaState[t.dataset.kind].evidence = t.value; break;
+                case 'capa-due': rcaState[t.dataset.kind].due_date = jalaliInputToIso(t.value) || ''; break;
+                case 'capa-completion': rcaState[t.dataset.kind].completion_date = jalaliInputToIso(t.value) || ''; break;
+                case 'value-time-saved': rcaState.value.timeSavedDays = t.value; break;
+                case 'value-cost-avoided': rcaState.value.costAvoidedRial = t.value; break;
+                default: return;
+            }
+        });
+
+        document.getElementById('rcaCapaModule').addEventListener('change', (e) => {
+            const t = e.target;
+            const field = t.getAttribute('data-rca-field');
+            if (!field) return;
+            switch (field) {
+                case 'impact': rcaState.problem.impact = t.value; break;
+                case 'status': rcaState.problem.status = t.value; break;
+                case 'criticality': rcaState.problem.criticality = t.value; break;
+                case 'capa-owner': rcaState[t.dataset.kind].owner = t.value; break;
+                case 'capa-priority': rcaState[t.dataset.kind].priority = t.value; break;
+                case 'capa-status': rcaState[t.dataset.kind].status = t.value; break;
+                case 'value-solved': rcaState.value.solved = t.value; break;
+                case 'value-tag': rcaState.value[t.dataset.key] = t.checked; break;
+                default: return;
+            }
+            renderRcaAll();
+        });
+
+        document.getElementById('rcaCapaModule').addEventListener('click', async (e) => {
+            const btn = e.target.closest('[data-rca-action]');
+            if (!btn) return;
+            const action = btn.dataset.rcaAction;
+
+            if (action === 'choose-method') {
+                rcaState.method = btn.dataset.method;
+                renderRcaAll();
+                if (rcaState.method === 'ai') await rcaRunAiAnalysis();
+                return;
+            }
+            if (action === 'change-method') { rcaState.method = null; renderRcaAll(); return; }
+            if (action === 'ai-retry') { await rcaRunAiAnalysis(); return; }
+            if (action === 'ai-confirm') {
+                const c = rcaState.ai.candidates[+btn.dataset.idx];
+                c.status = 'confirmed';
+                rcaState.confirmedCauses.push({ text: c.cause, evidence: c.evidence || '', source: 'ai' });
+                renderRcaAll();
+                return;
+            }
+            if (action === 'ai-edit') { rcaState.ai.candidates[+btn.dataset.idx].editing = true; renderRcaAll(); return; }
+            if (action === 'ai-save-edit') { rcaState.ai.candidates[+btn.dataset.idx].editing = false; renderRcaAll(); return; }
+            if (action === 'ai-dismiss') { rcaState.ai.candidates.splice(+btn.dataset.idx, 1); renderRcaAll(); return; }
+            if (action === 'ai-add-manual') {
+                const text = rcaState.ai.newCause.trim();
+                if (!text) { alert('شرح علت جدید را وارد کنید.'); return; }
+                rcaState.confirmedCauses.push({ text, evidence: rcaState.ai.newEvidence.trim(), source: 'manual' });
+                rcaState.ai.newCause = ''; rcaState.ai.newEvidence = '';
+                renderRcaAll();
+                return;
+            }
+            if (action === 'five-why-add') {
+                const fw = rcaState.fiveWhy;
+                if (fw.steps.length && !fw.steps[fw.steps.length - 1].answer.trim()) { alert('لطفاً ابتدا پاسخ Why فعلی را تکمیل کنید.'); return; }
+                fw.steps.push({ n: fw.steps.length + 1, question: rcaFiveWhyNextQuestion(), answer: '' });
+                renderRcaAll();
+                return;
+            }
+            if (action === 'five-why-done') {
+                const fw = rcaState.fiveWhy;
+                if (!fw.steps.length || !fw.steps[fw.steps.length - 1].answer.trim()) { alert('لطفاً ابتدا حداقل یک Why را تکمیل کنید.'); return; }
+                fw.done = true;
+                const finalText = fw.steps[fw.steps.length - 1].answer.trim();
+                rcaState.confirmedCauses = rcaState.confirmedCauses.filter(c => c.source !== 'five_why');
+                rcaState.confirmedCauses.push({ text: finalText, evidence: '', source: 'five_why' });
+                renderRcaAll();
+                return;
+            }
+            if (action === 'five-why-back') { rcaState.fiveWhy.steps.pop(); renderRcaAll(); return; }
+            if (action === 'five-why-reopen') {
+                rcaState.fiveWhy.done = false;
+                rcaState.confirmedCauses = rcaState.confirmedCauses.filter(c => c.source !== 'five_why');
+                renderRcaAll();
+                return;
+            }
+            if (action === 'fishbone-toggle-cat') {
+                rcaState.fishbone.openCategory = rcaState.fishbone.openCategory === btn.dataset.cat ? null : btn.dataset.cat;
+                renderRcaAll();
+                return;
+            }
+            if (action === 'fishbone-add-cat') {
+                rcaState.fishbone.activeCategories.push(btn.dataset.cat);
+                rcaState.fishbone.openCategory = btn.dataset.cat;
+                renderRcaAll();
+                return;
+            }
+            if (action === 'fishbone-remove-cat') {
+                rcaState.fishbone.activeCategories = rcaState.fishbone.activeCategories.filter(k => k !== btn.dataset.cat);
+                if (rcaState.fishbone.openCategory === btn.dataset.cat) rcaState.fishbone.openCategory = null;
+                renderRcaAll();
+                return;
+            }
+            if (action === 'fishbone-add-cause') {
+                const cat = btn.dataset.cat;
+                const text = (rcaState.fishbone.newCauseText[cat] || '').trim();
+                if (!text) { alert('شرح علت را وارد کنید.'); return; }
+                (rcaState.fishbone.causes[cat] ??= []).push({ id: rcaUid(), text, whys: [], confirmed: false, whyDraftOpen: false, whyDraftText: '' });
+                rcaState.fishbone.newCauseText[cat] = '';
+                renderRcaAll();
+                return;
+            }
+            if (action === 'fishbone-remove-cause') { rcaState.fishbone.causes[btn.dataset.cat].splice(+btn.dataset.idx, 1); renderRcaAll(); return; }
+            if (action === 'fishbone-why-prompt') { rcaState.fishbone.causes[btn.dataset.cat][+btn.dataset.idx].whyDraftOpen = true; renderRcaAll(); return; }
+            if (action === 'fishbone-why-add') {
+                const cause = rcaState.fishbone.causes[btn.dataset.cat][+btn.dataset.idx];
+                const text = (cause.whyDraftText || '').trim();
+                if (!text) { alert('پاسخ Why را وارد کنید.'); return; }
+                cause.whys.push(text);
+                cause.whyDraftOpen = false;
+                cause.whyDraftText = '';
+                renderRcaAll();
+                return;
+            }
+            if (action === 'fishbone-confirm-cause') {
+                const cat = btn.dataset.cat, idx = +btn.dataset.idx;
+                const cause = rcaState.fishbone.causes[cat][idx];
+                cause.confirmed = true;
+                const catLabel = RCA_FISHBONE_CATEGORIES.find(c => c[0] === cat)[1];
+                const fullText = cause.whys.length ? `${cause.text} ← ${cause.whys.join(' ← ')}` : cause.text;
+                rcaState.confirmedCauses.push({ text: fullText, evidence: `دسته: ${catLabel}`, source: 'fishbone' });
+                renderRcaAll();
+                return;
+            }
+            if (action === 'remove-confirmed-cause') { rcaState.confirmedCauses.splice(+btn.dataset.idx, 1); renderRcaAll(); return; }
+            if (action === 'set-effectiveness') { rcaState.effectiveness = btn.dataset.value; renderRcaAll(); return; }
+            if (action === 'set-recurrence') { rcaState.recurrenceReduced = btn.dataset.value === 'yes'; renderRcaAll(); return; }
+            if (action === 'reopen-rca') {
+                rcaState.effectiveness = null;
+                rcaState.recurrenceReduced = null;
+                rcaState.method = null;
+                renderRcaAll();
+                document.getElementById('rcaCapaModule').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
+            }
+        });
+
         async function refreshResponsibleOptions(selectId, projectName, filterOrg) {
             const sel = document.getElementById(selectId);
             if (!projectName) { sel.innerHTML = '<option value="">-- ابتدا پروژه را انتخاب کنید --</option>'; return; }
@@ -1922,12 +2677,13 @@
             });
 
             document.getElementById('ci_negative_event').value = row.q_negative_event || '';
-            document.getElementById('ci_bottleneck').value = row.main_bottleneck || '';
-            document.getElementById('ci_bottleneck_root_cause').value = row.bottleneck_root_cause || '';
-            document.getElementById('ci_bottleneck_unlock').value = row.bottleneck_unlock_action || '';
             document.getElementById('ci_senior_decision').value = row.senior_decision_needed || '';
             if (row.senior_decision_priority) document.getElementById('ci_senior_priority').value = row.senior_decision_priority;
             document.getElementById('ci_one_thing').value = row.one_thing_to_change || '';
+
+            document.getElementById('ci_bottleneck').value = row.main_bottleneck || '';
+            hydrateRcaStateFromRow(row);
+            renderRcaAll();
         }
 
         function populateQwProposalForm(row) {
@@ -2029,8 +2785,9 @@
             renderRespondentDisplay();
             document.getElementById('ci_hse_note_wrap').classList.add('hidden');
             document.getElementById('ci_qw_quick_fields').classList.add('hidden');
-            document.getElementById('ci_ai_root_cause_panel').classList.add('hidden');
-            document.getElementById('ci_five_why_panel').classList.add('hidden');
+            resetRcaState();
+            renderRcaAll();
+            await refreshRcaProjectPeople(project_name);
             await refreshResponsibleOptions('ci_qwq_responsible', project_name);
 
             const { data } = await _supabase.from('check_ins').select('*')
@@ -2118,52 +2875,6 @@
         // both write to the same cases table, so nothing is lost either way.
         document.getElementById('ci_convert_to_qw').addEventListener('change', (e) => {
             document.getElementById('ci_qw_quick_fields').classList.toggle('hidden', !e.target.checked);
-        });
-
-        // Redesign backlog (P2, section O): "پیشنهاد Root Cause" + "تشخیص
-        // Case مشابه" — an extension of the same AI engine analyze-project
-        // uses, available to whoever is filling in the form (not admin-only)
-        // since it only ever runs through the caller's own JWT — RLS already
-        // scopes the "similar past cases" search to what they can see.
-        document.getElementById('ci_ai_root_cause_btn').addEventListener('click', async () => {
-            const problemText = document.getElementById('ci_bottleneck').value.trim();
-            const panel = document.getElementById('ci_ai_root_cause_panel');
-            if (!problemText) { alert('ابتدا «مهم‌ترین گلوگاه فعلی پروژه» را بنویسید تا پیشنهاد بگیرید.'); return; }
-            panel.classList.remove('hidden');
-            panel.innerHTML = '<p class="text-slate-500">در حال دریافت پیشنهاد هوش مصنوعی...</p>';
-            const { data, error } = await _supabase.functions.invoke('suggest-root-cause', { body: { problem_text: problemText, provider: 'gemini' } });
-            if (error || !data || data.error) {
-                panel.innerHTML = `<p class="text-red-600">خطا در دریافت پیشنهاد: ${esc(error?.message || data?.error || 'نامشخص')}</p>`;
-                return;
-            }
-            const s = data.suggestion || {};
-            const similarHtml = (s.similar_cases || []).length
-                ? '<ul class="list-disc pr-4 space-y-1">' + s.similar_cases.map(c => `<li><b>${esc(c.project_name)}</b> — ${esc(c.reference)}: <span class="text-slate-600">${esc(c.why_similar)}</span></li>`).join('') + '</ul>'
-                : '<p class="text-slate-400">مورد مشابه‌ای در سابقه یافت نشد.</p>';
-            panel.innerHTML = `
-                <p class="font-bold text-purple-800">علت ریشه‌ای پیشنهادی:</p>
-                <p class="text-slate-700">${esc(s.suggested_root_cause || '-')}</p>
-                <button type="button" id="ci_ai_root_cause_use_btn" class="text-xs bg-purple-700 hover:bg-purple-800 text-white px-3 py-1.5 rounded-lg font-bold">استفاده از این پیشنهاد</button>
-                <p class="font-bold text-purple-800 pt-2">موارد مشابه قبلی:</p>
-                ${similarHtml}`;
-            document.getElementById('ci_ai_root_cause_use_btn').addEventListener('click', () => {
-                const rootCauseEl = document.getElementById('ci_bottleneck_root_cause');
-                rootCauseEl.value = rootCauseEl.value.trim() ? rootCauseEl.value.trim() + '\n\n' + s.suggested_root_cause : (s.suggested_root_cause || '');
-            });
-        });
-
-        document.getElementById('ci_five_why_toggle_btn').addEventListener('click', () => {
-            document.getElementById('ci_five_why_panel').classList.toggle('hidden');
-        });
-        document.getElementById('ci_five_why_apply_btn').addEventListener('click', () => {
-            const answers = Array.from(document.querySelectorAll('.ci_five_why_input'))
-                .map(inp => inp.value.trim())
-                .filter(Boolean);
-            if (!answers.length) { alert('حداقل یک «چرا» را تکمیل کنید.'); return; }
-            const composed = answers.map((a, i) => `چرا ${toPersianDigits(String(i + 1))}: ${a}`).join('\n');
-            const rootCauseEl = document.getElementById('ci_bottleneck_root_cause');
-            rootCauseEl.value = rootCauseEl.value.trim() ? rootCauseEl.value.trim() + '\n\n' + composed : composed;
-            document.getElementById('ci_five_why_panel').classList.add('hidden');
         });
 
         function updateContractorRequired() {
@@ -2306,6 +3017,8 @@
             wireOtherToggle('support', 'ci_support_other');
         }
         buildCheckinDynamicSections();
+        resetRcaState();
+        renderRcaAll();
 
         function collectDynamicStatusGroup(containerId) {
             const result = {};
@@ -2394,11 +3107,10 @@
 
                 q_negative_event: document.getElementById('ci_negative_event').value,
                 main_bottleneck: document.getElementById('ci_bottleneck').value,
-                bottleneck_root_cause: document.getElementById('ci_bottleneck_root_cause').value,
-                bottleneck_unlock_action: document.getElementById('ci_bottleneck_unlock').value,
                 senior_decision_needed: document.getElementById('ci_senior_decision').value,
                 senior_decision_priority: document.getElementById('ci_senior_priority').value,
                 one_thing_to_change: document.getElementById('ci_one_thing').value,
+                ...collectRcaCapaFields(),
             };
 
             const { error } = await _supabase.from('check_ins').insert([row]);
@@ -2430,6 +3142,8 @@
             e.target.reset();
             document.getElementById('ci_hse_note_wrap').classList.add('hidden');
             document.getElementById('ci_qw_quick_fields').classList.add('hidden');
+            resetRcaState();
+            renderRcaAll();
         });
 
         // --------------------------------------------------
