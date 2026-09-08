@@ -1,10 +1,11 @@
 // Supabase Edge Function: suggest-root-cause
 //
-// Redesign backlog (P2, section O): "پیشنهاد Root Cause بر اساس متن مسئله"
-// and "تشخیص Case مشابه قبلی" — an extension of the same analysis engine
-// analyze-project already uses (same providers, same retry logic), aimed at
-// whoever is filling in the check-in form right now rather than an admin
-// reviewing a whole project.
+// «تحلیل و آنالیز مشکلات پروژه» — AI Root Cause Analysis method. Given the
+// project's main bottleneck (plus its impact/status/criticality, and the
+// caller's own visible history), returns several ranked root-cause
+// CANDIDATES — never a single verdict — for the respondent to confirm, edit
+// or discard. Same analysis engine (providers, retry logic) analyze-project
+// already uses, extended for this narrower, per-bottleneck use.
 //
 // Deliberately NOT admin-only, unlike analyze-project: this only ever reads
 // through the CALLER'S OWN JWT (never service-role), so Postgres RLS scopes
@@ -14,10 +15,10 @@
 // useful "have we seen this before" signal without this function ever
 // becoming a way to peek at another organization's still-private proposals.
 //
-// Deploy: paste into a new "suggest-root-cause" Edge Function in the
-// Supabase dashboard (or `supabase functions deploy suggest-root-cause`).
-// Reuses the same GEMINI_API_KEY / OPENAI_API_KEY secrets as analyze-project
-// — no new secret to configure if that function is already set up.
+// Deploy: paste into the "suggest-root-cause" Edge Function in the Supabase
+// dashboard (or `supabase functions deploy suggest-root-cause`). Reuses the
+// same GEMINI_API_KEY / OPENAI_API_KEY secrets as analyze-project — no new
+// secret to configure if that function is already set up.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -66,7 +67,7 @@ Deno.serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return jsonResponse({ error: "Unauthorized" }, 401);
 
-    const { problem_text, provider } = await req.json();
+    const { problem_text, impact, status, criticality, provider } = await req.json();
     if (!problem_text || typeof problem_text !== "string" || !problem_text.trim()) {
       return jsonResponse({ error: "problem_text الزامی است." }, 400);
     }
@@ -101,24 +102,40 @@ Deno.serve(async (req) => {
 
     if (corpusLines.length === 0) {
       // Nothing to compare against yet (e.g. a brand-new project/user) —
-      // still worth a plain root-cause suggestion from the text alone.
+      // still worth plain root-cause candidates from the text alone.
       corpusLines.push("(هنوز سابقه‌ای برای مقایسه در دسترس این کاربر نیست.)");
     }
 
-    const prompt = `شما یک متخصص ریشه‌یابی مسائل در پروژه‌های خط انتقال گاز هستید. یک کاربر در حال توصیف مسئله زیر است:
+    const contextLines: string[] = [];
+    if (impact) contextLines.push(`Impact: ${impact}`);
+    if (status) contextLines.push(`وضعیت فعلی: ${status}`);
+    if (criticality) contextLines.push(`میزان اهمیت/Criticality: ${criticality}`);
+
+    const prompt = `شما یک متخصص ریشه‌یابی مسائل (Root Cause Analysis) در پروژه‌های خط انتقال گاز هستید. یک کاربر مسئله زیر را به‌عنوان مهم‌ترین گلوگاه فعلی پروژه ثبت کرده:
 «${problem_text}»
+${contextLines.length ? contextLines.join(" — ") : ""}
 
 سابقه مسائل و Caseهای قبلی که این کاربر به آن‌ها دسترسی دارد:
 ${corpusLines.join("\n")}
 
-خروجی را دقیقاً و فقط به‌صورت یک شیء JSON معتبر برگردان، بدون Markdown و بدون متن اضافه، دقیقاً با این ساختار:
+بر اساس این اطلاعات، ۲ تا ۴ علت ریشه‌ای «محتمل» (نه قطعی) تولید کن و بر اساس Confidence از زیاد به کم مرتب کن. خروجی را دقیقاً و فقط به‌صورت یک شیء JSON معتبر برگردان، بدون Markdown و بدون متن اضافه، دقیقاً با این ساختار:
 {
-  "suggested_root_cause": "یک یا دو جمله علت ریشه‌ای محتمل، بر اساس متن مسئله (و در صورت وجود شباهت، سابقه مشابه)",
+  "candidates": [
+    {
+      "cause": "عنوان کوتاه علت ریشه‌ای پیشنهادی",
+      "explanation": "توضیح یکی‌دو جمله‌ای چرا این علت محتمل است",
+      "evidence": "شواهدی از متن مسئله یا سابقه بالا که از این علت پشتیبانی می‌کند",
+      "probability": "کم" یا "متوسط" یا "زیاد",
+      "impact": "کم" یا "متوسط" یا "زیاد",
+      "confidence": عددی بین ۰ تا ۱۰۰ (میزان اطمینان مدل به این علت),
+      "suggested_action": "یک پیشنهاد کوتاه برای اقدام اصلاحی مرتبط با همین علت"
+    }
+  ],
   "similar_cases": [
     { "project_name": "نام پروژه از سابقه بالا", "reference": "عنوان Case یا شرح گلوگاه مشابه از سابقه بالا", "why_similar": "چرا این مورد شبیه مسئله فعلی است" }
   ]
 }
-اگر هیچ مورد مشابهی در سابقه بالا نبود، آرایه similar_cases را خالی [] بگذار — هرگز مورد نامرتبط اختراع نکن.`;
+اگر هیچ مورد مشابهی در سابقه بالا نبود، آرایه similar_cases را خالی [] بگذار — هرگز مورد نامرتبط اختراع نکن. هرگز از عبارت «علت قطعی» استفاده نکن — این‌ها همگی «علل ریشه‌ای پیشنهادی» هستند که کاربر باید تأیید یا اصلاح کند.`;
 
     // deno-lint-ignore no-explicit-any
     let resultJson: any;
@@ -133,7 +150,7 @@ ${corpusLines.join("\n")}
         headers: { "content-type": "application/json", "Authorization": `Bearer ${OPENAI_API_KEY}` },
         body: JSON.stringify({
           model: "gpt-4o-mini",
-          max_tokens: 800,
+          max_tokens: 1200,
           response_format: { type: "json_object" },
           messages: [{ role: "user", content: prompt }],
         }),
@@ -182,7 +199,12 @@ ${corpusLines.join("\n")}
       }
     }
 
-    return jsonResponse({ suggestion: resultJson, provider: chosenProvider });
+    // deno-lint-ignore no-explicit-any
+    const candidates = Array.isArray(resultJson?.candidates) ? resultJson.candidates : [];
+    // deno-lint-ignore no-explicit-any
+    const similarCases = Array.isArray(resultJson?.similar_cases) ? resultJson.similar_cases : [];
+
+    return jsonResponse({ suggestion: { candidates, similar_cases: similarCases }, provider: chosenProvider });
   } catch (err) {
     return jsonResponse({ error: String(err) }, 500);
   }
