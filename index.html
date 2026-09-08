@@ -1845,22 +1845,22 @@
         }
 
         function populateQwProposalForm(row) {
-            if (row.qw_bottleneck_area) document.getElementById('ci_qw_area').value = row.qw_bottleneck_area;
-            document.getElementById('ci_qw_area_other').value = row.qw_bottleneck_area_other || '';
-            document.getElementById('ci_qw_area_other').classList.toggle('hidden', row.qw_bottleneck_area !== 'سایر');
+            if (row.problem_area) document.getElementById('ci_qw_area').value = row.problem_area;
+            document.getElementById('ci_qw_area_other').value = row.problem_area_other || '';
+            document.getElementById('ci_qw_area_other').classList.toggle('hidden', row.problem_area !== 'سایر');
 
-            const consequenceSet = new Set(row.qw_consequences || []);
+            const consequenceSet = new Set(row.consequences || []);
             document.querySelectorAll('.qw_conseq-cb').forEach(cb => { cb.checked = consequenceSet.has(cb.value); });
-            document.getElementById('ci_qw_consequence_other').value = row.qw_consequence_other || '';
+            document.getElementById('ci_qw_consequence_other').value = row.consequence_other || '';
             document.getElementById('ci_qw_consequence_other').classList.toggle('hidden', !consequenceSet.has('سایر'));
-            document.getElementById('ci_qw_consequence_desc').value = row.qw_consequence_description || '';
+            document.getElementById('ci_qw_consequence_desc').value = row.consequence_description || '';
 
-            document.getElementById('ci_qw_title').value = row.quick_win_title || '';
+            document.getElementById('ci_qw_title').value = row.title || '';
             document.getElementById('ci_qw_action').value = row.action_details || '';
-            document.getElementById('ci_qw_rationale').value = row.qw_rationale || '';
-            document.getElementById('ci_qw_result').value = row.tangible_result || '';
+            document.getElementById('ci_qw_rationale').value = row.rationale || '';
+            document.getElementById('ci_qw_result').value = row.expected_result || '';
 
-            document.getElementById('ci_plan_action').value = row.plan_main_action || '';
+            document.getElementById('ci_plan_action').value = row.plan_action || '';
             setResponsibleValue('ci_plan_responsible', row.plan_responsible);
             document.getElementById('ci_plan_units').value = row.plan_units_involved || '';
             document.getElementById('ci_plan_start_date').value = formatJalali(row.plan_start_date);
@@ -1986,10 +1986,9 @@
             document.getElementById('ci_support_other').classList.add('hidden');
             await refreshResponsibleOptions('ci_plan_responsible', project_name);
 
-            const { data } = await _supabase.from('check_ins').select('*')
+            const { data } = await _supabase.from('cases').select('*')
                 .eq('project_name', project_name).eq('organization', organization)
-                .not('quick_win_title', 'is', null)
-                .order('created_at', { ascending: false }).limit(1).maybeSingle();
+                .order('proposed_at', { ascending: false }).limit(1).maybeSingle();
             if (data) populateQwProposalForm(data);
         }
 
@@ -2249,20 +2248,19 @@
                 user_id: currentUser.id,
                 project_name: p.project_name,
                 organization: p.organization,
-                qw_form_date: jalaliInputToIso(todayJalali()),
 
-                qw_bottleneck_area: qwArea,
-                qw_bottleneck_area_other: qwArea === 'سایر' ? document.getElementById('ci_qw_area_other').value.trim() : null,
-                qw_consequences: collectCheckboxGroup('qw_conseq-cb'),
-                qw_consequence_other: document.getElementById('ci_qw_consequence_other').value.trim() || null,
-                qw_consequence_description: document.getElementById('ci_qw_consequence_desc').value,
+                problem_area: qwArea,
+                problem_area_other: qwArea === 'سایر' ? document.getElementById('ci_qw_area_other').value.trim() : null,
+                consequences: collectCheckboxGroup('qw_conseq-cb'),
+                consequence_other: document.getElementById('ci_qw_consequence_other').value.trim() || null,
+                consequence_description: document.getElementById('ci_qw_consequence_desc').value,
 
-                quick_win_title: document.getElementById('ci_qw_title').value,
+                title: document.getElementById('ci_qw_title').value,
                 action_details: document.getElementById('ci_qw_action').value,
-                qw_rationale: document.getElementById('ci_qw_rationale').value,
-                tangible_result: document.getElementById('ci_qw_result').value,
+                rationale: document.getElementById('ci_qw_rationale').value,
+                expected_result: document.getElementById('ci_qw_result').value,
 
-                plan_main_action: document.getElementById('ci_plan_action').value,
+                plan_action: document.getElementById('ci_plan_action').value,
                 plan_responsible: document.getElementById('ci_plan_responsible').value,
                 plan_units_involved: document.getElementById('ci_plan_units').value,
                 plan_start_date: planStartIso,
@@ -2291,7 +2289,7 @@
                 final_reflection: document.getElementById('ci_final_reflection').value
             };
 
-            const { error } = await _supabase.from('check_ins').insert([row]);
+            const { error } = await _supabase.from('cases').insert([row]);
             if (error) { alert('خطا در ثبت: ' + error.message); return; }
             alert('پیشنهاد Quick Win با موفقیت ثبت شد!');
             e.target.reset();
@@ -2574,7 +2572,7 @@
         // Renaming a project means its name — stored as plain text, not a foreign key —
         // has to be updated everywhere it's referenced, or historical rows and access
         // grants would silently detach from the renamed project.
-        const PROJECT_NAME_TABLES = ['user_project_access', 'pending_invites', 'check_ins', 'client_reports', 'quick_win_decisions', 'quick_win_progress', 'quick_win_evaluations', 'app_users'];
+        const PROJECT_NAME_TABLES = ['user_project_access', 'pending_invites', 'check_ins', 'client_reports', 'quick_win_decisions', 'quick_win_progress', 'quick_win_evaluations', 'app_users', 'cases'];
 
         async function renameProject(oldName, newName) {
             const msg = document.getElementById('admMsg');
@@ -2601,7 +2599,10 @@
         // never cross-check the current `projects` list. So "حذف پروژه"
         // purges them all; app_users is deliberately excluded (those are
         // user accounts, not project data).
-        const PROJECT_DATA_TABLES = ['check_ins', 'client_reports', 'quick_win_decisions', 'quick_win_progress', 'quick_win_evaluations'];
+        // cases isn't in this list by accident of omission — case_updates
+        // rows cascade-delete automatically (on delete cascade on case_id)
+        // once their parent case row is gone.
+        const PROJECT_DATA_TABLES = ['check_ins', 'client_reports', 'quick_win_decisions', 'quick_win_progress', 'quick_win_evaluations', 'cases'];
 
         async function updateProjectPhase(name, phase) {
             const { error } = await _supabase.from('projects').update({ current_phase: phase }).eq('name', name);
@@ -2662,15 +2663,68 @@
             return merged;
         }
 
-        function buildMergedByProjectOrg(checkins) {
+        // A Quick Win proposal now lives in `cases`, not in a qw_* check_ins
+        // row (only historical, pre-cutover proposals still do) — this maps
+        // a `cases` row back onto the field names every reporting view below
+        // already reads, so none of them need to change.
+        function caseToLegacyQwShape(kase) {
+            if (!kase) return null;
+            return {
+                created_at: kase.proposed_at,
+                quick_win_title: kase.title,
+                action_details: kase.action_details,
+                qw_rationale: kase.rationale,
+                tangible_result: kase.expected_result,
+                qw_bottleneck_area: kase.problem_area,
+                qw_bottleneck_area_other: kase.problem_area_other,
+                qw_consequences: kase.consequences,
+                qw_consequence_other: kase.consequence_other,
+                qw_consequence_description: kase.consequence_description,
+                plan_main_action: kase.plan_action,
+                plan_responsible: kase.plan_responsible,
+                plan_units_involved: kase.plan_units_involved,
+                plan_start_date: kase.plan_start_date,
+                plan_target_date: kase.plan_target_date,
+                plan_prerequisite: kase.plan_prerequisite,
+                plan_decision_needed: kase.plan_decision_needed,
+                plan_deliverable: kase.plan_deliverable,
+                kpi_name: kase.kpi_name,
+                kpi_current: kase.kpi_current,
+                kpi_target_30d: kase.kpi_target_30d,
+                impact_delay_days: kase.impact_delay_days,
+                impact_progress_increase: kase.impact_progress_increase,
+                impact_cost_avoided: kase.impact_cost_avoided,
+                impact_issues_closed: kase.impact_issues_closed,
+                impact_docs_resolved: kase.impact_docs_resolved,
+                impact_fronts_freed: kase.impact_fronts_freed,
+                impact_other: kase.impact_other,
+                support_types: kase.support_types,
+                support_other_text: kase.support_other_text,
+                support_needed: kase.support_needed,
+                counter_commitment: kase.counter_commitment,
+                time_estimate: kase.time_estimate,
+                final_reflection: kase.final_reflection,
+            };
+        }
+
+        function buildMergedByProjectOrg(checkins, cases) {
             const rowsByKey = {};
             (checkins || []).forEach(c => { (rowsByKey[c.project_name + '||' + c.organization] ??= []).push(c); });
+            const latestCaseByKey = {};
+            (cases || []).forEach(k => {
+                const key = k.project_name + '||' + k.organization;
+                if (!latestCaseByKey[key] || new Date(k.proposed_at) > new Date(latestCaseByKey[key].proposed_at)) latestCaseByKey[key] = k;
+            });
             const result = {};
-            Object.entries(rowsByKey).forEach(([key, rows]) => {
+            const allKeys = new Set([...Object.keys(rowsByKey), ...Object.keys(latestCaseByKey)]);
+            allKeys.forEach(key => {
                 const [project, org] = key.split('||');
+                const rows = rowsByKey[key] || [];
                 const periodic = [...rows].reverse().find(r => r.main_bottleneck != null);
                 const qw = [...rows].reverse().find(r => r.quick_win_title != null);
-                const merged = mergeCheckinPair(periodic, qw);
+                let merged = mergeCheckinPair(periodic, qw);
+                const kase = caseToLegacyQwShape(latestCaseByKey[key]);
+                if (kase) merged = mergeCheckinPair(merged, kase);
                 if (merged) (result[project] ??= {})[org] = merged;
             });
             return result;
@@ -2737,12 +2791,12 @@
             return `<div class="bg-slate-50 rounded-2xl border-r-4 ${style.border} p-4 space-y-3 text-xs ${isSelected ? 'ring-2 ring-emerald-400' : ''} relative">
                 ${isSelected ? '<span class="absolute -top-2 left-3 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">🏆 منتخب</span>' : ''}
                 <div class="flex justify-between items-start gap-2">
-                    <b class="text-sm leading-snug">${esc(prop.quick_win_title)}</b>
+                    <b class="text-sm leading-snug">${esc(prop.title)}</b>
                     <span class="shrink-0 ${style.badge} px-2 py-1 rounded-lg font-bold">${esc(prop.organization)}</span>
                 </div>
                 <div class="space-y-1.5">
                     <p class="flex gap-1.5"><span class="font-bold shrink-0">⚡ اقدام:</span><span class="text-slate-600">${esc(prop.action_details)}</span></p>
-                    <p class="flex gap-1.5"><span class="font-bold shrink-0 text-emerald-700">🎯 نتیجه ۳۰ روزه:</span><span class="text-slate-600">${esc(prop.tangible_result)}</span></p>
+                    <p class="flex gap-1.5"><span class="font-bold shrink-0 text-emerald-700">🎯 نتیجه ۳۰ روزه:</span><span class="text-slate-600">${esc(prop.expected_result)}</span></p>
                     <p class="flex gap-1.5"><span class="font-bold shrink-0 ${style.text}">🤝 حمایت لازم:</span><span class="text-slate-600">${esc(prop.support_needed)}</span></p>
                     <p class="flex gap-1.5"><span class="font-bold shrink-0 ${style.text}">🤲 تعهد متقابل:</span><span class="text-slate-600">${esc(prop.counter_commitment)}</span></p>
                 </div>
@@ -2781,24 +2835,22 @@
             container.innerHTML = '<p class="text-center text-slate-400 p-4">در حال دریافت پیشنهادها...</p>';
 
             const { data: checkins, error: e1 } = await _supabase.from('check_ins').select('*').order('created_at', { ascending: true });
-            const { data: decisions, error: e2 } = await _supabase.from('quick_win_decisions').select('*');
-            const { data: evaluations, error: e4 } = await _supabase.from('quick_win_evaluations').select('*');
+            const { data: allCases, error: e2 } = await _supabase.from('cases').select('*').order('proposed_at', { ascending: true });
             if (e1 || e2) { container.innerHTML = '<p class="text-red-600 p-4">خطا در دریافت داده‌ها.</p>'; return; }
 
             loadMatrixData(checkins);
 
-            const evalByKey = {};
-            (evaluations || []).forEach(ev => { evalByKey[ev.project_name + '||' + ev.organization + '||' + ev.proposal_created_at] = ev; });
-
-            // Only rows that actually carry a Quick Win proposal are relevant here.
+            // Only the latest proposal per (project, organization) is a live
+            // candidate — an older resubmission from the same org is superseded,
+            // same as before when this came from the latest qw_* check_ins row.
             const latestByKey = {};
-            (checkins || []).filter(c => c.quick_win_title).forEach(c => { latestByKey[c.project_name + '||' + c.organization] = c; });
+            allCases.forEach(c => { latestByKey[c.project_name + '||' + c.organization] = c; });
 
             const byProject = {};
             Object.values(latestByKey).forEach(c => { (byProject[c.project_name] ??= []).push(c); });
 
             const decisionByProject = {};
-            (decisions || []).forEach(d => decisionByProject[d.project_name] = d);
+            allCases.filter(c => DECIDED_STATUSES.includes(c.status)).forEach(d => decisionByProject[d.project_name] = d);
 
             const projectNames = Object.keys(byProject);
             document.getElementById('qwSummaryStrip').innerHTML = '';
@@ -2855,9 +2907,8 @@
                     const banner = document.createElement('div');
                     banner.className = 'bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm space-y-1';
                     banner.innerHTML = `
-                        <p class="font-bold text-emerald-800">✅ منتخب نهایی: ${esc(decision.selected_title)} <span class="font-normal text-emerald-700">(${esc(decision.selected_organization)})</span></p>
-                        ${decision.rationale ? `<p class="text-xs text-slate-600">دلیل انتخاب: ${esc(decision.rationale)}</p>` : ''}
-                        <p class="text-xs text-slate-500">امتیاز اولویت: ${decision.priority_score} | مهلت: ${formatJalali(decision.target_date)}</p>
+                        <p class="font-bold text-emerald-800">✅ منتخب نهایی: ${esc(decision.title)} <span class="font-normal text-emerald-700">(${esc(decision.organization)})</span></p>
+                        <p class="text-xs text-slate-500">امتیاز اولویت: ${decision.weighted_score?.toFixed?.(2) ?? decision.weighted_score} | مهلت: ${formatJalali(decision.execution_target_date)}</p>
                         ${isAdmin ? '<button type="button" class="clear-btn text-xs text-red-600 underline mt-1">تغییر انتخاب</button>' : ''}`;
                     if (isAdmin) banner.querySelector('.clear-btn').addEventListener('click', () => clearDecision(pName));
                     body.appendChild(banner);
@@ -2867,10 +2918,9 @@
                 grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-3';
 
                 byProject[pName].forEach(prop => {
-                    const isSelected = decision && decision.selected_title === prop.quick_win_title && decision.selected_organization === prop.organization;
-                    const existingEval = evalByKey[pName + '||' + prop.organization + '||' + prop.created_at];
+                    const isSelected = decision && decision.id === prop.id;
                     const wrap = document.createElement('div');
-                    wrap.innerHTML = qwProposalCardHtml(prop, isSelected, existingEval, isAdmin, !!decision);
+                    wrap.innerHTML = qwProposalCardHtml(prop, isSelected, prop, isAdmin, !!decision);
                     const propEl = wrap.firstElementChild;
                     if (isAdmin) {
                         const scoreSelects = Array.from(propEl.querySelectorAll('.eval-score'));
@@ -2878,9 +2928,7 @@
                         const scoreBarEl = propEl.querySelector('.eval-score-bar');
                         const decisionSelect = propEl.querySelector('.eval-decision');
 
-                        if (existingEval) {
-                            scoreSelects.forEach(s => { if (existingEval[s.dataset.key] != null) s.value = existingEval[s.dataset.key]; });
-                        }
+                        scoreSelects.forEach(s => { if (prop[s.dataset.key] != null) s.value = prop[s.dataset.key]; });
                         const refreshScore = () => {
                             const score = computeWeightedScore(scoreSelects);
                             finalScoreEl.textContent = toPersianDigits(score.toFixed(2)) + ' / ۵';
@@ -2959,7 +3007,8 @@
             document.getElementById('aiaProjectSelect').innerHTML = projOptionsHtml;
 
             const { data: checkins } = await _supabase.from('check_ins').select('*').order('created_at', { ascending: true });
-            const byProject = buildMergedByProjectOrg(checkins);
+            const { data: cases } = await _supabase.from('cases').select('*');
+            const byProject = buildMergedByProjectOrg(checkins, cases);
             const projectNames = (projects || []).map(p => p.name);
 
             document.getElementById('aiaProjectList').innerHTML = projectNames.length
@@ -3430,8 +3479,9 @@
             if (e1) { document.getElementById('reportAiText').innerHTML = `<p class="text-red-600 text-xs">خطا در دریافت داده‌ها: ${esc(e1.message)}</p>`; regenBtn.disabled = false; regenBtn.classList.remove('opacity-50'); return; }
 
             const { data: clientReports } = await _supabase.from('client_reports').select('*').eq('project_name', projectName).order('created_at', { ascending: false }).limit(1);
+            const { data: cases } = await _supabase.from('cases').select('*').eq('project_name', projectName);
 
-            const latestByOrg = buildMergedByProjectOrg(checkins)[projectName] || {};
+            const latestByOrg = buildMergedByProjectOrg(checkins, cases)[projectName] || {};
 
             renderReportKpis(latestByOrg);
             renderClientReportCard(clientReports && clientReports[0]);
@@ -3512,11 +3562,10 @@
             if (currentAiReportProject) loadAiReport(currentAiReportProject, currentAiReportProvider, true);
         });
 
+        const DECIDED_STATUSES = ['انتخاب‌شده', 'در حال اجرا', 'بسته‌شده'];
+
         async function saveEvaluation(projectName, prop, scores, weightedScore, decision) {
-            const evalRow = {
-                project_name: projectName,
-                organization: prop.organization,
-                proposal_created_at: prop.created_at,
+            const patch = {
                 score_time: scores.score_time,
                 score_cost: scores.score_cost,
                 score_urgency: scores.score_urgency,
@@ -3524,30 +3573,36 @@
                 score_leverage: scores.score_leverage,
                 weighted_score: weightedScore,
                 decision,
-                evaluated_by: currentUser.email
+                evaluated_by: currentUser.email,
+                evaluated_at: new Date().toISOString(),
             };
-            const { error: evalError } = await _supabase.from('quick_win_evaluations').upsert([evalRow], { onConflict: 'project_name,organization,proposal_created_at' });
-            if (evalError) { alert('خطا در ثبت ارزیابی: ' + evalError.message); return; }
+            const isNewlySelected = decision === 'Quick Win منتخب';
+            // Re-saving the already-decided proposal's evaluation (still
+            // allowed, e.g. to update its score/rationale) must not reset its
+            // execution status backwards if it has since moved further along.
+            if (!DECIDED_STATUSES.includes(prop.status)) {
+                if (isNewlySelected) {
+                    patch.status = 'انتخاب‌شده';
+                    patch.decided_by = currentUser.email;
+                    patch.decided_at = new Date().toISOString();
+                    patch.execution_target_date = prop.plan_target_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+                } else {
+                    patch.status = 'ارزیابی‌شده';
+                }
+            }
 
-            if (decision === 'Quick Win منتخب') {
-                const targetDate = prop.plan_target_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-                const { error } = await _supabase.from('quick_win_decisions').upsert([{
-                    project_name: projectName,
-                    selected_organization: prop.organization,
-                    selected_title: prop.quick_win_title,
-                    selected_action: prop.action_details,
-                    selected_result: prop.tangible_result,
-                    selected_support: prop.support_needed,
-                    selected_counter_commitment: prop.counter_commitment,
-                    impact_score: scores.score_time,
-                    feasibility_score: scores.score_feasibility,
-                    cost_score: scores.score_cost,
-                    priority_score: weightedScore,
-                    rationale: `امتیاز نهایی ${weightedScore.toFixed(2)}/۵ — تصمیم: ${decision}`,
-                    decided_by: currentUser.email,
-                    target_date: targetDate
-                }], { onConflict: 'project_name' });
-                if (error) { alert('خطا در ثبت تصمیم: ' + error.message); return; }
+            const { error } = await _supabase.from('cases').update(patch).eq('id', prop.id);
+            if (error) { alert('خطا در ثبت ارزیابی: ' + error.message); return; }
+
+            if (isNewlySelected) {
+                // Only one Quick Win can be "the decided one" per project at a
+                // time — demote whatever previously held that spot.
+                const { error: demoteError } = await _supabase.from('cases')
+                    .update({ status: 'ارزیابی‌شده', decided_by: null, decided_at: null, execution_target_date: null })
+                    .eq('project_name', projectName)
+                    .in('status', DECIDED_STATUSES)
+                    .neq('id', prop.id);
+                if (demoteError) { alert('خطا در به‌روزرسانی پیشنهادهای دیگر: ' + demoteError.message); return; }
             }
 
             alert('ارزیابی با موفقیت ثبت شد.');
@@ -3556,7 +3611,10 @@
 
         async function clearDecision(projectName) {
             if (!confirm('آیا مطمئنید می‌خواهید انتخاب فعلی این پروژه حذف شود؟')) return;
-            const { error } = await _supabase.from('quick_win_decisions').delete().eq('project_name', projectName);
+            const { error } = await _supabase.from('cases')
+                .update({ status: 'ارزیابی‌شده', decided_by: null, decided_at: null, execution_target_date: null })
+                .eq('project_name', projectName)
+                .in('status', DECIDED_STATUSES);
             if (error) { alert('خطا: ' + error.message); return; }
             loadSelectionData();
         }
@@ -3576,13 +3634,13 @@
         }
 
         function isTaskOverdue(task) {
-            return task.status !== 'انجام‌شده' && task.due_date < new Date().toISOString().slice(0, 10);
+            return task.task_status !== 'انجام‌شده' && task.due_date < new Date().toISOString().slice(0, 10);
         }
 
         function quickWinTaskItemHtml(task, isAdmin) {
             const overdue = isTaskOverdue(task);
-            const isDone = task.status === 'انجام‌شده';
-            const isPending = task.status === 'در انتظار تایید';
+            const isDone = task.task_status === 'انجام‌شده';
+            const isPending = task.task_status === 'در انتظار تایید';
             // A non-admin can only act on a task through the submit button
             // below when they're the one it's assigned to — admins have
             // their own full controls regardless of whose name is on it.
@@ -3593,7 +3651,7 @@
                     ? '<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap">🕓 در انتظار تایید ادمین</span>'
                     : overdue
                         ? '<span class="bg-red-100 text-red-800 px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap">⏰ معوق</span>'
-                        : `<span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap">${esc(task.status)}</span>`;
+                        : `<span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap">${esc(task.task_status)}</span>`;
             return `<div class="task-row" data-task-id="${task.id}">
                 <div class="flex items-center justify-between gap-2 text-xs bg-slate-50 rounded-lg px-3 py-2 flex-wrap">
                     <div class="min-w-0">
@@ -3677,8 +3735,8 @@
         }
 
         async function completeQuickWinTask(taskId) {
-            const { error } = await _supabase.from('quick_win_tasks')
-                .update({ status: 'انجام‌شده', completed_at: new Date().toISOString() })
+            const { error } = await _supabase.from('case_updates')
+                .update({ task_status: 'انجام‌شده', completed_at: new Date().toISOString() })
                 .eq('id', taskId);
             if (error) { alert('خطا در ثبت اتمام تسک: ' + error.message); return; }
             loadTrackingData();
@@ -3690,8 +3748,8 @@
         async function submitQuickWinTask(taskId) {
             const note = prompt('توضیح اقدام انجام‌شده (اختیاری):', '');
             if (note === null) return;
-            const { error } = await _supabase.from('quick_win_tasks')
-                .update({ status: 'در انتظار تایید', submitted_at: new Date().toISOString(), submitted_note: note || null })
+            const { error } = await _supabase.from('case_updates')
+                .update({ task_status: 'در انتظار تایید', submitted_at: new Date().toISOString(), submitted_note: note || null })
                 .eq('id', taskId);
             if (error) { alert('خطا در ثبت اقدام: ' + error.message); return; }
             loadTrackingData();
@@ -3700,15 +3758,15 @@
         // Admin sends a submitted task back for rework instead of approving it.
         async function rejectQuickWinTask(taskId) {
             if (!confirm('این تسک به «در حال انجام» بازگردانده شود تا مسئول دوباره اقدام کند؟')) return;
-            const { error } = await _supabase.from('quick_win_tasks')
-                .update({ status: 'در حال انجام', submitted_at: null, submitted_note: null })
+            const { error } = await _supabase.from('case_updates')
+                .update({ task_status: 'در حال انجام', submitted_at: null, submitted_note: null })
                 .eq('id', taskId);
             if (error) { alert('خطا در بازگشت تسک: ' + error.message); return; }
             loadTrackingData();
         }
 
         async function deleteQuickWinTask(taskId) {
-            const { error } = await _supabase.from('quick_win_tasks').delete().eq('id', taskId);
+            const { error } = await _supabase.from('case_updates').delete().eq('id', taskId);
             if (error) { alert('خطا در حذف تسک: ' + error.message); return; }
             loadTrackingData();
         }
@@ -3719,7 +3777,7 @@
                 alert('عنوان، مسئول، ایمیل مسئول و مهلت انجام (به‌صورت ۱۴۰۵/۰۶/۳۰) الزامی است.');
                 return;
             }
-            const { error } = await _supabase.from('quick_win_tasks').update({
+            const { error } = await _supabase.from('case_updates').update({
                 title, responsible_name: responsibleName, responsible_email: responsibleEmail, due_date: dueDateIso,
                 overdue_notified_at: null,
             }).eq('id', taskId);
@@ -3727,15 +3785,15 @@
             loadTrackingData();
         }
 
-        async function addQuickWinTask(projectName, title, responsibleName, responsibleEmail, dueDateJalali) {
+        async function addQuickWinTask(caseId, title, responsibleName, responsibleEmail, dueDateJalali) {
             const dueDateIso = jalaliInputToIso(dueDateJalali);
             if (!title || !responsibleName || !responsibleEmail || !dueDateIso) {
                 alert('عنوان، مسئول، ایمیل مسئول و مهلت انجام (به‌صورت ۱۴۰۵/۰۶/۳۰) الزامی است.');
                 return;
             }
-            const { error } = await _supabase.from('quick_win_tasks').insert([{
-                project_name: projectName, title, responsible_name: responsibleName,
-                responsible_email: responsibleEmail, due_date: dueDateIso, created_by: currentUser.email,
+            const { error } = await _supabase.from('case_updates').insert([{
+                case_id: caseId, kind: 'task', title, responsible_name: responsibleName,
+                responsible_email: responsibleEmail, due_date: dueDateIso, task_status: 'باز', created_by: currentUser.email,
             }]);
             if (error) { alert('خطا در ثبت تسک: ' + error.message); return; }
             loadTrackingData();
@@ -3764,11 +3822,11 @@
         // Cross-project report of overdue + completed tasks. Admins see every
         // project's tasks together here (same query, no per-project filter);
         // a manager's own report is naturally scoped to their project(s) by
-        // the RLS policy on quick_win_tasks, so no extra filtering is needed.
+        // the RLS policy on case_updates, so no extra filtering is needed.
         function renderTaskSummaryReport(tasks, isAdmin) {
             const reportEl = document.getElementById('trackingTaskReport');
             const overdueTasks = (tasks || []).filter(isTaskOverdue);
-            const doneTasks = (tasks || []).filter(t => t.status === 'انجام‌شده')
+            const doneTasks = (tasks || []).filter(t => t.task_status === 'انجام‌شده')
                 .slice().sort((a, b) => new Date(b.completed_at || 0) - new Date(a.completed_at || 0));
 
             if (!tasks || tasks.length === 0) { reportEl.innerHTML = ''; return; }
@@ -3793,11 +3851,10 @@
             const container = document.getElementById('trackingContainer');
             container.innerHTML = '<p class="text-center text-slate-400 p-4">در حال دریافت اطلاعات پایش...</p>';
 
-            const { data: decisions, error: e1 } = await _supabase.from('quick_win_decisions').select('*').order('target_date', { ascending: true });
-            const { data: logs, error: e2 } = await _supabase.from('quick_win_progress').select('*').order('created_at', { ascending: true });
+            const { data: decisions, error: e1 } = await _supabase.from('cases').select('*').in('status', DECIDED_STATUSES).order('execution_target_date', { ascending: true });
+            const { data: allUpdates, error: e2 } = await _supabase.from('case_updates').select('*').order('created_at', { ascending: true });
             const { data: checkins, error: e3 } = await _supabase.from('check_ins').select('*').order('created_at', { ascending: true });
-            const { data: tasks, error: e4 } = await _supabase.from('quick_win_tasks').select('*').order('due_date', { ascending: true });
-            if (e1 || e2 || e3 || e4) { container.innerHTML = '<p class="text-red-600 p-4">خطا در دریافت داده‌ها.</p>'; return; }
+            if (e1 || e2 || e3) { container.innerHTML = '<p class="text-red-600 p-4">خطا در دریافت داده‌ها.</p>'; return; }
 
             if (!decisions || decisions.length === 0) {
                 document.getElementById('trackingOverdueBanner').innerHTML = '';
@@ -3806,15 +3863,24 @@
                 return;
             }
 
-            const logsByProject = {};
-            (logs || []).forEach(l => { (logsByProject[l.project_name] ??= []).push(l); });
-            const tasksByProject = {};
-            (tasks || []).forEach(t => { (tasksByProject[t.project_name] ??= []).push(t); });
-            const byProjectOrg = buildMergedByProjectOrg(checkins);
+            const projectNameByCaseId = {};
+            decisions.forEach(d => { projectNameByCaseId[d.id] = d.project_name; });
+
+            const logs = (allUpdates || []).filter(u => u.kind === 'progress');
+            // Tasks don't carry project_name directly (they're scoped by
+            // case_id) — attach it here so the report table below (and
+            // anything printing a task row) can still show it.
+            const tasks = (allUpdates || []).filter(u => u.kind === 'task').map(t => ({ ...t, project_name: projectNameByCaseId[t.case_id] }));
+
+            const logsByCase = {};
+            logs.forEach(l => { (logsByCase[l.case_id] ??= []).push(l); });
+            const tasksByCase = {};
+            tasks.forEach(t => { (tasksByCase[t.case_id] ??= []).push(t); });
+            const byProjectOrg = buildMergedByProjectOrg(checkins, decisions);
 
             const isAdmin = currentProfile.role === 'admin';
-            const overdueCount = (tasks || []).filter(isTaskOverdue).length;
-            const pendingApprovalCount = isAdmin ? (tasks || []).filter(t => t.status === 'در انتظار تایید').length : 0;
+            const overdueCount = tasks.filter(isTaskOverdue).length;
+            const pendingApprovalCount = isAdmin ? tasks.filter(t => t.task_status === 'در انتظار تایید').length : 0;
             const bannerParts = [];
             if (overdueCount) bannerParts.push(`<div class="bg-red-100 text-red-800 text-xs font-bold px-3 py-2 rounded-lg">⚠️ ${toPersianDigits(overdueCount)} تسک معوق نیاز به پیگیری فوری دارد.</div>`);
             if (pendingApprovalCount) bannerParts.push(`<div class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-2 rounded-lg">🕓 ${toPersianDigits(pendingApprovalCount)} تسک در انتظار تایید نهایی شماست.</div>`);
@@ -3838,14 +3904,14 @@
             }
 
             decisions.forEach(dec => {
-                const projectLogs = logsByProject[dec.project_name] || [];
+                const projectLogs = logsByCase[dec.id] || [];
                 const latest = projectLogs[projectLogs.length - 1];
                 const percent = latest ? latest.progress_percent : 0;
                 const status = latest ? latest.status : 'شروع نشده';
-                const rec = byProjectOrg[dec.project_name]?.[dec.selected_organization] || {};
-                const responsible = rec.plan_responsible || dec.selected_organization;
+                const rec = byProjectOrg[dec.project_name]?.[dec.organization] || {};
+                const responsible = dec.plan_responsible || rec.plan_responsible || dec.organization;
 
-                const target = new Date(dec.target_date);
+                const target = new Date(dec.execution_target_date || dec.plan_target_date);
                 const daysLeft = Math.round((target - today) / 86400000);
                 const isDone = percent >= 100;
                 const isOverdue = !isDone && daysLeft < 0;
@@ -3866,7 +3932,7 @@
                         <span class="text-slate-400">- ${esc(l.reported_by || '')}</span>
                     </div>`).join('') || '<p class="text-xs text-slate-400">هنوز بروزرسانی‌ای ثبت نشده.</p>';
 
-                const projectTasks = tasksByProject[dec.project_name] || [];
+                const projectTasks = tasksByCase[dec.id] || [];
                 const tasksById = {};
                 projectTasks.forEach(t => { tasksById[t.id] = t; });
                 const tasksHtml = projectTasks.length
@@ -3878,14 +3944,14 @@
                     <div class="flex justify-between items-center flex-wrap gap-2">
                         <div>
                             <h3 class="font-bold text-blue-900">${esc(dec.project_name)}</h3>
-                            <p class="text-xs text-slate-500">${esc(dec.selected_title)} (${esc(dec.selected_organization)})</p>
+                            <p class="text-xs text-slate-500">${esc(dec.title)} (${esc(dec.organization)})</p>
                         </div>
                         ${badge}
                     </div>
                     <div class="w-full bg-slate-100 rounded-full h-2.5">
                         <div class="${barColor} h-2.5 rounded-full" style="width:${Math.min(percent, 100)}%"></div>
                     </div>
-                    <p class="text-xs text-slate-500">وضعیت فعلی: <b>${esc(status)}</b> — 👤 مسئول: <b>${esc(responsible)}</b> — مهلت: ${formatJalali(dec.target_date)}</p>
+                    <p class="text-xs text-slate-500">وضعیت فعلی: <b>${esc(status)}</b> — 👤 مسئول: <b>${esc(responsible)}</b> — مهلت: ${formatJalali(dec.execution_target_date || dec.plan_target_date)}</p>
                     <div class="space-y-1 max-h-40 overflow-y-auto">${timelineHtml}</div>
 
                     <div class="pt-3 border-t space-y-2">
@@ -3919,7 +3985,7 @@
                         taskAddBtn.addEventListener('click', () => {
                             const [respName, respEmail] = cardEl.querySelector('.task-resp-select').value.split('|||');
                             addQuickWinTask(
-                                dec.project_name,
+                                dec.id,
                                 cardEl.querySelector('.task-title-input').value.trim(),
                                 respName || '',
                                 respEmail || '',
@@ -3931,21 +3997,30 @@
                     const percentInput = cardEl.querySelector('.percent-input');
                     const noteInput = cardEl.querySelector('.note-input');
                     cardEl.querySelector('.update-btn').addEventListener('click', () => {
-                        addProgressUpdate(dec.project_name, statusSel.value, percentInput.value, noteInput.value);
+                        addProgressUpdate(dec.id, statusSel.value, percentInput.value, noteInput.value);
                     });
                 }
                 container.appendChild(cardEl);
             });
         }
 
-        async function addProgressUpdate(projectName, status, rawPercent, note) {
+        async function addProgressUpdate(caseId, status, rawPercent, note) {
             let percent = Math.max(0, Math.min(100, Number(rawPercent) || 0));
             if (status === 'تکمیل شده') percent = 100;
 
-            const { error } = await _supabase.from('quick_win_progress').insert([{
-                project_name: projectName, status, progress_percent: percent, note, reported_by: currentUser.email
+            const { error } = await _supabase.from('case_updates').insert([{
+                case_id: caseId, kind: 'progress', status, progress_percent: percent, note, reported_by: currentUser.email, created_by: currentUser.email
             }]);
             if (error) { alert('خطا در ثبت بروزرسانی: ' + error.message); return; }
+            // Keep the case's own status (what Overview/exec report read
+            // directly, rather than recomputing from the latest log every
+            // time) in sync with the progress just logged: the first update
+            // moves a merely-selected case into execution, reaching 100%
+            // closes it, and logging a lower percent afterwards reopens it.
+            const casePatch = percent >= 100
+                ? { status: 'بسته‌شده', closed_at: new Date().toISOString() }
+                : { status: 'در حال اجرا', closed_at: null };
+            await _supabase.from('cases').update(casePatch).eq('id', caseId).in('status', ['انتخاب‌شده', 'در حال اجرا', 'بسته‌شده']);
             loadTrackingData();
         }
 
@@ -3979,10 +4054,11 @@
             document.getElementById('execGeneratedAt').textContent = todayJalali();
 
             const { data: checkins } = await _supabase.from('check_ins').select('*').order('created_at', { ascending: true });
-            const { data: decisions } = await _supabase.from('quick_win_decisions').select('*');
-            const { data: logs } = await _supabase.from('quick_win_progress').select('*');
+            const { data: allCases } = await _supabase.from('cases').select('*');
+            const decisions = (allCases || []).filter(c => ['انتخاب‌شده', 'در حال اجرا', 'بسته‌شده'].includes(c.status));
+            const { data: updates } = await _supabase.from('case_updates').select('*').eq('kind', 'progress').order('created_at', { ascending: true });
 
-            const byProject = buildMergedByProjectOrg(checkins);
+            const byProject = buildMergedByProjectOrg(checkins, allCases);
             const projectNames = Object.keys(byProject);
 
             let green = 0, yellow = 0, red = 0;
@@ -3996,27 +4072,21 @@
             document.getElementById('execYellowCount').textContent = `🟡 ${toPersianDigits(yellow)}`;
             document.getElementById('execRedCount').textContent = `🔴 ${toPersianDigits(red)}`;
 
-            const logsByProject = {};
-            (logs || []).forEach(l => { (logsByProject[l.project_name] ??= []).push(l); });
+            const progressByCase = {};
+            (updates || []).forEach(u => { (progressByCase[u.case_id] ??= []).push(u); });
+            const latestProgress = (caseId) => { const list = progressByCase[caseId] || []; return list[list.length - 1] || null; };
 
-            const identified = (decisions || []).length;
+            const identified = decisions.length;
             let closed = 0, inProgress = 0;
-            (decisions || []).forEach(dec => {
-                const pl = logsByProject[dec.project_name] || [];
-                const latest = pl[pl.length - 1];
-                const percent = latest ? latest.progress_percent : 0;
+            decisions.forEach(dec => {
+                const percent = latestProgress(dec.id)?.progress_percent || 0;
                 if (percent >= 100) closed++; else inProgress++;
             });
             document.getElementById('execIdentified').textContent = toPersianDigits(identified);
             document.getElementById('execClosed').textContent = `Closed: ${toPersianDigits(closed)}`;
             document.getElementById('execInProgress').textContent = `In Progress: ${toPersianDigits(inProgress)}`;
 
-            const selectedCheckinByProject = {};
-            (decisions || []).forEach(dec => {
-                const orgRec = byProject[dec.project_name]?.[dec.selected_organization];
-                if (orgRec) selectedCheckinByProject[dec.project_name] = orgRec;
-            });
-            const sum = (field) => Object.values(selectedCheckinByProject).reduce((a, r) => a + (Number(r[field]) || 0), 0);
+            const sum = (field) => decisions.reduce((a, r) => a + (Number(r[field]) || 0), 0);
 
             document.getElementById('execKpiRow').innerHTML =
                 kpiCard('Time Saved', `${toPersianDigits(sum('impact_delay_days'))} روز`, 'text-blue-900') +
@@ -4027,19 +4097,17 @@
 
             const cardsContainer = document.getElementById('execCardsContainer');
             cardsContainer.innerHTML = '';
-            if ((decisions || []).length === 0) {
+            if (decisions.length === 0) {
                 cardsContainer.innerHTML = '<p class="text-center text-slate-400 p-4">هنوز هیچ Quick Win‌ی انتخاب نشده است.</p>';
             } else {
                 decisions.forEach((dec, idx) => {
-                    const rec = selectedCheckinByProject[dec.project_name] || {};
-                    const pl = logsByProject[dec.project_name] || [];
-                    const latest = pl[pl.length - 1];
-                    const percent = latest ? latest.progress_percent : 0;
+                    const periodicRec = byProject[dec.project_name]?.[dec.organization] || {};
+                    const percent = latestProgress(dec.id)?.progress_percent || 0;
                     const health = computeProjectHealth(byProject[dec.project_name] || {});
                     const impactParts = [];
-                    if (rec.impact_delay_days) impactParts.push(`${toPersianDigits(rec.impact_delay_days)} روز`);
-                    if (rec.impact_progress_increase) impactParts.push(`${toPersianDigits(rec.impact_progress_increase)}٪`);
-                    if (rec.impact_cost_avoided) impactParts.push(fmtRial(rec.impact_cost_avoided));
+                    if (dec.impact_delay_days) impactParts.push(`${toPersianDigits(dec.impact_delay_days)} روز`);
+                    if (dec.impact_progress_increase) impactParts.push(`${toPersianDigits(dec.impact_progress_increase)}٪`);
+                    if (dec.impact_cost_avoided) impactParts.push(fmtRial(dec.impact_cost_avoided));
 
                     const wrap = document.createElement('div');
                     wrap.innerHTML = `<div class="print-card bg-white rounded-2xl shadow-sm border p-6 space-y-3">
@@ -4048,14 +4116,14 @@
                             <span class="text-lg">${health}</span>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                            <p>🔴 <b>Problem:</b> ${esc(rec.main_bottleneck || '-')}</p>
-                            <p>🎯 <b>Quick Win:</b> ${esc(dec.selected_title)}</p>
-                            <p>👤 <b>Owner:</b> ${esc(rec.plan_responsible || dec.selected_organization)}</p>
-                            <p>📅 <b>Deadline:</b> ${formatJalali(rec.plan_target_date || dec.target_date)}</p>
-                            <p>📊 <b>KPI:</b> ${esc(rec.kpi_name || '-')}</p>
+                            <p>🔴 <b>Problem:</b> ${esc(periodicRec.main_bottleneck || '-')}</p>
+                            <p>🎯 <b>Quick Win:</b> ${esc(dec.title)}</p>
+                            <p>👤 <b>Owner:</b> ${esc(dec.plan_responsible || dec.organization)}</p>
+                            <p>📅 <b>Deadline:</b> ${formatJalali(dec.plan_target_date || dec.execution_target_date)}</p>
+                            <p>📊 <b>KPI:</b> ${esc(dec.kpi_name || '-')}</p>
                             <p>📈 <b>Progress:</b> ${toPersianDigits(percent)}٪</p>
-                            <p><b>BEFORE:</b> ${esc(rec.kpi_current || '-')}</p>
-                            <p><b>AFTER:</b> ${esc(rec.kpi_target_30d || '-')}</p>
+                            <p><b>BEFORE:</b> ${esc(dec.kpi_current || '-')}</p>
+                            <p><b>AFTER:</b> ${esc(dec.kpi_target_30d || '-')}</p>
                             <p class="md:col-span-2 text-emerald-700"><b>IMPACT:</b> ${impactParts.length ? esc(impactParts.join(' / ')) : '-'}</p>
                         </div>
                         <button type="button" class="ai-link-btn no-print text-xs text-purple-700 underline"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:-0.125em"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z"/></svg> مشاهده تحلیل هوش مصنوعی این پروژه</button>
@@ -4066,20 +4134,18 @@
                 });
             }
 
-            document.getElementById('execSummaryTableBody').innerHTML = (decisions || []).length === 0
+            document.getElementById('execSummaryTableBody').innerHTML = decisions.length === 0
                 ? '<tr><td colspan="7" class="p-3 text-center text-slate-400">داده‌ای موجود نیست.</td></tr>'
                 : decisions.map(dec => {
-                    const rec = selectedCheckinByProject[dec.project_name] || {};
-                    const pl = logsByProject[dec.project_name] || [];
-                    const latest = pl[pl.length - 1];
+                    const latest = latestProgress(dec.id);
                     const percent = latest ? latest.progress_percent : 0;
                     const status = percent >= 100 ? 'تکمیل شده' : (latest ? latest.status : 'شروع نشده');
                     return `<tr>
                         <td class="p-2 border font-bold">${esc(dec.project_name)}</td>
-                        <td class="p-2 border">${esc(dec.selected_title)}</td>
-                        <td class="p-2 border">${esc(rec.plan_responsible || '-')}</td>
-                        <td class="p-2 border">${esc(dec.selected_organization)}</td>
-                        <td class="p-2 border">${formatJalali(rec.plan_target_date || dec.target_date)}</td>
+                        <td class="p-2 border">${esc(dec.title)}</td>
+                        <td class="p-2 border">${esc(dec.plan_responsible || '-')}</td>
+                        <td class="p-2 border">${esc(dec.organization)}</td>
+                        <td class="p-2 border">${formatJalali(dec.plan_target_date || dec.execution_target_date)}</td>
                         <td class="p-2 border">${toPersianDigits(percent)}٪</td>
                         <td class="p-2 border">${esc(status)}</td>
                     </tr>`;
@@ -4141,29 +4207,32 @@
         }
 
         async function loadOverview() {
-            const [{ data: rawCheckins }, { data: rawDecisions }, { data: rawLogs }, { data: rawClientReports }, guideNames] = await Promise.all([
+            const [{ data: rawCheckins }, { data: rawCases }, { data: rawUpdates }, { data: rawClientReports }, guideNames] = await Promise.all([
                 _supabase.from('check_ins').select('*').order('created_at', { ascending: true }),
-                _supabase.from('quick_win_decisions').select('*'),
-                _supabase.from('quick_win_progress').select('*').order('created_at', { ascending: true }),
+                _supabase.from('cases').select('*').order('proposed_at', { ascending: true }),
+                _supabase.from('case_updates').select('*').eq('kind', 'progress').order('created_at', { ascending: true }),
                 _supabase.from('client_reports').select('*').order('created_at', { ascending: true }),
                 getGuideProjectNames(),
             ]);
             const checkins = (rawCheckins || []).filter(c => !guideNames.has(c.project_name));
-            const decisions = (rawDecisions || []).filter(d => !guideNames.has(d.project_name));
-            const logs = (rawLogs || []).filter(l => !guideNames.has(l.project_name));
+            const allCases = (rawCases || []).filter(c => !guideNames.has(c.project_name));
+            const decisions = allCases.filter(c => ['انتخاب‌شده', 'در حال اجرا', 'بسته‌شده'].includes(c.status));
+            const caseIdByProject = {};
+            decisions.forEach(d => { caseIdByProject[d.project_name] = d.id; });
+            const updates = (rawUpdates || []).filter(u => decisions.some(d => d.id === u.case_id));
             const clientReports = (rawClientReports || []).filter(cr => !guideNames.has(cr.project_name));
 
-            const byProject = buildMergedByProjectOrg(checkins);
+            const byProject = buildMergedByProjectOrg(checkins, allCases);
             const projectNames = Object.keys(byProject);
 
             const clientReportByProject = {};
             (clientReports || []).forEach(cr => { clientReportByProject[cr.project_name] = cr; });
 
             const logsByProject = {};
-            (logs || []).forEach(l => { (logsByProject[l.project_name] ??= []).push(l); });
+            updates.forEach(u => { (logsByProject[u.case_id] ??= []).push(u); });
 
             const latestPercent = (projectName) => {
-                const pl = logsByProject[projectName] || [];
+                const pl = logsByProject[caseIdByProject[projectName]] || [];
                 return pl.length ? pl[pl.length - 1].progress_percent : 0;
             };
 
@@ -4188,12 +4257,12 @@
                 .filter(v => v !== null);
             const avgDeviation = deviations.length ? Math.round(deviations.reduce((a, b) => a + b, 0) / deviations.length) : 0;
 
-            const allCheckinsWithQw = (checkins || []).filter(c => c.quick_win_title);
+            const allCheckinsWithQw = allCases;
             const qwDefined = allCheckinsWithQw.length;
-            const qwAchieved = (decisions || []).filter(d => latestPercent(d.project_name) >= 100).length;
-            const qwInProgress = (decisions || []).length - qwAchieved;
+            const qwAchieved = decisions.filter(d => d.status === 'بسته‌شده').length;
+            const qwInProgress = decisions.length - qwAchieved;
             const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-            const overdueCount = (decisions || []).filter(d => latestPercent(d.project_name) < 100 && new Date(d.target_date) < todayStart).length;
+            const overdueCount = decisions.filter(d => d.status !== 'بسته‌شده' && new Date(d.execution_target_date || d.plan_target_date) < todayStart).length;
 
             document.getElementById('ovStatCards').innerHTML = [
                 statCard('grid', 'bg-blue-900/15 text-blue-900', toPersianDigits(projectNames.length), 'تعداد پروژه‌ها',
@@ -4300,13 +4369,19 @@
             ]);
 
             // ---- Recent activity feed ----
+            const projectNameByCaseId = {};
+            allCases.forEach(c => { projectNameByCaseId[c.id] = c.project_name; });
             const activity = [];
-            (checkins || []).slice(-8).forEach(c => activity.push({
+            checkins.slice(-8).forEach(c => activity.push({
                 ts: c.created_at, color: '#3b82f6',
-                text: `${c.quick_win_title ? 'ثبت پیشنهاد Quick Win جدید' : 'ثبت اطلاعات تکمیلی جدید'} — ${c.project_name} (${c.organization})`
+                text: `ثبت اطلاعات تکمیلی جدید — ${c.project_name} (${c.organization})`
             }));
-            (logs || []).slice(-8).forEach(l => activity.push({ ts: l.created_at, color: '#f59e0b', text: `بروزرسانی پیشرفت Quick Win — ${l.project_name}: ${l.status} (${l.progress_percent}٪)` }));
-            (decisions || []).forEach(d => activity.push({ ts: d.created_at, color: '#22c55e', text: `Quick Win «${d.selected_title}» برای ${d.project_name} انتخاب شد` }));
+            allCases.slice(-8).forEach(c => activity.push({
+                ts: c.proposed_at, color: '#3b82f6',
+                text: `ثبت پیشنهاد Quick Win جدید — ${c.project_name} (${c.organization})`
+            }));
+            updates.slice(-8).forEach(u => activity.push({ ts: u.created_at, color: '#f59e0b', text: `بروزرسانی پیشرفت Quick Win — ${projectNameByCaseId[u.case_id] || ''}: ${u.status} (${u.progress_percent}٪)` }));
+            decisions.forEach(d => activity.push({ ts: d.decided_at || d.proposed_at, color: '#22c55e', text: `Quick Win «${d.title}» برای ${d.project_name} انتخاب شد` }));
             activity.sort((a, b) => new Date(b.ts) - new Date(a.ts));
             document.getElementById('ovActivityFeed').innerHTML = activity.length ? activity.slice(0, 8).map(a => `
                 <div class="flex items-start gap-2 text-xs">
@@ -4316,9 +4391,7 @@
                 </div>`).join('') : '<p class="text-xs text-slate-400 text-center py-4">فعالیتی ثبت نشده است.</p>';
 
             // ---- Bottom metrics strip ----
-            const selectedCheckinByProject = {};
-            (decisions || []).forEach(d => { const rec = byProject[d.project_name]?.[d.selected_organization]; if (rec) selectedCheckinByProject[d.project_name] = rec; });
-            const sumSelected = (field) => Object.values(selectedCheckinByProject).reduce((a, r) => a + (Number(r[field]) || 0), 0);
+            const sumSelected = (field) => decisions.reduce((a, r) => a + (Number(r[field]) || 0), 0);
             const riskFollowUp = Object.values(byProject).reduce((total, orgs) => total + Object.values(orgs).reduce((t, c) =>
                 t + ((c.risks || []).filter(r => (r.level === 'بحرانی' || r.level === 'زیاد') && r.current_action).length), 0), 0);
 
