@@ -762,6 +762,10 @@
 
             <!-- OVERVIEW (landing dashboard for admin + managers, scoped by RLS) -->
             <div id="overviewView" class="hidden space-y-4">
+                <div class="bg-blue-950 rounded-2xl p-5 space-y-3">
+                    <p class="text-xs font-bold text-blue-200">۸ سؤال مدیرعامل — بدون نیاز به تحلیل هوش مصنوعی، مستقیم از داده‌ها</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3" id="ovExecCards"></div>
+                </div>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="ovStatCards"></div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
@@ -4466,6 +4470,54 @@
                 metricItem('trendingUp', '+' + toPersianDigits(sumSelected('impact_progress_increase')) + '٪', 'افزایش پیشرفت تجمعی'),
                 metricItem('shield', toPersianDigits(riskFollowUp) + ' مورد', 'ریسک‌های تحت پیگیری'),
                 metricItem('fileText', toPersianDigits((checkins || []).length) + ' گزارش', 'تعداد گزارش‌های ثبت‌شده'),
+            ].join('');
+
+            renderExecCards({ decisions, byProject, bottleneckRows, priorityTally, sumSelected });
+        }
+
+        // Redesign backlog (P1): the 8-question executive dashboard from the
+        // report (section M) — every answer computed directly from cases/
+        // check_ins, no AI call, so it's always instantly available.
+        function execQCard(q, a) {
+            return `<div class="bg-white/5 border border-white/10 rounded-xl p-3">
+                <p class="text-[11px] text-blue-300 font-bold mb-1">${esc(q)}</p>
+                <p class="text-sm text-white leading-snug">${a}</p>
+            </div>`;
+        }
+
+        function renderExecCards({ decisions, byProject, bottleneckRows, priorityTally, sumSelected }) {
+            const red = Object.keys(byProject).filter(p => computeProjectHealth(byProject[p]) === '🔴').length;
+            const activeDecisions = decisions.filter(d => d.status !== 'بسته‌شده');
+            const inExecution = decisions.filter(d => d.status === 'در حال اجرا').length;
+            const now = new Date();
+            const closedThisMonth = decisions.filter(d => d.closed_at
+                && new Date(d.closed_at).getFullYear() === now.getFullYear()
+                && new Date(d.closed_at).getMonth() === now.getMonth()).length;
+            const todayStart2 = new Date(); todayStart2.setHours(0, 0, 0, 0);
+            const overdueDecisions = activeDecisions.filter(d => new Date(d.execution_target_date || d.plan_target_date) < todayStart2);
+
+            const responsibleSet = new Set(activeDecisions.map(d => d.plan_responsible).filter(Boolean));
+            const responsibleWithOverdue = new Set(overdueDecisions.map(d => d.plan_responsible).filter(Boolean));
+
+            // "چه چیزی تکرار می‌شود؟" — a bottleneck area flagged in more than
+            // one distinct project, not just flagged more than once overall.
+            const areaProjects = {};
+            Object.entries(byProject).forEach(([projectName, orgs]) => {
+                const areasHere = new Set();
+                Object.values(orgs).forEach(c => { if (c.qw_bottleneck_area) areasHere.add(QW_AREA_FA[c.qw_bottleneck_area] || c.qw_bottleneck_area); });
+                areasHere.forEach(label => { (areaProjects[label] ??= new Set()).add(projectName); });
+            });
+            const repeated = Object.entries(areaProjects).filter(([, set]) => set.size > 1).sort((a, b) => b[1].size - a[1].size)[0];
+
+            document.getElementById('ovExecCards').innerHTML = [
+                execQCard('۱. چه مشکلی داریم؟', red ? `<b class="text-red-300">${toPersianDigits(red)}</b> پروژه با وضعیت بحرانی 🔴` : 'در حال حاضر پروژه بحرانی ثبت نشده'),
+                execQCard('۲. کجا داریم؟', bottleneckRows.length ? `حوزه <b>${esc(bottleneckRows[0][0])}</b> (${toPersianDigits(bottleneckRows[0][1])} گزارش)` : 'داده‌ای ثبت نشده'),
+                execQCard('۳. چقدر مهم است؟', `<b class="text-amber-300">${toPersianDigits(priorityTally['فوری – کمتر از ۷ روز'] || 0)}</b> مورد نیازمند تصمیم فوری مدیریت ارشد`),
+                execQCard('۴. مسئول کیست؟', `<b>${toPersianDigits(responsibleSet.size)}</b> نفر مسئول Case فعال${responsibleWithOverdue.size ? `، <b class="text-red-300">${toPersianDigits(responsibleWithOverdue.size)}</b> نفر با تأخیر` : ''}`),
+                execQCard('۵. چه اقدامی جاری است؟', `<b class="text-blue-300">${toPersianDigits(inExecution)}</b> Case در حال اجرا`),
+                execQCard('۶. نتیجه چه بوده؟', `<b class="text-emerald-300">${toPersianDigits(closedThisMonth)}</b> Case بسته‌شده این ماه`),
+                execQCard('۷. چقدر ارزش ساختیم؟', `<b class="text-emerald-300">${toPersianDigits(sumSelected('impact_delay_days', 'days_saved'))}</b> روز صرفه‌جویی، ${fmtRial(sumSelected('impact_cost_avoided', 'cost_avoided_rial'))}`),
+                execQCard('۸. چه چیزی تکرار می‌شود؟', repeated ? `«${esc(repeated[0])}» در <b>${toPersianDigits(repeated[1].size)}</b> پروژه` : 'الگوی تکراری بین پروژه‌ها یافت نشد'),
             ].join('');
         }
 
