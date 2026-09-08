@@ -441,6 +441,24 @@
                         <div><label class="block text-xs font-semibold mb-1">اگر فقط یک موضوع را می‌توانستید در این پروژه تغییر دهید، چه چیزی را تغییر می‌دادید؟ *</label><textarea id="ci_one_thing" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-red-500"></textarea></div>
                     </div>
 
+                    <div class="bg-emerald-50 border border-emerald-200 p-6 rounded-2xl shadow-sm space-y-3">
+                        <h3 class="text-sm font-bold border-r-4 border-emerald-600 pr-3">🎯 تبدیل به Quick Win (اختیاری)</h3>
+                        <p class="text-xs text-slate-600">اگر مسئله‌ای که بالا توصیف کردید یک راه‌حل سریع و مشخص دارد، همین‌جا به‌عنوان پیشنهاد Quick Win هم ثبتش کنید — نیازی به رفتن به فرم جداگانه نیست.</p>
+                        <label class="inline-flex items-center gap-2 text-xs font-semibold cursor-pointer">
+                            <input type="checkbox" id="ci_convert_to_qw" class="w-4 h-4">
+                            این مسئله را به یک پیشنهاد Quick Win هم تبدیل کن
+                        </label>
+                        <div id="ci_qw_quick_fields" class="hidden space-y-3 pt-2 border-t">
+                            <div><label class="block text-xs font-semibold mb-1">عنوان Quick Win *</label><input type="text" id="ci_qwq_title" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">راه‌حل پیشنهادی *</label><textarea id="ci_qwq_action" rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></textarea></div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div><label class="block text-xs font-semibold mb-1">مسئول اجرا *</label><select id="ci_qwq_responsible" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500 bg-white"><option value="">-- ابتدا پروژه را انتخاب کنید --</option></select></div>
+                                <div><label class="block text-xs font-semibold mb-1">سررسید (شمسی) *</label><input type="text" id="ci_qwq_due" readonly dir="ltr" placeholder="۱۴۰۵/۰۶/۳۰" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500 text-center cursor-pointer bg-white"></div>
+                            </div>
+                            <p class="text-[11px] text-slate-500">برای ثبت جزئیات کامل‌تر (اثر تخمینی، KPI، حمایت لازم و ...)، بعداً از صفحه «پیشنهاد Quick Win» همین پیشنهاد را تکمیل کنید.</p>
+                        </div>
+                    </div>
+
                     <button type="submit" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-3 rounded-xl transition shadow">ثبت اطلاعات تکمیلی</button>
                 </form>
             </div>
@@ -1944,6 +1962,8 @@
             document.getElementById('checkinForm').reset();
             document.getElementById('ci_hse_note_wrap').classList.add('hidden');
             document.getElementById('ci_official_progress_hint').textContent = '';
+            document.getElementById('ci_qw_quick_fields').classList.add('hidden');
+            await refreshResponsibleOptions('ci_qwq_responsible', project_name);
             await applyWorkFrontsVisibility(project_name);
             await refreshOfficialProgress(project_name);
 
@@ -2056,6 +2076,17 @@
 
         document.getElementById('ci_hse_incident').addEventListener('change', (e) => {
             document.getElementById('ci_hse_note_wrap').classList.toggle('hidden', e.target.value !== 'true');
+        });
+
+        // Redesign backlog (P2): "تبدیل به Quick Win" — the merge of اطلاعات
+        // تکمیلی and پیشنهاد Quick Win into one flow. Rather than duplicating
+        // the full ~30-field proposal form inline, this captures just the 5
+        // fields the report's Level-1 flow calls essential; anyone who wants
+        // the fuller field set (impact estimate, KPI, support ask, ...) still
+        // has the standalone «پیشنهاد Quick Win» page to fill in afterward —
+        // both write to the same cases table, so nothing is lost either way.
+        document.getElementById('ci_convert_to_qw').addEventListener('change', (e) => {
+            document.getElementById('ci_qw_quick_fields').classList.toggle('hidden', !e.target.checked);
         });
 
         function updateContractorRequired() {
@@ -2241,6 +2272,22 @@
             const forecastIso = jalaliInputToIso(document.getElementById('ci_forecast_date').value);
             if (!forecastIso) { alert('تاریخ پیش‌بینی تکمیل معتبر نیست. لطفاً به‌صورت ۱۴۰۵/۰۶/۰۸ وارد کنید.'); return; }
 
+            // Validated up front, before anything is inserted, so a
+            // half-filled "تبدیل به Quick Win" section never leaves the
+            // periodic report saved but the Case silently missing.
+            const convertToQw = document.getElementById('ci_convert_to_qw').checked;
+            let qwDueIso = null;
+            if (convertToQw) {
+                const qwTitle = document.getElementById('ci_qwq_title').value.trim();
+                const qwAction = document.getElementById('ci_qwq_action').value.trim();
+                const qwResponsible = document.getElementById('ci_qwq_responsible').value;
+                qwDueIso = jalaliInputToIso(document.getElementById('ci_qwq_due').value);
+                if (!qwTitle || !qwAction || !qwResponsible || !qwDueIso) {
+                    alert('برای تبدیل به Quick Win، عنوان، راه‌حل، مسئول و سررسید همگی الزامی‌اند.');
+                    return;
+                }
+            }
+
             const p = effectiveProfile();
 
             const row = {
@@ -2279,9 +2326,33 @@
 
             const { error } = await _supabase.from('check_ins').insert([row]);
             if (error) { alert('خطا در ثبت: ' + error.message); return; }
-            alert('اطلاعات تکمیلی با موفقیت ثبت شد!');
+
+            let qwError = null;
+            if (convertToQw) {
+                const [respName] = document.getElementById('ci_qwq_responsible').value.split('|||');
+                const qwRow = {
+                    user_id: currentUser.id,
+                    project_name: p.project_name,
+                    organization: p.organization,
+                    title: document.getElementById('ci_qwq_title').value.trim(),
+                    action_details: document.getElementById('ci_qwq_action').value.trim(),
+                    plan_responsible: respName || document.getElementById('ci_qwq_responsible').value,
+                    plan_target_date: qwDueIso,
+                };
+                const { error: e2 } = await _supabase.from('cases').insert([qwRow]);
+                qwError = e2;
+            }
+
+            alert(
+                qwError
+                    ? 'اطلاعات تکمیلی ثبت شد، اما خطا در ثبت پیشنهاد Quick Win: ' + qwError.message
+                    : convertToQw
+                        ? 'اطلاعات تکمیلی و پیشنهاد Quick Win هر دو با موفقیت ثبت شدند!'
+                        : 'اطلاعات تکمیلی با موفقیت ثبت شد!'
+            );
             e.target.reset();
             document.getElementById('ci_hse_note_wrap').classList.add('hidden');
+            document.getElementById('ci_qw_quick_fields').classList.add('hidden');
         });
 
         // --------------------------------------------------
@@ -4579,7 +4650,7 @@
         // is now picked, never typed. These inputs are static (always in the
         // DOM from page load, only their .value is read/written elsewhere),
         // so this needs to run once, not on every render.
-        ['ci_forecast_date', 'ci_plan_start_date', 'ci_plan_target_date', 'cr_start_date', 'cr_end_date', 'cr_milestone_date']
+        ['ci_forecast_date', 'ci_plan_start_date', 'ci_plan_target_date', 'cr_start_date', 'cr_end_date', 'cr_milestone_date', 'ci_qwq_due']
             .forEach(id => attachJalaliDatePicker(document.getElementById(id)));
 
         initApp();
