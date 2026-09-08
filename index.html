@@ -3973,6 +3973,23 @@
                         <input class="note-input border rounded-lg p-2 md:col-span-2" type="text" placeholder="توضیح بروزرسانی">
                     </div>
                     <button type="button" class="update-btn no-print w-full bg-amber-600 hover:bg-amber-500 text-white rounded-lg py-2 font-bold text-xs">ثبت بروزرسانی پیشرفت</button>` : ''}
+                    ${isAdmin && isDone ? `
+                    <div class="no-print pt-3 border-t space-y-2 bg-emerald-50 -mx-5 -mb-5 px-5 pb-5 rounded-b-2xl">
+                        <p class="text-xs font-bold text-emerald-800">🏁 نتیجه نهایی و ارزش محقق‌شده</p>
+                        <textarea class="actual-result-input w-full border rounded-lg p-2 text-xs" rows="2" placeholder="نتیجه واقعی این Quick Win چه بود؟">${esc(dec.actual_result || '')}</textarea>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] text-slate-500 mb-0.5">صرفه‌جویی زمانی واقعی (روز)</label>
+                                <input class="actual-days-input w-full border rounded-lg p-2 text-xs" type="number" step="any" value="${dec.actual_value_json?.days_saved ?? dec.impact_delay_days ?? ''}">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-slate-500 mb-0.5">صرفه‌جویی مالی واقعی (ریال)</label>
+                                <input class="actual-cost-input w-full border rounded-lg p-2 text-xs" type="number" step="any" value="${dec.actual_value_json?.cost_avoided_rial ?? dec.impact_cost_avoided ?? ''}">
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-slate-500">اعداد بالا با اثر تخمینی ثبت‌شده هنگام پیشنهاد پر شده‌اند — در صورت نیاز اصلاح کنید.</p>
+                        <button type="button" class="save-actual-value-btn w-full bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg py-1.5 font-bold text-xs">ثبت نتیجه نهایی</button>
+                    </div>` : ''}
                 </div>`;
 
                 const cardEl = wrap.firstElementChild;
@@ -3999,6 +4016,17 @@
                     cardEl.querySelector('.update-btn').addEventListener('click', () => {
                         addProgressUpdate(dec.id, statusSel.value, percentInput.value, noteInput.value);
                     });
+                    const saveActualBtn = cardEl.querySelector('.save-actual-value-btn');
+                    if (saveActualBtn) {
+                        saveActualBtn.addEventListener('click', () => {
+                            saveActualValue(
+                                dec.id,
+                                cardEl.querySelector('.actual-result-input').value.trim(),
+                                cardEl.querySelector('.actual-days-input').value,
+                                cardEl.querySelector('.actual-cost-input').value,
+                            );
+                        });
+                    }
                 }
                 container.appendChild(cardEl);
             });
@@ -4021,6 +4049,24 @@
                 ? { status: 'بسته‌شده', closed_at: new Date().toISOString() }
                 : { status: 'در حال اجرا', closed_at: null };
             await _supabase.from('cases').update(casePatch).eq('id', caseId).in('status', ['انتخاب‌شده', 'در حال اجرا', 'بسته‌شده']);
+            loadTrackingData();
+        }
+
+        // Redesign backlog (P1): the report's flagged gap — the system
+        // captures an *estimated* impact at proposal time but never records
+        // what actually happened once a Quick Win closes. Fields default to
+        // the original estimate (see the form above) so confirming with no
+        // change is a one-click action, not a re-entry chore.
+        async function saveActualValue(caseId, actualResult, daysSaved, costAvoided) {
+            const { error } = await _supabase.from('cases').update({
+                actual_result: actualResult || null,
+                actual_value_json: {
+                    days_saved: daysSaved !== '' ? Number(daysSaved) : null,
+                    cost_avoided_rial: costAvoided !== '' ? Number(costAvoided) : null,
+                },
+            }).eq('id', caseId);
+            if (error) { alert('خطا در ثبت نتیجه نهایی: ' + error.message); return; }
+            alert('نتیجه نهایی ثبت شد.');
             loadTrackingData();
         }
 
@@ -4086,11 +4132,16 @@
             document.getElementById('execClosed').textContent = `Closed: ${toPersianDigits(closed)}`;
             document.getElementById('execInProgress').textContent = `In Progress: ${toPersianDigits(inProgress)}`;
 
-            const sum = (field) => decisions.reduce((a, r) => a + (Number(r[field]) || 0), 0);
+            // Prefer the actual, confirmed-at-close value over the original
+            // estimate once a Case has one (redesign backlog: "ارزش محقق‌شده").
+            const sum = (field, actualKey) => decisions.reduce((a, r) => {
+                const actual = actualKey ? r.actual_value_json?.[actualKey] : null;
+                return a + (Number(actual ?? r[field]) || 0);
+            }, 0);
 
             document.getElementById('execKpiRow').innerHTML =
-                kpiCard('Time Saved', `${toPersianDigits(sum('impact_delay_days'))} روز`, 'text-blue-900') +
-                kpiCard('Cost Avoided', fmtRial(sum('impact_cost_avoided')), 'text-emerald-700') +
+                kpiCard('Time Saved', `${toPersianDigits(sum('impact_delay_days', 'days_saved'))} روز`, 'text-blue-900') +
+                kpiCard('Cost Avoided', fmtRial(sum('impact_cost_avoided', 'cost_avoided_rial')), 'text-emerald-700') +
                 kpiCard('Risks Reduced', toPersianDigits(identified), 'text-amber-700') +
                 kpiCard('Issues Closed', toPersianDigits(sum('impact_issues_closed')), 'text-blue-900') +
                 kpiCard('Decisions Made', toPersianDigits(identified), 'text-slate-700');
@@ -4104,10 +4155,13 @@
                     const periodicRec = byProject[dec.project_name]?.[dec.organization] || {};
                     const percent = latestProgress(dec.id)?.progress_percent || 0;
                     const health = computeProjectHealth(byProject[dec.project_name] || {});
+                    const daysVal = dec.actual_value_json?.days_saved ?? dec.impact_delay_days;
+                    const costVal = dec.actual_value_json?.cost_avoided_rial ?? dec.impact_cost_avoided;
                     const impactParts = [];
-                    if (dec.impact_delay_days) impactParts.push(`${toPersianDigits(dec.impact_delay_days)} روز`);
+                    if (daysVal) impactParts.push(`${toPersianDigits(daysVal)} روز`);
                     if (dec.impact_progress_increase) impactParts.push(`${toPersianDigits(dec.impact_progress_increase)}٪`);
-                    if (dec.impact_cost_avoided) impactParts.push(fmtRial(dec.impact_cost_avoided));
+                    if (costVal) impactParts.push(fmtRial(costVal));
+                    if (dec.actual_result) impactParts.push(`نتیجه: ${dec.actual_result}`);
 
                     const wrap = document.createElement('div');
                     wrap.innerHTML = `<div class="print-card bg-white rounded-2xl shadow-sm border p-6 space-y-3">
@@ -4391,7 +4445,12 @@
                 </div>`).join('') : '<p class="text-xs text-slate-400 text-center py-4">فعالیتی ثبت نشده است.</p>';
 
             // ---- Bottom metrics strip ----
-            const sumSelected = (field) => decisions.reduce((a, r) => a + (Number(r[field]) || 0), 0);
+            // Prefer the actual, confirmed-at-close value over the original
+            // estimate once a Case has one (redesign backlog: "ارزش محقق‌شده").
+            const sumSelected = (field, actualKey) => decisions.reduce((a, r) => {
+                const actual = r.actual_value_json?.[actualKey];
+                return a + (Number(actual ?? r[field]) || 0);
+            }, 0);
             const riskFollowUp = Object.values(byProject).reduce((total, orgs) => total + Object.values(orgs).reduce((t, c) =>
                 t + ((c.risks || []).filter(r => (r.level === 'بحرانی' || r.level === 'زیاد') && r.current_action).length), 0), 0);
 
@@ -4402,8 +4461,8 @@
                 </div>`;
             }
             document.getElementById('ovMetricsStrip').innerHTML = [
-                metricItem('clock', toPersianDigits(sumSelected('impact_delay_days')) + ' روز', 'جمع صرفه‌جویی زمانی'),
-                metricItem('gauge', fmtRial(sumSelected('impact_cost_avoided')), 'جمع صرفه‌جویی مالی'),
+                metricItem('clock', toPersianDigits(sumSelected('impact_delay_days', 'days_saved')) + ' روز', 'جمع صرفه‌جویی زمانی'),
+                metricItem('gauge', fmtRial(sumSelected('impact_cost_avoided', 'cost_avoided_rial')), 'جمع صرفه‌جویی مالی'),
                 metricItem('trendingUp', '+' + toPersianDigits(sumSelected('impact_progress_increase')) + '٪', 'افزایش پیشرفت تجمعی'),
                 metricItem('shield', toPersianDigits(riskFollowUp) + ' مورد', 'ریسک‌های تحت پیگیری'),
                 metricItem('fileText', toPersianDigits((checkins || []).length) + ' گزارش', 'تعداد گزارش‌های ثبت‌شده'),
