@@ -2,13 +2,18 @@
 //
 // Not called from the app itself — this is a system job meant to be
 // triggered once a day by a Supabase Cron schedule (pg_cron + pg_net,
-// see supabase/setup_overdue_task_cron.sql). It finds every
-// quick_win_tasks row that's still open past its due_date and hasn't
+// see supabase/setup_overdue_task_cron.sql). It finds every case_updates
+// row of kind 'task' that's still open past its due_date and hasn't
 // been notified about yet, and emails via Gmail SMTP whoever still owes
 // an action: the responsible person (cc admins) while the task hasn't
 // been submitted yet, or admins directly once it's «در انتظار تایید» —
 // their final approval is the only thing left — then stamps
 // overdue_notified_at so the same task is only ever emailed about once.
+//
+// case_updates itself doesn't carry project_name (only case_id) — the
+// project name is pulled in via PostgREST's embedded-resource syntax
+// (`cases(project_name)`), which works because case_id is a real foreign
+// key to cases(id).
 //
 // There is no logged-in caller here (it's a scheduled job, not a user
 // action), so — unlike analyze-project — using the service-role key is
@@ -118,7 +123,7 @@ function buildEmail(task: any): { subject: string; html: string } {
     0,
     Math.floor((Date.now() - new Date(task.due_date).getTime()) / 86400000),
   );
-  const pendingApproval = task.status === "در انتظار تایید";
+  const pendingApproval = task.task_status === "در انتظار تایید";
   const subject = pendingApproval
     ? `⚠️ در انتظار تایید نهایی (معوق): ${task.title} — پروژه ${task.project_name}`
     : `⚠️ اقدام معوق: ${task.title} — پروژه ${task.project_name}`;
@@ -151,17 +156,20 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const { data: overdueTasks, error: tasksErr } = await supabase
-      .from("quick_win_tasks")
-      .select("id, project_name, title, responsible_name, responsible_email, due_date, status")
+    const { data: rawOverdueTasks, error: tasksErr } = await supabase
+      .from("case_updates")
+      .select("id, title, responsible_name, responsible_email, due_date, task_status, cases(project_name)")
+      .eq("kind", "task")
       .lt("due_date", new Date().toISOString().slice(0, 10))
-      .neq("status", "انجام‌شده")
+      .neq("task_status", "انجام‌شده")
       .is("overdue_notified_at", null);
 
     if (tasksErr) return jsonResponse({ error: tasksErr.message }, 500);
-    if (!overdueTasks || overdueTasks.length === 0) {
+    if (!rawOverdueTasks || rawOverdueTasks.length === 0) {
       return jsonResponse({ notified: 0 });
     }
+    // deno-lint-ignore no-explicit-any
+    const overdueTasks = rawOverdueTasks.map((t: any) => ({ ...t, project_name: t.cases?.project_name }));
 
     const { data: admins } = await supabase.from("app_users").select("email").eq("role", "admin");
     // deno-lint-ignore no-explicit-any
@@ -182,7 +190,7 @@ Deno.serve(async (req) => {
       // Once the responsible person has already submitted the task for
       // approval, the ball is in the admin's court — address the reminder
       // to admins instead of nagging someone who already did their part.
-      const pendingApproval = task.status === "در انتظار تایید";
+      const pendingApproval = task.task_status === "در انتظار تایید";
       const toEmails = pendingApproval ? adminEmails : [task.responsible_email];
       const ccEmails = pendingApproval ? [] : adminEmails;
       if (toEmails.length === 0) continue;
@@ -201,7 +209,7 @@ Deno.serve(async (req) => {
       }
 
       await supabase
-        .from("quick_win_tasks")
+        .from("case_updates")
         .update({ overdue_notified_at: new Date().toISOString() })
         .eq("id", task.id);
       notified++;
