@@ -389,6 +389,7 @@
                             <div><label class="block text-xs font-semibold mb-1">% پیشرفت فیزیکی (واقعی) *</label><input type="number" step="any" id="ci_physical_progress" min="0" max="100" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                             <div><label class="block text-xs font-semibold mb-1">تاریخ پیش‌بینی فعلی تکمیل پروژه (شمسی) *</label><input type="text" id="ci_forecast_date" required dir="ltr" placeholder="۱۴۰۵/۰۶/۰۸" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
                         </div>
+                        <p id="ci_official_progress_hint" class="text-xs font-bold"></p>
 
                         <div class="max-w-xs">
                             <label class="block text-xs font-semibold mb-1">رویداد HSE در این دوره؟</label>
@@ -620,6 +621,7 @@
                             <div><label class="block text-xs font-semibold mb-1">پیشرفت تأمین (٪)</label><input type="number" step="any" id="cr_progress_proc" min="0" max="100" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
                             <div><label class="block text-xs font-semibold mb-1">پیشرفت اجرا (٪)</label><input type="number" step="any" id="cr_progress_constr" min="0" max="100" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
                         </div>
+                        <p id="cr_deviation_live" class="text-xs font-bold"></p>
                         <p class="text-xs text-slate-500">انحراف پیشرفت (واقعی − برنامه‌ای) و درصد مدت سپری‌شده از قرارداد، به‌صورت خودکار محاسبه و در گزارش‌ها نمایش داده می‌شود.</p>
 
                         <h4 class="text-xs font-bold text-slate-600 pt-2 border-t">مهم‌ترین Milestone پیش‌رو</h4>
@@ -1812,6 +1814,7 @@
 
             document.getElementById('ci_planned_progress').value = row.planned_progress ?? '';
             document.getElementById('ci_physical_progress').value = row.physical_progress ?? '';
+            updateOfficialProgressHint();
             document.getElementById('ci_forecast_date').value = formatJalali(row.forecast_completion_date);
             document.getElementById('ci_hse_incident').value = row.hse_incident ? 'true' : 'false';
             document.getElementById('ci_hse_note_wrap').classList.toggle('hidden', !row.hse_incident);
@@ -1917,6 +1920,7 @@
             updateElapsedFromStart();
             document.getElementById('cr_progress_planned').value = row.progress_planned ?? '';
             document.getElementById('cr_progress_physical').value = row.progress_physical ?? '';
+            updateProgressDeviationLive();
             document.getElementById('cr_progress_eng').value = row.progress_engineering ?? '';
             document.getElementById('cr_progress_proc').value = row.progress_procurement ?? '';
             document.getElementById('cr_progress_constr').value = row.progress_construction ?? '';
@@ -1939,7 +1943,9 @@
 
             document.getElementById('checkinForm').reset();
             document.getElementById('ci_hse_note_wrap').classList.add('hidden');
+            document.getElementById('ci_official_progress_hint').textContent = '';
             await applyWorkFrontsVisibility(project_name);
+            await refreshOfficialProgress(project_name);
 
             const { data } = await _supabase.from('check_ins').select('*')
                 .eq('project_name', project_name).eq('organization', organization)
@@ -1958,6 +1964,32 @@
             document.getElementById('ci_work_fronts_hidden_note').classList.toggle('hidden', isExecution);
         }
 
+        // Redesign backlog (P1): "مغایرت پیشرفت خودگزارش‌شده در برابر رسمی" —
+        // this comparison used to only ever surface inside an AI analysis run;
+        // showing it right where the self-report is typed makes it visible to
+        // every respondent, not just whoever later asks for AI analysis.
+        let officialPhysicalProgress = null;
+        async function refreshOfficialProgress(projectName) {
+            const { data } = await _supabase.from('client_reports').select('progress_physical')
+                .eq('project_name', projectName).order('created_at', { ascending: false }).limit(1).maybeSingle();
+            officialPhysicalProgress = data?.progress_physical ?? null;
+            updateOfficialProgressHint();
+        }
+        function updateOfficialProgressHint() {
+            const el = document.getElementById('ci_official_progress_hint');
+            const selfReported = document.getElementById('ci_physical_progress').value;
+            if (officialPhysicalProgress == null || selfReported === '') { el.textContent = ''; return; }
+            const diff = Number(selfReported) - Number(officialPhysicalProgress);
+            if (Math.abs(diff) < 1) {
+                el.className = 'text-xs font-bold text-emerald-600';
+                el.textContent = `مطابق پیشرفت رسمی ثبت‌شده در اطلاعات پایه پروژه (${toPersianDigits(String(officialPhysicalProgress))}٪)`;
+            } else {
+                el.className = 'text-xs font-bold text-amber-600';
+                el.textContent = `مغایرت با پیشرفت رسمی: ${toPersianDigits(String(officialPhysicalProgress))}٪ در اطلاعات پایه پروژه در برابر ${toPersianDigits(String(selfReported))}٪ ثبت‌شده اینجا (${diff > 0 ? '+' : ''}${toPersianDigits(String(diff))}٪)`;
+            }
+        }
+        document.getElementById('ci_physical_progress').addEventListener('input', updateOfficialProgressHint);
+
         async function openClientReportPreview(project_name) {
             if (!project_name) { alert('لطفاً ابتدا پروژه را انتخاب کنید.'); return; }
             pickedProjectContext = { project_name, organization: 'کارفرما' };
@@ -1966,6 +1998,8 @@
             document.getElementById('clientReportForm').reset();
             document.getElementById('cr_contract_type_other').classList.add('hidden');
             updateContractorRequired();
+            document.getElementById('cr_deviation_live').textContent = '';
+            document.getElementById('cr_elapsed').value = '';
             await Promise.all([
                 refreshResponsibleOptions('cr_client_pm', project_name, 'کارفرما'),
                 refreshResponsibleOptions('cr_contractor_pm', project_name, 'پیمانکار'),
@@ -2041,6 +2075,23 @@
             document.getElementById('cr_elapsed').value = iso ? monthsBetween(iso) : '';
         }
         document.getElementById('cr_start_date').addEventListener('input', updateElapsedFromStart);
+
+        // Redesign backlog (P1): "انحراف پیشرفت... زنده در فرم" — this used
+        // to only ever be computed after the fact, in reports; showing it live
+        // while PMO is still typing catches a scheduling problem the moment
+        // it's entered, not weeks later in an aggregate view.
+        function updateProgressDeviationLive() {
+            const el = document.getElementById('cr_deviation_live');
+            const planned = document.getElementById('cr_progress_planned').value;
+            const physical = document.getElementById('cr_progress_physical').value;
+            if (planned === '' || physical === '') { el.textContent = ''; return; }
+            const deviation = Number(physical) - Number(planned);
+            const cls = deviation < -5 ? 'text-red-600' : deviation < 0 ? 'text-amber-600' : 'text-emerald-600';
+            el.className = 'text-xs font-bold ' + cls;
+            el.textContent = `انحراف پیشرفت: ${deviation > 0 ? '+' : ''}${toPersianDigits(String(deviation))}٪ ${deviation < -5 ? '(عقب از برنامه)' : deviation < 0 ? '(کمی عقب از برنامه)' : '(مطابق یا جلوتر از برنامه)'}`;
+        }
+        document.getElementById('cr_progress_planned').addEventListener('input', updateProgressDeviationLive);
+        document.getElementById('cr_progress_physical').addEventListener('input', updateProgressDeviationLive);
 
         // ---- Dynamic, repeated sub-sections of the check-in form ----
         function statusRowHtml(key, label, fieldPlaceholder) {
