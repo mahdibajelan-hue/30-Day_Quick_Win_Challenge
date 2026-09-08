@@ -187,6 +187,13 @@
             #trackingView h1, #trackingView h2, #trackingView h3, #trackingView p, #trackingView span, #trackingView td, #trackingView th, #trackingView b,
             #projectsReportModal h1, #projectsReportModal h2, #projectsReportModal h3, #projectsReportModal p, #projectsReportModal span, #projectsReportModal td, #projectsReportModal th, #projectsReportModal b { color: #111 !important; }
             .print-card { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: avoid; }
+            /* The modal's own flex-centering and 90vh scroll box only make
+               sense on screen — on paper they'd clip the table to one
+               screen-height instead of flowing it across pages. */
+            #projectsReportModal, #projectsReportModal > div { display: block !important; max-height: none !important; overflow: visible !important; }
+            #projectsReportModal table { font-size: 8.5px; }
+            #projectsReportModal th, #projectsReportModal td { padding: 3px 4px !important; }
+            #projectsReportModal tr { break-inside: avoid; }
         }
     </style>
 </head>
@@ -619,82 +626,78 @@
                         <button id="cr_mgr_load_btn" type="button" class="bg-blue-900 hover:bg-blue-800 text-white text-xs px-4 rounded-xl font-bold">بارگذاری فرم</button>
                     </div>
                 </div>
-                <form id="clientReportForm" class="space-y-6">
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                <form id="clientReportForm" class="space-y-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-3">
                         <div class="flex items-center gap-2.5">
                             <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-xs font-extrabold text-[#ffffff]" style="background: linear-gradient(135deg, #1e3a8a, #4c1d95);">۱</span>
                             <h3 class="text-sm font-bold text-slate-800">اطلاعات پایه پروژه</h3>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div><label class="block text-xs font-semibold mb-1">نام طرح *</label><input type="text" id="cr_plan_name" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">شماره قرارداد *</label><input type="text" id="cr_contract_number" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            <div><label class="block text-xs font-semibold mb-1">نام طرح *</label><input type="text" id="cr_plan_name" required class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">شماره قرارداد *</label><input type="text" id="cr_contract_number" required class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                             <div>
                                 <label class="block text-xs font-semibold mb-1">نوع قرارداد *</label>
-                                <select id="cr_contract_type" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
+                                <select id="cr_contract_type" required class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900">
                                     <option value="EPC">EPC</option><option value="E">E</option><option value="PC">PC</option><option value="C">C</option><option value="سایر">سایر</option>
                                 </select>
                             </div>
                         </div>
-                        <input type="text" id="cr_contract_type_other" placeholder="توضیح «سایر» نوع قرارداد" class="hidden w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div><label class="block text-xs font-semibold mb-1">پیمانکار <span id="cr_contractor_required_mark">*</span></label><input type="text" id="cr_contractor" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">مشاور *</label><input type="text" id="cr_consultant" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">مدیر پروژه کارفرما *</label><select id="cr_client_pm" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 bg-white"><option value="">-- ابتدا پروژه را انتخاب کنید --</option></select></div>
-                            <div><label class="block text-xs font-semibold mb-1">مدیر پروژه پیمانکار</label><select id="cr_contractor_pm" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 bg-white"><option value="">-- ابتدا پروژه را انتخاب کنید --</option></select></div>
-                            <div><label class="block text-xs font-semibold mb-1">مدیر پروژه مشاور</label><select id="cr_consultant_pm" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 bg-white"><option value="">-- ابتدا پروژه را انتخاب کنید --</option></select></div>
+                        <input type="text" id="cr_contract_type_other" placeholder="توضیح «سایر» نوع قرارداد" class="hidden w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                            <div><label class="block text-xs font-semibold mb-1">پیمانکار <span id="cr_contractor_required_mark">*</span></label><input type="text" id="cr_contractor" required class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">مشاور *</label><input type="text" id="cr_consultant" required class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">مدیر پروژه کارفرما *</label><select id="cr_client_pm" required class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900 bg-white"><option value="">-- ابتدا پروژه را انتخاب کنید --</option></select></div>
+                            <div><label class="block text-xs font-semibold mb-1">مدیر پروژه پیمانکار</label><select id="cr_contractor_pm" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900 bg-white"><option value="">-- ابتدا پروژه را انتخاب کنید --</option></select></div>
+                            <div><label class="block text-xs font-semibold mb-1">مدیر پروژه مشاور</label><select id="cr_consultant_pm" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900 bg-white"><option value="">-- ابتدا پروژه را انتخاب کنید --</option></select></div>
                         </div>
-                        <p class="text-xs font-semibold text-slate-600">مبلغ اولیه قرارداد — بخش ریالی به میلیارد ریال، بخش ارزی به میلیون یورو</p>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label class="block text-xs font-semibold mb-1">مبلغ اولیه — ریالی (میلیارد ریال)</label><input type="number" step="any" min="0" id="cr_amount_initial_rial" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">مبلغ اولیه — ارزی (میلیون یورو)</label><input type="number" step="any" min="0" id="cr_amount_initial_eur" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                        <p class="text-[11px] text-slate-500">مبالغ قرارداد — ریالی به میلیارد ریال، ارزی به میلیون یورو</p>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div><label class="block text-xs font-semibold mb-1">مبلغ اولیه (ریالی)</label><input type="number" step="any" min="0" id="cr_amount_initial_rial" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">مبلغ اولیه (ارزی)</label><input type="number" step="any" min="0" id="cr_amount_initial_eur" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">میزان جذب (ریالی)</label><input type="number" step="any" min="0" id="cr_amount_current_rial" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">میزان جذب (ارزی)</label><input type="number" step="any" min="0" id="cr_amount_current_eur" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                         </div>
-                        <p class="text-xs font-semibold text-slate-600 pt-1">میزان جذب قرارداد — بخش ریالی به میلیارد ریال، بخش ارزی به میلیون یورو</p>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label class="block text-xs font-semibold mb-1">میزان جذب — ریالی (میلیارد ریال)</label><input type="number" step="any" min="0" id="cr_amount_current_rial" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">میزان جذب — ارزی (میلیون یورو)</label><input type="number" step="any" min="0" id="cr_amount_current_eur" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label class="block text-xs font-semibold mb-1">تاریخ شروع قرارداد (شمسی) *</label><input type="text" id="cr_start_date" required dir="ltr" placeholder="۱۴۰۴/۰۱/۰۱" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
-                            <div><label class="block text-xs font-semibold mb-1">تاریخ پایان قراردادی (شمسی) *</label><input type="text" id="cr_end_date" required dir="ltr" placeholder="۱۴۰۶/۰۱/۰۱" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label class="block text-xs font-semibold mb-1">مدت قرارداد (ماه) *</label><input type="number" step="any" id="cr_duration" required min="0" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">مدت سپری‌شده (ماه)</label><input type="number" step="any" id="cr_elapsed" readonly title="به‌صورت خودکار از تاریخ شروع قرارداد محاسبه می‌شود" class="w-full p-2.5 border rounded-xl text-sm outline-none bg-slate-50 text-slate-500"></div>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div><label class="block text-xs font-semibold mb-1">تاریخ شروع قرارداد *</label><input type="text" id="cr_start_date" required dir="ltr" placeholder="۱۴۰۴/۰۱/۰۱" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
+                            <div><label class="block text-xs font-semibold mb-1">تاریخ پایان قراردادی *</label><input type="text" id="cr_end_date" required dir="ltr" placeholder="۱۴۰۶/۰۱/۰۱" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
+                            <div><label class="block text-xs font-semibold mb-1">مدت قرارداد (ماه) *</label><input type="number" step="any" id="cr_duration" required min="0" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">مدت سپری‌شده (ماه)</label><input type="number" step="any" id="cr_elapsed" readonly title="به‌صورت خودکار از تاریخ شروع قرارداد محاسبه می‌شود" class="w-full p-2 border rounded-lg text-sm outline-none bg-slate-50 text-slate-500"></div>
                         </div>
                     </div>
 
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-3">
                         <div class="flex items-center gap-2.5">
                             <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-xs font-extrabold text-[#ffffff]" style="background: linear-gradient(135deg, #f59e0b, #db2777);">۲</span>
                             <h3 class="text-sm font-bold text-slate-800">وضعیت پیشرفت و زمان‌بندی</h3>
                         </div>
-                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-                            <div><label class="block text-xs font-semibold mb-1">پیشرفت برنامه‌ای (٪) *</label><input type="number" step="any" id="cr_progress_planned" required min="0" max="100" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
-                            <div><label class="block text-xs font-semibold mb-1">پیشرفت واقعی (٪) *</label><input type="number" step="any" id="cr_progress_physical" required min="0" max="100" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
-                            <div><label class="block text-xs font-semibold mb-1">پیشرفت مهندسی (٪)</label><input type="number" step="any" id="cr_progress_eng" min="0" max="100" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
-                            <div><label class="block text-xs font-semibold mb-1">پیشرفت تأمین (٪)</label><input type="number" step="any" id="cr_progress_proc" min="0" max="100" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
-                            <div><label class="block text-xs font-semibold mb-1">پیشرفت اجرا (٪)</label><input type="number" step="any" id="cr_progress_constr" min="0" max="100" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                            <div><label class="block text-xs font-semibold mb-1">پیشرفت برنامه‌ای (٪) *</label><input type="number" step="any" id="cr_progress_planned" required min="0" max="100" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">پیشرفت واقعی (٪) *</label><input type="number" step="any" id="cr_progress_physical" required min="0" max="100" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">پیشرفت مهندسی (٪)</label><input type="number" step="any" id="cr_progress_eng" min="0" max="100" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">پیشرفت تأمین (٪)</label><input type="number" step="any" id="cr_progress_proc" min="0" max="100" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">پیشرفت اجرا (٪)</label><input type="number" step="any" id="cr_progress_constr" min="0" max="100" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
                         </div>
-                        <p id="cr_deviation_live" class="text-xs font-bold"></p>
-                        <p class="text-xs text-slate-500">انحراف پیشرفت (واقعی − برنامه‌ای) و درصد مدت سپری‌شده از قرارداد، به‌صورت خودکار محاسبه و در گزارش‌ها نمایش داده می‌شود.</p>
-
-                        <h4 class="text-xs font-bold text-slate-600 pt-2 border-t">مهم‌ترین Milestone پیش‌رو</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label class="block text-xs font-semibold mb-1">نام Milestone *</label><input type="text" id="cr_milestone_name" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
-                            <div><label class="block text-xs font-semibold mb-1">تاریخ برنامه‌ای (شمسی) *</label><input type="text" id="cr_milestone_date" required dir="ltr" placeholder="۱۴۰۵/۰۸/۰۱" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500 text-center"></div>
+                        <p id="cr_deviation_live" class="text-xs font-bold" title="انحراف پیشرفت (واقعی − برنامه‌ای) و درصد مدت سپری‌شده از قرارداد، به‌صورت خودکار محاسبه می‌شود"></p>
+                        <div class="flex items-center gap-2.5 pt-1 border-t">
+                            <span class="shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-[11px] text-[#ffffff]" style="background: linear-gradient(135deg, #f59e0b, #db2777);">🏁</span>
+                            <h4 class="text-xs font-bold text-slate-600">مهم‌ترین Milestone پیش‌رو</h4>
+                        </div>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div><label class="block text-xs font-semibold mb-1">نام Milestone *</label><input type="text" id="cr_milestone_name" required class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">تاریخ برنامه‌ای *</label><input type="text" id="cr_milestone_date" required dir="ltr" placeholder="۱۴۰۵/۰۸/۰۱" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500 text-center"></div>
                             <div>
                                 <label class="block text-xs font-semibold mb-1">وضعیت فعلی *</label>
-                                <select id="cr_milestone_status" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500">
+                                <select id="cr_milestone_status" required class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500">
                                     <option value="مطابق برنامه">مطابق برنامه</option>
                                     <option value="در معرض تأخیر">در معرض تأخیر</option>
                                     <option value="دارای تأخیر">دارای تأخیر</option>
                                 </select>
                             </div>
-                            <div><label class="block text-xs font-semibold mb-1">برآورد تأخیر (روز)</label><input type="number" step="any" id="cr_milestone_delay" min="0" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">برآورد تأخیر (روز)</label><input type="number" step="any" id="cr_milestone_delay" min="0" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
                         </div>
                     </div>
 
-                    <button type="submit" class="w-full text-[#ffffff] font-bold py-3.5 rounded-xl transition shadow-lg hover:shadow-xl hover:-translate-y-0.5" style="background: linear-gradient(135deg, #1e3a8a, #4c1d95);">ثبت اطلاعات پروژه</button>
+                    <button type="submit" class="w-full text-[#ffffff] font-bold py-2.5 rounded-xl transition shadow-lg hover:shadow-xl hover:-translate-y-0.5" style="background: linear-gradient(135deg, #1e3a8a, #4c1d95);">ثبت اطلاعات پروژه</button>
                 </form>
             </div>
 
@@ -707,7 +710,7 @@
                             <p class="text-xs text-slate-500">مشخصات قراردادی و پیشرفت هر پروژه، بر اساس آخرین «اطلاعات پایه و پیشرفت پروژه» ثبت‌شده.</p>
                         </div>
                         <div class="flex items-center gap-2">
-                            <button type="button" onclick="window.print()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-lg font-bold">🖨 چاپ / ذخیره PDF</button>
+                            <button type="button" onclick="printProjectsReport()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-lg font-bold">🖨 چاپ / ذخیره PDF (A4 افقی)</button>
                             <button id="closeProjectsReportBtn" type="button" class="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
                         </div>
                     </div>
@@ -2601,9 +2604,9 @@
         function projectReportProgressCell(val) {
             const pct = Math.max(0, Math.min(100, Number(val) || 0));
             const color = pct >= 90 ? '#10b981' : pct >= 60 ? '#3b82f6' : pct >= 30 ? '#f59e0b' : '#ef4444';
-            return `<div class="flex items-center gap-2 min-w-[92px]">
+            return `<div class="flex items-center gap-1.5">
                 <div class="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full" style="width:${pct}%; background:${color};"></div></div>
-                <span class="text-xs font-bold tabular-nums" style="color:${color};">${toPersianDigits(String(Math.round(pct)))}٪</span>
+                <span class="text-xs font-bold tabular-nums shrink-0" style="color:${color};">${toPersianDigits(String(Math.round(pct)))}٪</span>
             </div>`;
         }
 
@@ -2629,29 +2632,47 @@
 
             const headers = ['ردیف', 'نام پروژه', 'شماره قرارداد', 'نوع قرارداد', 'پیمانکار', 'مشاور', 'مدیر پروژه کارفرما', 'تاریخ شروع قرارداد', 'تاریخ پایان قرارداد', 'مدت قرارداد (ماه)', 'پیشرفت برنامه‌ای', 'پیشرفت واقعی (٪)'];
 
+            const colWidths = [3, 12, 7, 6, 12, 12, 10, 8, 8, 5, 8.5, 8.5];
+
             body.innerHTML = `
-                <table class="w-full text-xs border-separate" style="border-spacing:0;">
+                <table class="w-full text-xs border-separate" style="border-spacing:0; table-layout: fixed;">
+                    <colgroup>${colWidths.map(w => `<col style="width:${w}%;">`).join('')}</colgroup>
                     <thead>
-                        <tr>${headers.map(h => `<th class="sticky top-0 z-10 text-[#ffffff] font-bold px-3 py-2.5 text-center whitespace-nowrap" style="background: linear-gradient(135deg, #1e3a8a, #4c1d95);">${esc(h)}</th>`).join('')}</tr>
+                        <tr>${headers.map(h => `<th class="sticky top-0 z-10 text-[#ffffff] font-bold px-2 py-2.5 text-center" style="background: linear-gradient(135deg, #1e3a8a, #4c1d95); overflow-wrap: break-word;">${esc(h)}</th>`).join('')}</tr>
                     </thead>
                     <tbody>
                         ${rows.map((r, i) => `
                         <tr class="${i % 2 ? 'bg-slate-50' : 'bg-white'} hover:bg-blue-900/10 transition-colors">
-                            <td class="px-3 py-2.5 text-center font-bold text-slate-400 border-b border-slate-100">${toPersianDigits(String(i + 1))}</td>
-                            <td class="px-3 py-2.5 font-bold text-slate-800 border-b border-slate-100 whitespace-nowrap">${esc(r.project_name)}</td>
-                            <td class="px-3 py-2.5 text-center border-b border-slate-100 whitespace-nowrap">${esc(r.contract_number || '—')}</td>
-                            <td class="px-3 py-2.5 text-center border-b border-slate-100 whitespace-nowrap">${esc(r.contract_type === 'سایر' ? (r.contract_type_other || 'سایر') : (r.contract_type || '—'))}</td>
-                            <td class="px-3 py-2.5 border-b border-slate-100 whitespace-nowrap">${esc(r.contractor_name || '—')}</td>
-                            <td class="px-3 py-2.5 border-b border-slate-100 whitespace-nowrap">${esc(r.consultant_name || '—')}</td>
-                            <td class="px-3 py-2.5 border-b border-slate-100 whitespace-nowrap">${esc(r.client_pm_name || '—')}</td>
-                            <td class="px-3 py-2.5 text-center border-b border-slate-100 whitespace-nowrap tabular-nums">${formatJalali(r.contract_start_date) || '—'}</td>
-                            <td class="px-3 py-2.5 text-center border-b border-slate-100 whitespace-nowrap tabular-nums">${formatJalali(r.contract_end_date) || '—'}</td>
-                            <td class="px-3 py-2.5 text-center border-b border-slate-100 tabular-nums">${r.contract_duration_months != null ? toPersianDigits(String(r.contract_duration_months)) : '—'}</td>
-                            <td class="px-3 py-2.5 border-b border-slate-100">${projectReportProgressCell(r.progress_planned)}</td>
-                            <td class="px-3 py-2.5 border-b border-slate-100">${projectReportProgressCell(r.progress_physical)}</td>
+                            <td class="px-2 py-2.5 text-center font-bold text-slate-400 border-b border-slate-100">${toPersianDigits(String(i + 1))}</td>
+                            <td class="px-2 py-2.5 font-bold text-slate-800 border-b border-slate-100" style="overflow-wrap: break-word;">${esc(r.project_name)}</td>
+                            <td class="px-2 py-2.5 text-center border-b border-slate-100" style="overflow-wrap: break-word;">${esc(r.contract_number || '—')}</td>
+                            <td class="px-2 py-2.5 text-center border-b border-slate-100" style="overflow-wrap: break-word;">${esc(r.contract_type === 'سایر' ? (r.contract_type_other || 'سایر') : (r.contract_type || '—'))}</td>
+                            <td class="px-2 py-2.5 border-b border-slate-100" style="overflow-wrap: break-word;">${esc(r.contractor_name || '—')}</td>
+                            <td class="px-2 py-2.5 border-b border-slate-100" style="overflow-wrap: break-word;">${esc(r.consultant_name || '—')}</td>
+                            <td class="px-2 py-2.5 border-b border-slate-100" style="overflow-wrap: break-word;">${esc(r.client_pm_name || '—')}</td>
+                            <td class="px-2 py-2.5 text-center border-b border-slate-100 whitespace-nowrap tabular-nums">${formatJalali(r.contract_start_date) || '—'}</td>
+                            <td class="px-2 py-2.5 text-center border-b border-slate-100 whitespace-nowrap tabular-nums">${formatJalali(r.contract_end_date) || '—'}</td>
+                            <td class="px-2 py-2.5 text-center border-b border-slate-100 tabular-nums">${r.contract_duration_months != null ? toPersianDigits(String(r.contract_duration_months)) : '—'}</td>
+                            <td class="px-2 py-2.5 border-b border-slate-100">${projectReportProgressCell(r.progress_planned)}</td>
+                            <td class="px-2 py-2.5 border-b border-slate-100">${projectReportProgressCell(r.progress_physical)}</td>
                         </tr>`).join('')}
                     </tbody>
                 </table>`;
+        }
+
+        // A dozen columns never fits A4 portrait (or even the browser's
+        // default page settings), and this app has no global @page rule to
+        // change since the other print views (aiReportView, execReportView,
+        // trackingView) are fine as-is — so the landscape page size is
+        // injected only for the moment of THIS print call, then removed,
+        // instead of being set globally for every print in the app.
+        function printProjectsReport() {
+            const style = document.createElement('style');
+            style.id = 'projectsReportPrintStyle';
+            style.textContent = '@page { size: A4 landscape; margin: 10mm; }';
+            document.head.appendChild(style);
+            window.print();
+            setTimeout(() => style.remove(), 1000);
         }
 
         document.getElementById('crOpenReportBtn').addEventListener('click', openProjectsReportModal);
