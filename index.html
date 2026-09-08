@@ -376,10 +376,11 @@
                         <div id="ci_area_status" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
                     </div>
 
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                    <div id="ci_work_fronts_card" class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                         <h3 class="text-sm font-bold border-r-4 border-blue-900 pr-3">وضعیت جبهه‌های اصلی پروژه</h3>
                         <div id="ci_work_fronts" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
                     </div>
+                    <p id="ci_work_fronts_hidden_note" class="hidden text-xs text-slate-400 italic -mt-2">این پروژه هنوز در فاز اجرا نیست؛ بخش «جبهه‌های اصلی» فقط برای فاز اجرا نمایش داده می‌شود.</p>
 
                     <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                         <h3 class="text-sm font-bold border-r-4 border-blue-900 pr-3">پیشرفت و زمان‌بندی</h3>
@@ -1934,12 +1935,23 @@
 
             document.getElementById('checkinForm').reset();
             document.getElementById('ci_hse_note_wrap').classList.add('hidden');
+            await applyWorkFrontsVisibility(project_name);
 
             const { data } = await _supabase.from('check_ins').select('*')
                 .eq('project_name', project_name).eq('organization', organization)
                 .not('main_bottleneck', 'is', null)
                 .order('created_at', { ascending: false }).limit(1).maybeSingle();
             if (data) populateCheckinForm(data);
+        }
+
+        // Redesign backlog (P1): the 10-row «جبهه کاری» block only makes sense
+        // once a project has actually reached execution — earlier phases force
+        // a manager to dismiss 10 irrelevant rows every single check-in.
+        async function applyWorkFrontsVisibility(projectName) {
+            const { data } = await _supabase.from('projects').select('current_phase').eq('name', projectName).maybeSingle();
+            const isExecution = !data || data.current_phase === 'اجرا'; // unknown phase (e.g. legacy row) fails open, same as today
+            document.getElementById('ci_work_fronts_card').classList.toggle('hidden', !isExecution);
+            document.getElementById('ci_work_fronts_hidden_note').classList.toggle('hidden', isExecution);
         }
 
         async function openClientReportPreview(project_name) {
@@ -2187,7 +2199,10 @@
                 qw_form_date: jalaliInputToIso(todayJalali()),
 
                 area_status: collectDynamicStatusGroup('ci_area_status'),
-                work_fronts: collectDynamicStatusGroup('ci_work_fronts'),
+                // null (not the untouched default values) when the block is
+                // hidden for this project's phase — nobody actually reviewed
+                // those rows, so they shouldn't read as reported status.
+                work_fronts: document.getElementById('ci_work_fronts_card').classList.contains('hidden') ? null : collectDynamicStatusGroup('ci_work_fronts'),
 
                 planned_progress: Number(document.getElementById('ci_planned_progress').value),
                 physical_progress: Number(document.getElementById('ci_physical_progress').value),
@@ -2351,10 +2366,12 @@
             if (!(projects || []).length) {
                 projectsList.innerHTML = '<p class="text-slate-400 col-span-full">هنوز پروژه‌ای تعریف نشده.</p>';
             } else {
+                const PROJECT_PHASES = ['مهندسی', 'تأمین', 'اجرا', 'تکمیل‌شده'];
                 projects.forEach(p => {
                     const wrap = document.createElement('div');
-                    wrap.innerHTML = `<div class="p-2 bg-slate-50 rounded-lg flex items-center gap-1">
+                    wrap.innerHTML = `<div class="p-2 bg-slate-50 rounded-lg flex items-center gap-1 flex-wrap">
                         <input class="proj-name-input flex-1 min-w-0 p-1.5 border rounded text-xs">
+                        <select class="proj-phase-select p-1.5 border rounded text-xs bg-white" title="فاز فعلی پروژه">${PROJECT_PHASES.map(ph => `<option value="${esc(ph)}" ${ph === p.current_phase ? 'selected' : ''}>${esc(ph)}</option>`).join('')}</select>
                         <button type="button" class="proj-save-btn bg-blue-100 hover:bg-blue-200 text-blue-900 px-2 py-1 rounded font-bold shrink-0" title="ذخیره نام جدید">💾</button>
                         <button type="button" class="proj-delete-btn bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded font-bold shrink-0" title="حذف پروژه">🗑</button>
                     </div>`;
@@ -2364,6 +2381,7 @@
                         const newName = card.querySelector('.proj-name-input').value.trim();
                         renameProject(p.name, newName);
                     });
+                    card.querySelector('.proj-phase-select').addEventListener('change', (e) => updateProjectPhase(p.name, e.target.value));
                     card.querySelector('.proj-delete-btn').addEventListener('click', () => deleteProject(p.name));
                     projectsList.appendChild(card);
                 });
@@ -2584,6 +2602,11 @@
         // purges them all; app_users is deliberately excluded (those are
         // user accounts, not project data).
         const PROJECT_DATA_TABLES = ['check_ins', 'client_reports', 'quick_win_decisions', 'quick_win_progress', 'quick_win_evaluations'];
+
+        async function updateProjectPhase(name, phase) {
+            const { error } = await _supabase.from('projects').update({ current_phase: phase }).eq('name', name);
+            if (error) alert('خطا در به‌روزرسانی فاز پروژه: ' + error.message);
+        }
 
         async function deleteProject(name) {
             if (!confirm(`آیا از حذف کامل و همیشگی پروژه «${name}» مطمئنید؟ این کار غیرقابل بازگشت است: دسترسی همه کاربران به آن لغو می‌شود و تمام گزارش‌های ثبت‌شده‌اش (اطلاعات پایه، اطلاعات تکمیلی، پیشنهادهای Quick Win، تصمیمات و پیگیری اجرا) برای همیشه پاک خواهد شد.`)) return;
