@@ -369,13 +369,10 @@
                 </div>
 
                 <form id="checkinForm" class="space-y-6">
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-2">
                         <h3 class="text-sm font-bold border-r-4 border-blue-900 pr-3">مشخصات پاسخ‌دهنده</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div><label class="block text-xs font-semibold mb-1">نام و نام خانوادگی *</label><input type="text" id="ci_respondent" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">سمت *</label><input type="text" id="ci_position" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">شماره تماس / ایمیل *</label><input type="text" id="ci_contact" required dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                        </div>
+                        <p id="ci_respondent_display" class="text-sm text-slate-600" dir="auto">—</p>
+                        <p class="text-[11px] text-slate-400">این اطلاعات از «مشخصات من» شما گرفته می‌شود. برای اصلاح نام، سمت یا شماره تماس، از همان صفحه اقدام کنید.</p>
                     </div>
 
                     <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
@@ -384,21 +381,8 @@
                         <div id="ci_area_status" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
                     </div>
 
-                    <div id="ci_work_fronts_card" class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                        <h3 class="text-sm font-bold border-r-4 border-blue-900 pr-3">وضعیت جبهه‌های اصلی پروژه</h3>
-                        <div id="ci_work_fronts" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
-                    </div>
-                    <p id="ci_work_fronts_hidden_note" class="hidden text-xs text-slate-400 italic -mt-2">این پروژه هنوز در فاز اجرا نیست؛ بخش «جبهه‌های اصلی» فقط برای فاز اجرا نمایش داده می‌شود.</p>
-
                     <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                        <h3 class="text-sm font-bold border-r-4 border-blue-900 pr-3">پیشرفت و زمان‌بندی</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div><label class="block text-xs font-semibold mb-1">% پیشرفت برنامه‌ای *</label><input type="number" step="any" id="ci_planned_progress" min="0" max="100" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">% پیشرفت فیزیکی (واقعی) *</label><input type="number" step="any" id="ci_physical_progress" min="0" max="100" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">تاریخ پیش‌بینی فعلی تکمیل پروژه (شمسی) *</label><input type="text" id="ci_forecast_date" required dir="ltr" placeholder="۱۴۰۵/۰۶/۰۸" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
-                        </div>
-                        <p id="ci_official_progress_hint" class="text-xs font-bold"></p>
-
+                        <h3 class="text-sm font-bold border-r-4 border-blue-900 pr-3">رویداد HSE</h3>
                         <div class="max-w-xs">
                             <label class="block text-xs font-semibold mb-1">رویداد HSE در این دوره؟</label>
                             <select id="ci_hse_incident" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
@@ -421,7 +405,6 @@
                     <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                         <h3 class="text-sm font-bold border-r-4 border-amber-500 pr-3">سه ریسک اصلی پروژه</h3>
                         <div id="ci_risks" class="space-y-3"></div>
-                        <p id="ci_top_risk_auto" class="text-xs text-slate-500 italic"></p>
                     </div>
 
                     <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
@@ -437,8 +420,8 @@
                         </div>
                         <div class="flex flex-wrap gap-3 items-center">
                             <button type="button" id="ci_ai_root_cause_btn" class="text-xs text-purple-700 underline">💡 پیشنهاد هوش مصنوعی برای علت ریشه‌ای و موارد مشابه قبلی</button>
-                            <div id="ci_five_why_prompt" class="hidden">
-                                <button type="button" id="ci_five_why_toggle_btn" class="text-xs text-red-700 underline">🔍 استفاده از تکنیک ۵Why (چون شدت این مورد قابل‌توجه است)</button>
+                            <div id="ci_five_why_prompt">
+                                <button type="button" id="ci_five_why_toggle_btn" class="text-xs text-red-700 underline">🔍 استفاده از تکنیک ۵Why برای ریشه‌یابی</button>
                             </div>
                         </div>
                         <div id="ci_ai_root_cause_panel" class="hidden bg-purple-50 border border-purple-200 rounded-xl p-4 space-y-2 text-xs"></div>
@@ -657,11 +640,10 @@
                             <div><label class="block text-xs font-semibold mb-1">میزان جذب (ریالی)</label><input type="number" step="any" min="0" id="cr_amount_current_rial" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                             <div><label class="block text-xs font-semibold mb-1">میزان جذب (ارزی)</label><input type="number" step="any" min="0" id="cr_amount_current_eur" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                         </div>
-                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
                             <div><label class="block text-xs font-semibold mb-1">تاریخ شروع قرارداد *</label><input type="text" id="cr_start_date" required dir="ltr" placeholder="۱۴۰۴/۰۱/۰۱" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
-                            <div><label class="block text-xs font-semibold mb-1">تاریخ پایان قراردادی *</label><input type="text" id="cr_end_date" required dir="ltr" placeholder="۱۴۰۶/۰۱/۰۱" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
                             <div><label class="block text-xs font-semibold mb-1">مدت قرارداد (ماه) *</label><input type="number" step="any" id="cr_duration" required min="0" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">مدت سپری‌شده (ماه)</label><input type="number" step="any" id="cr_elapsed" readonly title="به‌صورت خودکار از تاریخ شروع قرارداد محاسبه می‌شود" class="w-full p-2 border rounded-lg text-sm outline-none bg-slate-50 text-slate-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">تاریخ پایان قراردادی</label><input type="text" id="cr_end_date" readonly dir="ltr" title="به‌صورت خودکار از تاریخ شروع و مدت قرارداد محاسبه می‌شود" placeholder="۱۴۰۶/۰۱/۰۱" class="w-full p-2 border rounded-lg text-sm outline-none bg-slate-50 text-slate-500 text-center"></div>
                         </div>
                     </div>
 
@@ -670,14 +652,35 @@
                             <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-xs font-extrabold text-[#ffffff]" style="background: linear-gradient(135deg, #f59e0b, #db2777);">۲</span>
                             <h3 class="text-sm font-bold text-slate-800">وضعیت پیشرفت و زمان‌بندی</h3>
                         </div>
-                        <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-                            <div><label class="block text-xs font-semibold mb-1">پیشرفت برنامه‌ای (٪) *</label><input type="number" step="any" id="cr_progress_planned" required min="0" max="100" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
-                            <div><label class="block text-xs font-semibold mb-1">پیشرفت واقعی (٪) *</label><input type="number" step="any" id="cr_progress_physical" required min="0" max="100" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
-                            <div><label class="block text-xs font-semibold mb-1">پیشرفت مهندسی (٪)</label><input type="number" step="any" id="cr_progress_eng" min="0" max="100" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
-                            <div><label class="block text-xs font-semibold mb-1">پیشرفت تأمین (٪)</label><input type="number" step="any" id="cr_progress_proc" min="0" max="100" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
-                            <div><label class="block text-xs font-semibold mb-1">پیشرفت اجرا (٪)</label><input type="number" step="any" id="cr_progress_constr" min="0" max="100" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                        <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                            <div><label class="block text-xs font-semibold mb-1">پیشرفت برنامه‌ای کل (٪)</label><input type="number" step="any" id="cr_progress_planned" readonly title="میانگین پیشرفت برنامه‌ای رشته‌های زیر (بر اساس نوع قرارداد)" class="w-full p-2 border rounded-lg text-sm outline-none bg-slate-50 text-slate-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">پیشرفت واقعی کل (٪)</label><input type="number" step="any" id="cr_progress_physical" readonly title="میانگین پیشرفت واقعی رشته‌های زیر (بر اساس نوع قرارداد)" class="w-full p-2 border rounded-lg text-sm outline-none bg-slate-50 text-slate-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">تاریخ پیش‌بینی فعلی تکمیل *</label><input type="text" id="cr_forecast_date" required dir="ltr" placeholder="۱۴۰۵/۰۶/۰۸" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500 text-center"></div>
                         </div>
-                        <p id="cr_deviation_live" class="text-xs font-bold" title="انحراف پیشرفت (واقعی − برنامه‌ای) و درصد مدت سپری‌شده از قرارداد، به‌صورت خودکار محاسبه می‌شود"></p>
+                        <p id="cr_deviation_live" class="text-xs font-bold" title="انحراف پیشرفت (واقعی − برنامه‌ای)، به‌صورت خودکار محاسبه می‌شود"></p>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div id="cr_progress_eng_row" class="p-3 bg-slate-50 rounded-xl space-y-2">
+                                <p class="text-xs font-bold text-slate-600">پیشرفت مهندسی (E)</p>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div><label class="block text-[11px] mb-1">برنامه‌ای (٪)</label><input type="number" step="any" id="cr_progress_eng_planned" min="0" max="100" class="w-full p-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                                    <div><label class="block text-[11px] mb-1">واقعی (٪)</label><input type="number" step="any" id="cr_progress_eng_actual" min="0" max="100" class="w-full p-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                                </div>
+                            </div>
+                            <div id="cr_progress_proc_row" class="p-3 bg-slate-50 rounded-xl space-y-2">
+                                <p class="text-xs font-bold text-slate-600">پیشرفت تأمین (P)</p>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div><label class="block text-[11px] mb-1">برنامه‌ای (٪)</label><input type="number" step="any" id="cr_progress_proc_planned" min="0" max="100" class="w-full p-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                                    <div><label class="block text-[11px] mb-1">واقعی (٪)</label><input type="number" step="any" id="cr_progress_proc_actual" min="0" max="100" class="w-full p-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                                </div>
+                            </div>
+                            <div id="cr_progress_constr_row" class="p-3 bg-slate-50 rounded-xl space-y-2">
+                                <p class="text-xs font-bold text-slate-600">پیشرفت اجرا (C)</p>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div><label class="block text-[11px] mb-1">برنامه‌ای (٪)</label><input type="number" step="any" id="cr_progress_constr_planned" min="0" max="100" class="w-full p-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                                    <div><label class="block text-[11px] mb-1">واقعی (٪)</label><input type="number" step="any" id="cr_progress_constr_actual" min="0" max="100" class="w-full p-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                                </div>
+                            </div>
+                        </div>
                         <div class="flex items-center gap-2.5 pt-1 border-t">
                             <span class="shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-[11px] text-[#ffffff]" style="background: linear-gradient(135deg, #f59e0b, #db2777);">🏁</span>
                             <h4 class="text-xs font-bold text-slate-600">مهم‌ترین Milestone پیش‌رو</h4>
@@ -951,17 +954,11 @@
                     </div>
                 </div>
 
-                <div class="print-card bg-white rounded-2xl shadow-sm border p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="md:col-span-2 space-y-4">
-                        <h3 class="text-sm font-bold text-slate-800 border-r-4 border-blue-900 pr-3">مقایسه پیشرفت گزارش‌شده توسط هر طرف</h3>
-                        <div style="max-height:320px">
-                            <canvas id="reportChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="space-y-3">
-                        <h3 class="text-sm font-bold text-slate-800 border-r-4 border-amber-500 pr-3">وضعیت حوزه‌ها (X-Ray)</h3>
-                        <p class="text-[10px] text-slate-400">هر رکن (کارفرما/مشاور/پیمانکار) ۷ حوزه را جداگانه رنگ‌بندی می‌کند؛ نمودار زیر مجموع همه این رتبه‌بندی‌ها را نشان می‌دهد، نه تعداد حوزه‌ها.</p>
-                        <div class="relative h-32 mx-auto overflow-hidden" style="max-width:150px">
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-6 space-y-3">
+                    <h3 class="text-sm font-bold text-slate-800 border-r-4 border-amber-500 pr-3">وضعیت حوزه‌ها (X-Ray)</h3>
+                    <p class="text-[10px] text-slate-400">هر رکن (کارفرما/مشاور/پیمانکار) ۷ حوزه را جداگانه رنگ‌بندی می‌کند؛ نمودار زیر مجموع همه این رتبه‌بندی‌ها را نشان می‌دهد، نه تعداد حوزه‌ها.</p>
+                    <div class="flex flex-col sm:flex-row items-center gap-6">
+                        <div class="relative h-32 shrink-0 overflow-hidden" style="max-width:150px">
                             <canvas id="reportXrayDonut"></canvas>
                             <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                 <p class="text-lg font-extrabold" id="reportXrayDonutCenter">-</p>
@@ -1188,6 +1185,16 @@
             return Math.max(0, months);
         }
 
+        // Reverse of monthsBetween: start date + a duration in months -> the
+        // resulting Gregorian ISO date, used to auto-derive "تاریخ پایان
+        // قراردادی" from "تاریخ شروع قرارداد" + "مدت قرارداد".
+        function addMonthsIso(startIso, months) {
+            if (!startIso || months === '' || months == null || isNaN(months)) return null;
+            const d = new Date(startIso);
+            d.setMonth(d.getMonth() + Number(months));
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
         function todayJalali() {
             const now = new Date();
             return formatJalali(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`);
@@ -1338,19 +1345,6 @@
             ['hse', 'HSE'],
             ['quality', 'Quality (کیفیت)']
         ];
-        const WORK_FRONTS = [
-            ['row', 'مسیر و ROW'],
-            ['pipe_supply', 'تأمین لوله'],
-            ['valve_equipment', 'تأمین شیرآلات و تجهیزات'],
-            ['welding', 'Welding'],
-            ['ndt', 'NDT'],
-            ['coating', 'Coating'],
-            ['lowering', 'Lowering'],
-            ['backfilling', 'Backfilling'],
-            ['crossings', 'Crossings'],
-            ['station_facility', 'Station / Facility']
-        ];
-        const ISSUE_IMPACT_TAGS = ['زمان', 'هزینه', 'کیفیت', 'پیشرفت', 'قرارداد', 'ریسک'];
         const QW_AREA_OPTIONS = ['Engineering', 'Procurement', 'Construction', 'Contract / Commercial', 'Finance', 'HSE', 'Quality', 'Management / Decision Making', 'سایر'];
         const QW_CONSEQUENCE_TAGS = ['تأخیر زمانی', 'افزایش هزینه', 'کاهش پیشرفت', 'ایجاد Claim', 'ایجاد ریسک', 'افت کیفیت', 'توقف جبهه کاری', 'تأخیر در بهره‌برداری', 'سایر'];
         const QW_SUPPORT_TAGS = ['تصمیم مدیرعامل', 'تصمیم مجری طرح', 'تصمیم مدیریت طرح', 'تصمیم قراردادی', 'تصمیم مهندسی', 'تأمین منابع مالی', 'تأمین کالا', 'رفع محدودیت اجرایی', 'هماهنگی بین واحدها', 'سایر'];
@@ -1770,6 +1764,21 @@
             return [u.first_name, u.last_name].filter(Boolean).join(' ').trim() || u.email;
         }
 
+        // Redesign backlog (P0 round 2): "مشخصات پاسخ‌دهنده" used to be typed
+        // by hand on every check-in even though it's always the logged-in
+        // user themselves — derive it from their own profile/role instead.
+        function respondentInfo() {
+            return {
+                name: personDisplayName(currentProfile),
+                position: currentProfile.job_title || (currentProfile.role === 'admin' ? 'ادمین سامانه' : 'مدیر پروژه'),
+                contact: currentProfile.phone || currentUser.email,
+            };
+        }
+        function renderRespondentDisplay() {
+            const r = respondentInfo();
+            document.getElementById('ci_respondent_display').textContent = `${r.name} — ${r.position} — ${r.contact}`;
+        }
+
         async function refreshResponsibleOptions(selectId, projectName, filterOrg) {
             const sel = document.getElementById(selectId);
             if (!projectName) { sel.innerHTML = '<option value="">-- ابتدا پروژه را انتخاب کنید --</option>'; return; }
@@ -1890,17 +1899,8 @@
         }
 
         function populateCheckinForm(row) {
-            document.getElementById('ci_respondent').value = row.respondent || '';
-            document.getElementById('ci_position').value = row.respondent_position || '';
-            document.getElementById('ci_contact').value = row.respondent_contact || '';
-
             setDynamicStatusGroup('ci_area_status', row.area_status);
-            setDynamicStatusGroup('ci_work_fronts', row.work_fronts);
 
-            document.getElementById('ci_planned_progress').value = row.planned_progress ?? '';
-            document.getElementById('ci_physical_progress').value = row.physical_progress ?? '';
-            updateOfficialProgressHint();
-            document.getElementById('ci_forecast_date').value = formatJalali(row.forecast_completion_date);
             document.getElementById('ci_hse_incident').value = row.hse_incident ? 'true' : 'false';
             document.getElementById('ci_hse_note_wrap').classList.toggle('hidden', !row.hse_incident);
             document.getElementById('ci_hse_note').value = row.hse_incident_note || '';
@@ -1910,8 +1910,6 @@
                 const el = issueEls[i];
                 if (!el) return;
                 el.querySelector('.issue-desc').value = issue.description || '';
-                const impactSet = new Set(issue.impact || []);
-                el.querySelectorAll('.issue-impact-cb').forEach(cb => { cb.checked = impactSet.has(cb.value); });
                 if (issue.severity) el.querySelector('.issue-severity').value = issue.severity;
             });
 
@@ -1920,9 +1918,6 @@
                 const el = riskEls[i];
                 if (!el) return;
                 el.querySelector('.risk-desc').value = risk.risk || '';
-                if (risk.probability) el.querySelector('.risk-probability').value = risk.probability;
-                if (risk.impact) el.querySelector('.risk-impact').value = risk.impact;
-                if (risk.level) el.querySelector('.risk-level').value = risk.level;
                 el.querySelector('.risk-action').value = risk.current_action || '';
             });
 
@@ -1933,7 +1928,6 @@
             document.getElementById('ci_senior_decision').value = row.senior_decision_needed || '';
             if (row.senior_decision_priority) document.getElementById('ci_senior_priority').value = row.senior_decision_priority;
             document.getElementById('ci_one_thing').value = row.one_thing_to_change || '';
-            updateTopRiskPreview();
         }
 
         function populateQwProposalForm(row) {
@@ -2000,15 +1994,20 @@
             document.getElementById('cr_amount_current_rial').value = row.contract_current_amount_rial ?? '';
             document.getElementById('cr_amount_current_eur').value = row.contract_current_amount_eur ?? '';
             document.getElementById('cr_start_date').value = formatJalali(row.contract_start_date);
-            document.getElementById('cr_end_date').value = formatJalali(row.contract_end_date);
             document.getElementById('cr_duration').value = row.contract_duration_months ?? '';
-            updateElapsedFromStart();
-            document.getElementById('cr_progress_planned').value = row.progress_planned ?? '';
-            document.getElementById('cr_progress_physical').value = row.progress_physical ?? '';
+            updateEndDateFromStartAndDuration();
+            document.getElementById('cr_forecast_date').value = formatJalali(row.forecast_completion_date);
+            document.getElementById('cr_progress_eng_planned').value = row.progress_engineering_planned ?? '';
+            document.getElementById('cr_progress_eng_actual').value = row.progress_engineering ?? '';
+            document.getElementById('cr_progress_proc_planned').value = row.progress_procurement_planned ?? '';
+            document.getElementById('cr_progress_proc_actual').value = row.progress_procurement ?? '';
+            document.getElementById('cr_progress_constr_planned').value = row.progress_construction_planned ?? '';
+            document.getElementById('cr_progress_constr_actual').value = row.progress_construction ?? '';
+            updateProgressFieldsVisibility();
+            // Fallback for reports submitted before the per-discipline planned/actual split existed.
+            if (document.getElementById('cr_progress_planned').value === '') document.getElementById('cr_progress_planned').value = row.progress_planned ?? '';
+            if (document.getElementById('cr_progress_physical').value === '') document.getElementById('cr_progress_physical').value = row.progress_physical ?? '';
             updateProgressDeviationLive();
-            document.getElementById('cr_progress_eng').value = row.progress_engineering ?? '';
-            document.getElementById('cr_progress_proc').value = row.progress_procurement ?? '';
-            document.getElementById('cr_progress_constr').value = row.progress_construction ?? '';
             document.getElementById('cr_milestone_name').value = row.milestone_name || '';
             document.getElementById('cr_milestone_date').value = formatJalali(row.milestone_planned_date);
             if (row.milestone_status) document.getElementById('cr_milestone_status').value = row.milestone_status;
@@ -2027,14 +2026,12 @@
             document.getElementById('ciOrganization').textContent = organization;
 
             document.getElementById('checkinForm').reset();
+            renderRespondentDisplay();
             document.getElementById('ci_hse_note_wrap').classList.add('hidden');
-            document.getElementById('ci_official_progress_hint').textContent = '';
             document.getElementById('ci_qw_quick_fields').classList.add('hidden');
             document.getElementById('ci_ai_root_cause_panel').classList.add('hidden');
             document.getElementById('ci_five_why_panel').classList.add('hidden');
             await refreshResponsibleOptions('ci_qwq_responsible', project_name);
-            await applyWorkFrontsVisibility(project_name);
-            await refreshOfficialProgress(project_name);
 
             const { data } = await _supabase.from('check_ins').select('*')
                 .eq('project_name', project_name).eq('organization', organization)
@@ -2042,42 +2039,6 @@
                 .order('created_at', { ascending: false }).limit(1).maybeSingle();
             if (data) populateCheckinForm(data);
         }
-
-        // Redesign backlog (P1): the 10-row «جبهه کاری» block only makes sense
-        // once a project has actually reached execution — earlier phases force
-        // a manager to dismiss 10 irrelevant rows every single check-in.
-        async function applyWorkFrontsVisibility(projectName) {
-            const { data } = await _supabase.from('projects').select('current_phase').eq('name', projectName).maybeSingle();
-            const isExecution = !data || data.current_phase === 'اجرا'; // unknown phase (e.g. legacy row) fails open, same as today
-            document.getElementById('ci_work_fronts_card').classList.toggle('hidden', !isExecution);
-            document.getElementById('ci_work_fronts_hidden_note').classList.toggle('hidden', isExecution);
-        }
-
-        // Redesign backlog (P1): "مغایرت پیشرفت خودگزارش‌شده در برابر رسمی" —
-        // this comparison used to only ever surface inside an AI analysis run;
-        // showing it right where the self-report is typed makes it visible to
-        // every respondent, not just whoever later asks for AI analysis.
-        let officialPhysicalProgress = null;
-        async function refreshOfficialProgress(projectName) {
-            const { data } = await _supabase.from('client_reports').select('progress_physical')
-                .eq('project_name', projectName).order('created_at', { ascending: false }).limit(1).maybeSingle();
-            officialPhysicalProgress = data?.progress_physical ?? null;
-            updateOfficialProgressHint();
-        }
-        function updateOfficialProgressHint() {
-            const el = document.getElementById('ci_official_progress_hint');
-            const selfReported = document.getElementById('ci_physical_progress').value;
-            if (officialPhysicalProgress == null || selfReported === '') { el.textContent = ''; return; }
-            const diff = Number(selfReported) - Number(officialPhysicalProgress);
-            if (Math.abs(diff) < 1) {
-                el.className = 'text-xs font-bold text-emerald-600';
-                el.textContent = `مطابق پیشرفت رسمی ثبت‌شده در اطلاعات پایه پروژه (${toPersianDigits(String(officialPhysicalProgress))}٪)`;
-            } else {
-                el.className = 'text-xs font-bold text-amber-600';
-                el.textContent = `مغایرت با پیشرفت رسمی: ${toPersianDigits(String(officialPhysicalProgress))}٪ در اطلاعات پایه پروژه در برابر ${toPersianDigits(String(selfReported))}٪ ثبت‌شده اینجا (${diff > 0 ? '+' : ''}${toPersianDigits(String(diff))}٪)`;
-            }
-        }
-        document.getElementById('ci_physical_progress').addEventListener('input', updateOfficialProgressHint);
 
         async function openClientReportPreview(project_name) {
             if (!project_name) { alert('لطفاً ابتدا پروژه را انتخاب کنید.'); return; }
@@ -2088,7 +2049,8 @@
             document.getElementById('cr_contract_type_other').classList.add('hidden');
             updateContractorRequired();
             document.getElementById('cr_deviation_live').textContent = '';
-            document.getElementById('cr_elapsed').value = '';
+            document.getElementById('cr_end_date').value = '';
+            updateProgressFieldsVisibility();
             await Promise.all([
                 refreshResponsibleOptions('cr_client_pm', project_name, 'کارفرما'),
                 refreshResponsibleOptions('cr_contractor_pm', project_name, 'پیمانکار'),
@@ -2214,13 +2176,58 @@
         document.getElementById('cr_contract_type').addEventListener('change', (e) => {
             document.getElementById('cr_contract_type_other').classList.toggle('hidden', e.target.value !== 'سایر');
             updateContractorRequired();
+            updateProgressFieldsVisibility();
         });
 
-        function updateElapsedFromStart() {
-            const iso = jalaliInputToIso(document.getElementById('cr_start_date').value);
-            document.getElementById('cr_elapsed').value = iso ? monthsBetween(iso) : '';
+        // Redesign backlog (P0 round 2): "تاریخ پایان قراردادی" used to be
+        // typed by hand even though it's fully derivable from the start date
+        // + duration already on the same form.
+        function updateEndDateFromStartAndDuration() {
+            const startIso = jalaliInputToIso(document.getElementById('cr_start_date').value);
+            const duration = document.getElementById('cr_duration').value;
+            const endIso = (startIso && duration !== '') ? addMonthsIso(startIso, duration) : null;
+            document.getElementById('cr_end_date').value = endIso ? formatJalali(endIso) : '';
         }
-        document.getElementById('cr_start_date').addEventListener('input', updateElapsedFromStart);
+        document.getElementById('cr_start_date').addEventListener('input', updateEndDateFromStartAndDuration);
+        document.getElementById('cr_duration').addEventListener('input', updateEndDateFromStartAndDuration);
+
+        // Redesign backlog (P0 round 2): progress is captured per discipline
+        // (E/P/C) since a single "overall %" hides which discipline is
+        // actually behind; only the disciplines a contract type actually
+        // covers are shown/required, and the overall figures every other
+        // report/KPI already reads (progress_planned/physical) are kept
+        // alive as a plain average of whichever discipline fields apply.
+        function progressDisciplineGroups() {
+            const type = document.getElementById('cr_contract_type').value;
+            return [
+                { rowId: 'cr_progress_eng_row', planned: 'cr_progress_eng_planned', actual: 'cr_progress_eng_actual', show: type === 'E' || type === 'EPC' || type === 'سایر' },
+                { rowId: 'cr_progress_proc_row', planned: 'cr_progress_proc_planned', actual: 'cr_progress_proc_actual', show: type === 'PC' || type === 'EPC' || type === 'سایر' },
+                { rowId: 'cr_progress_constr_row', planned: 'cr_progress_constr_planned', actual: 'cr_progress_constr_actual', show: type === 'PC' || type === 'C' || type === 'EPC' || type === 'سایر' },
+            ];
+        }
+
+        function updateOverallProgressFromDisciplines() {
+            const groups = progressDisciplineGroups().filter(g => g.show);
+            const avg = (field) => {
+                const vals = groups.map(g => document.getElementById(g[field]).value).filter(v => v !== '').map(Number);
+                return vals.length ? String(Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)) : '';
+            };
+            document.getElementById('cr_progress_planned').value = avg('planned');
+            document.getElementById('cr_progress_physical').value = avg('actual');
+            updateProgressDeviationLive();
+        }
+
+        function updateProgressFieldsVisibility() {
+            progressDisciplineGroups().forEach(g => {
+                document.getElementById(g.rowId).classList.toggle('hidden', !g.show);
+                document.getElementById(g.planned).required = g.show;
+                document.getElementById(g.actual).required = g.show;
+            });
+            updateOverallProgressFromDisciplines();
+        }
+        ['cr_progress_eng_planned', 'cr_progress_eng_actual', 'cr_progress_proc_planned', 'cr_progress_proc_actual', 'cr_progress_constr_planned', 'cr_progress_constr_actual']
+            .forEach(id => document.getElementById(id).addEventListener('input', updateOverallProgressFromDisciplines));
+        updateProgressFieldsVisibility();
 
         // Redesign backlog (P1): "انحراف پیشرفت... زنده در فرم" — this used
         // to only ever be computed after the fact, in reports; showing it live
@@ -2254,7 +2261,6 @@
             return `<div class="p-3 bg-slate-50 rounded-xl space-y-2" data-issue="${n}">
                 <p class="text-xs font-bold text-slate-600">Issue No. ${toPersianDigits(n)}</p>
                 <textarea class="issue-desc w-full p-2 border rounded-lg text-xs" rows="2" placeholder="شرح مسئله"></textarea>
-                <div class="flex flex-wrap gap-2">${ISSUE_IMPACT_TAGS.map(t => `<label class="inline-flex items-center gap-1 bg-white border rounded-lg px-2 py-1 text-xs cursor-pointer"><input type="checkbox" class="issue-impact-cb" value="${esc(t)}"> ${esc(t)}</label>`).join('')}</div>
                 <select class="issue-severity p-1 border rounded text-xs">
                     <option value="بالا">شدت: بالا</option>
                     <option value="متوسط" selected>شدت: متوسط</option>
@@ -2264,12 +2270,9 @@
         }
 
         function riskBlockHtml(n) {
-            return `<div class="p-3 bg-slate-50 rounded-xl grid grid-cols-1 md:grid-cols-5 gap-2 items-start" data-risk="${n}">
-                <input type="text" class="risk-desc md:col-span-2 p-2 border rounded-lg text-xs" placeholder="شرح ریسک ${toPersianDigits(n)}">
-                <select class="risk-probability p-1 border rounded text-xs"><option value="کم">احتمال: کم</option><option value="متوسط" selected>احتمال: متوسط</option><option value="زیاد">احتمال: زیاد</option></select>
-                <select class="risk-impact p-1 border rounded text-xs"><option value="کم">اثر: کم</option><option value="متوسط" selected>اثر: متوسط</option><option value="زیاد">اثر: زیاد</option></select>
-                <select class="risk-level p-1 border rounded text-xs"><option value="کم">سطح: کم</option><option value="متوسط" selected>سطح: متوسط</option><option value="زیاد">سطح: زیاد</option><option value="بحرانی">سطح: بحرانی</option></select>
-                <input type="text" class="risk-action md:col-span-5 p-2 border rounded-lg text-xs" placeholder="اقدام فعلی">
+            return `<div class="p-3 bg-slate-50 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-2 items-start" data-risk="${n}">
+                <input type="text" class="risk-desc md:col-span-1 p-2 border rounded-lg text-xs" placeholder="شرح ریسک ${toPersianDigits(n)}">
+                <input type="text" class="risk-action md:col-span-2 p-2 border rounded-lg text-xs" placeholder="اقدام فعلی">
             </div>`;
         }
 
@@ -2290,12 +2293,8 @@
 
         function buildCheckinDynamicSections() {
             document.getElementById('ci_area_status').innerHTML = XRAY_AREAS.map(([k, l]) => statusRowHtml(k, l, 'مهم‌ترین مسئله این حوزه')).join('');
-            document.getElementById('ci_work_fronts').innerHTML = WORK_FRONTS.map(([k, l]) => statusRowHtml(k, l, 'گلوگاه اصلی این جبهه')).join('');
             document.getElementById('ci_issues').innerHTML = [1, 2, 3].map(issueBlockHtml).join('');
             document.getElementById('ci_risks').innerHTML = [1, 2, 3].map(riskBlockHtml).join('');
-            document.getElementById('ci_risks').addEventListener('input', updateTopRiskPreview);
-            document.getElementById('ci_risks').addEventListener('change', updateTopRiskPreview);
-            updateTopRiskPreview();
             document.getElementById('ci_qw_area').innerHTML = QW_AREA_OPTIONS.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
             document.getElementById('ci_qw_consequences').innerHTML = QW_CONSEQUENCE_TAGS.map(t => checkboxTagHtml('qw_conseq', t)).join('');
             document.getElementById('ci_support_types').innerHTML = QW_SUPPORT_TAGS.map(t => checkboxTagHtml('support', t)).join('');
@@ -2326,7 +2325,6 @@
                 if (!description) return;
                 result.push({
                     description,
-                    impact: Array.from(el.querySelectorAll('.issue-impact-cb:checked')).map(c => c.value),
                     severity: el.querySelector('.issue-severity').value
                 });
             });
@@ -2340,46 +2338,12 @@
                 if (!risk) return;
                 result.push({
                     risk,
-                    probability: el.querySelector('.risk-probability').value,
-                    impact: el.querySelector('.risk-impact').value,
-                    level: el.querySelector('.risk-level').value,
                     current_action: el.querySelector('.risk-action').value.trim()
                 });
             });
             return result;
         }
 
-        // Redesign backlog (P0): «سه ساختار متفاوت برای یک سؤال» — top_risk/
-        // risk_severity used to be a 4th, separately-typed summary of the risk
-        // the user had *just* described in the list above. Deriving them from
-        // that list removes the duplicate typing without losing the columns
-        // anything downstream (Overview, exec report) already reads.
-        function riskLevelRank(level) {
-            return { 'کم': 1, 'متوسط': 3, 'زیاد': 4, 'بحرانی': 5 }[level] || 3;
-        }
-
-        function deriveTopRisk(risks) {
-            if (!risks.length) return { top_risk: null, risk_severity: null };
-            const top = risks.reduce((best, r) => riskLevelRank(r.level) > riskLevelRank(best.level) ? r : best, risks[0]);
-            return { top_risk: top.risk, risk_severity: riskLevelRank(top.level) };
-        }
-
-        function updateTopRiskPreview() {
-            const el = document.getElementById('ci_top_risk_auto');
-            if (!el) return;
-            const { top_risk, risk_severity } = deriveTopRisk(collectRisks());
-            el.textContent = top_risk
-                ? `مهم‌ترین ریسک (محاسبه خودکار از فهرست بالا): «${top_risk}» — شدت ${toPersianDigits(String(risk_severity))} از ۵`
-                : 'با تکمیل فهرست بالا، مهم‌ترین ریسک به‌صورت خودکار اینجا نمایش داده می‌شود.';
-
-            // Redesign backlog (P2): "۵Why شرطی برای شدت≥متوسط" — offered, not
-            // forced, and only once there's an actual signal it's worth the
-            // extra structure.
-            const promptEl = document.getElementById('ci_five_why_prompt');
-            const showPrompt = (risk_severity || 0) >= riskLevelRank('متوسط');
-            promptEl.classList.toggle('hidden', !showPrompt);
-            if (!showPrompt) document.getElementById('ci_five_why_panel').classList.add('hidden');
-        }
 
         function collectCheckboxGroup(cls) {
             return Array.from(document.querySelectorAll('.' + cls + ':checked')).map(c => c.value);
@@ -2391,9 +2355,6 @@
             const hseIncident = document.getElementById('ci_hse_incident').value === 'true';
             const hseNote = document.getElementById('ci_hse_note').value.trim();
             if (hseIncident && !hseNote) { alert('لطفاً توضیح رویداد HSE را وارد کنید.'); return; }
-
-            const forecastIso = jalaliInputToIso(document.getElementById('ci_forecast_date').value);
-            if (!forecastIso) { alert('تاریخ پیش‌بینی تکمیل معتبر نیست. لطفاً به‌صورت ۱۴۰۵/۰۶/۰۸ وارد کنید.'); return; }
 
             // Validated up front, before anything is inserted, so a
             // half-filled "تبدیل به Quick Win" section never leaves the
@@ -2412,25 +2373,19 @@
             }
 
             const p = effectiveProfile();
+            const respondent = respondentInfo();
 
             const row = {
                 user_id: currentUser.id,
                 project_name: p.project_name,
                 organization: p.organization,
-                respondent: document.getElementById('ci_respondent').value,
-                respondent_position: document.getElementById('ci_position').value,
-                respondent_contact: document.getElementById('ci_contact').value,
+                respondent: respondent.name,
+                respondent_position: respondent.position,
+                respondent_contact: respondent.contact,
                 qw_form_date: jalaliInputToIso(todayJalali()),
 
                 area_status: collectDynamicStatusGroup('ci_area_status'),
-                // null (not the untouched default values) when the block is
-                // hidden for this project's phase — nobody actually reviewed
-                // those rows, so they shouldn't read as reported status.
-                work_fronts: document.getElementById('ci_work_fronts_card').classList.contains('hidden') ? null : collectDynamicStatusGroup('ci_work_fronts'),
 
-                planned_progress: Number(document.getElementById('ci_planned_progress').value),
-                physical_progress: Number(document.getElementById('ci_physical_progress').value),
-                forecast_completion_date: forecastIso,
                 hse_incident: hseIncident,
                 hse_incident_note: hseIncident ? hseNote : null,
 
@@ -2444,7 +2399,6 @@
                 senior_decision_needed: document.getElementById('ci_senior_decision').value,
                 senior_decision_priority: document.getElementById('ci_senior_priority').value,
                 one_thing_to_change: document.getElementById('ci_one_thing').value,
-                ...deriveTopRisk(collectRisks())
             };
 
             const { error } = await _supabase.from('check_ins').insert([row]);
@@ -2556,7 +2510,8 @@
             const startIso = jalaliInputToIso(document.getElementById('cr_start_date').value);
             const endIso = jalaliInputToIso(document.getElementById('cr_end_date').value);
             const milestoneIso = jalaliInputToIso(document.getElementById('cr_milestone_date').value);
-            if (!startIso || !endIso || !milestoneIso) { alert('لطفاً تاریخ‌ها را به‌صورت شمسی معتبر (مثلاً ۱۴۰۵/۰۱/۰۱) وارد کنید.'); return; }
+            const forecastIso = jalaliInputToIso(document.getElementById('cr_forecast_date').value);
+            if (!startIso || !endIso || !milestoneIso || !forecastIso) { alert('لطفاً تاریخ‌ها را به‌صورت شمسی معتبر (مثلاً ۱۴۰۵/۰۱/۰۱) وارد کنید.'); return; }
 
             const contractType = document.getElementById('cr_contract_type').value;
             const row = {
@@ -2579,11 +2534,15 @@
                 contract_end_date: endIso,
                 contract_duration_months: Number(document.getElementById('cr_duration').value),
                 elapsed_months: monthsBetween(startIso),
+                forecast_completion_date: forecastIso,
                 progress_planned: Number(document.getElementById('cr_progress_planned').value),
                 progress_physical: Number(document.getElementById('cr_progress_physical').value),
-                progress_engineering: document.getElementById('cr_progress_eng').value ? Number(document.getElementById('cr_progress_eng').value) : null,
-                progress_procurement: document.getElementById('cr_progress_proc').value ? Number(document.getElementById('cr_progress_proc').value) : null,
-                progress_construction: document.getElementById('cr_progress_constr').value ? Number(document.getElementById('cr_progress_constr').value) : null,
+                progress_engineering: document.getElementById('cr_progress_eng_actual').value ? Number(document.getElementById('cr_progress_eng_actual').value) : null,
+                progress_procurement: document.getElementById('cr_progress_proc_actual').value ? Number(document.getElementById('cr_progress_proc_actual').value) : null,
+                progress_construction: document.getElementById('cr_progress_constr_actual').value ? Number(document.getElementById('cr_progress_constr_actual').value) : null,
+                progress_engineering_planned: document.getElementById('cr_progress_eng_planned').value ? Number(document.getElementById('cr_progress_eng_planned').value) : null,
+                progress_procurement_planned: document.getElementById('cr_progress_proc_planned').value ? Number(document.getElementById('cr_progress_proc_planned').value) : null,
+                progress_construction_planned: document.getElementById('cr_progress_constr_planned').value ? Number(document.getElementById('cr_progress_constr_planned').value) : null,
                 milestone_name: document.getElementById('cr_milestone_name').value,
                 milestone_planned_date: milestoneIso,
                 milestone_status: document.getElementById('cr_milestone_status').value,
@@ -2595,6 +2554,9 @@
             alert('اطلاعات پروژه با موفقیت ثبت شد!');
             e.target.reset();
             document.getElementById('cr_contract_type_other').classList.add('hidden');
+            document.getElementById('cr_end_date').value = '';
+            updateContractorRequired();
+            updateProgressFieldsVisibility();
         });
 
         // --------------------------------------------------
@@ -3313,7 +3275,6 @@
         // the narrative text comes from a Supabase Edge Function (async).
         // --------------------------------------------------
         const ORG_COLORS = { 'کارفرما': '#2563eb', 'مشاور': '#d97706', 'پیمانکار': '#059669' };
-        let reportChartInstance = null;
         let aiReportReturnView = 'selection';
 
         function showAiReport(projectName, provider, returnView) {
@@ -3384,19 +3345,6 @@
             </tr>`;
         }
 
-        function reportComputedRow(label, latestByOrg, computeFn) {
-            const cell = (org) => {
-                const v = computeFn(latestByOrg[org]);
-                return v ? esc(v) : '<span class="text-slate-300">-</span>';
-            };
-            return `<tr>
-                <td class="p-2 border font-bold bg-slate-50">${esc(label)}</td>
-                <td class="p-2 border">${cell('کارفرما')}</td>
-                <td class="p-2 border">${cell('مشاور')}</td>
-                <td class="p-2 border">${cell('پیمانکار')}</td>
-            </tr>`;
-        }
-
         function reportAreaRow(label, latestByOrg, areaKey) {
             const cell = (org) => {
                 const v = latestByOrg[org]?.area_status?.[areaKey];
@@ -3411,70 +3359,37 @@
             </tr>`;
         }
 
-        function workFrontsSummary(rec) {
-            if (!rec || !rec.work_fronts) return null;
-            const vals = Object.values(rec.work_fronts).map(f => f && f.status).filter(Boolean);
-            if (!vals.length) return null;
-            const red = vals.filter(v => v.includes('🔴')).length;
-            const yellow = vals.filter(v => v.includes('🟡')).length;
-            return `${toPersianDigits(red)} قرمز، ${toPersianDigits(yellow)} زرد از ${toPersianDigits(vals.length)} جبهه`;
-        }
-
         function renderReportTable(latestByOrg) {
             document.getElementById('reportTableBody').innerHTML = [
                 reportRow('پاسخ‌دهنده', latestByOrg, 'respondent'),
                 ...XRAY_AREAS.map(([k, l]) => reportAreaRow(l, latestByOrg, k)),
-                reportComputedRow('وضعیت جبهه‌های کاری', latestByOrg, workFrontsSummary),
-                reportRow('% پیشرفت برنامه‌ای', latestByOrg, 'planned_progress', '٪'),
-                reportRow('% پیشرفت فیزیکی', latestByOrg, 'physical_progress', '٪'),
-                reportRow('تاریخ پیش‌بینی تکمیل', latestByOrg, 'forecast_completion_date', '', formatJalali),
-                reportRow('شدت ریسک', latestByOrg, 'risk_severity', '/۵'),
                 reportRow('گلوگاه فعلی', latestByOrg, 'main_bottleneck'),
                 reportRow('علت ریشه‌ای گلوگاه', latestByOrg, 'bottleneck_root_cause'),
                 reportRow('نیاز به تصمیم مدیریت ارشد', latestByOrg, 'senior_decision_needed'),
                 reportRow('اولویت تصمیم', latestByOrg, 'senior_decision_priority'),
-                reportRow('ریسک پیش‌رو', latestByOrg, 'top_risk'),
                 reportRow('عنوان Quick Win پیشنهادی', latestByOrg, 'quick_win_title'),
                 reportRow('زمان تحقق برآوردی', latestByOrg, 'time_estimate'),
             ].join('');
         }
 
+        // Redesign backlog (P0 round 2): «پیشرفت»/«ریسک» ستون‌بندی‌شده دیگر
+        // اینجا وجود ندارد (هر دو از فرم اطلاعات تکمیلی حذف شدند) — این دو KPI
+        // به‌جایش از همان X-Ray که هنوز جمع‌آوری می‌شود ساخته می‌شوند.
         function renderReportKpis(latestByOrg) {
             const orgs = ['کارفرما', 'مشاور', 'پیمانکار'].filter(o => latestByOrg[o]);
-            const avg = (field) => {
-                const vals = orgs.map(o => latestByOrg[o][field]).filter(v => typeof v === 'number');
-                return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
-            };
-            const maxRisk = Math.max(0, ...orgs.map(o => Number(latestByOrg[o].risk_severity) || 0));
+            let redCount = 0, yellowCount = 0;
+            orgs.forEach(o => {
+                Object.values(latestByOrg[o].area_status || {}).forEach(a => {
+                    const s = a && a.status;
+                    if (s && s.includes('🔴')) redCount++;
+                    else if (s && s.includes('🟡')) yellowCount++;
+                });
+            });
 
             document.getElementById('reportKpiCards').innerHTML =
                 kpiCard('دیدگاه‌های دریافتی', `${toPersianDigits(orgs.length)} / ۳`, 'text-blue-900') +
-                kpiCard('میانگین پیشرفت فیزیکی', avg('physical_progress') !== null ? toPersianDigits(avg('physical_progress')) + '٪' : '-', 'text-blue-900') +
-                kpiCard('بیشترین شدت ریسک', maxRisk ? toPersianDigits(maxRisk) + '/۵' : '-', maxRisk >= 4 ? 'text-red-700' : 'text-emerald-700');
-        }
-
-        function renderReportChart(latestByOrg) {
-            const orgs = ['کارفرما', 'مشاور', 'پیمانکار'];
-            const field = (f) => orgs.map(o => latestByOrg[o]?.[f] ?? null);
-
-            if (reportChartInstance) { reportChartInstance.destroy(); reportChartInstance = null; }
-            const ctx = document.getElementById('reportChart').getContext('2d');
-            reportChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: orgs,
-                    datasets: [
-                        { label: 'پیشرفت برنامه‌ای (٪)', data: field('planned_progress'), backgroundColor: '#93c5fd' },
-                        { label: 'پیشرفت فیزیکی (٪)', data: field('physical_progress'), backgroundColor: '#2563eb' }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true, max: 100, ticks: { callback: (v) => toPersianDigits(v) + '٪' } } },
-                    plugins: { legend: { position: 'bottom', rtl: true, labels: { font: { family: 'Vazirmatn' } } } }
-                }
-            });
+                kpiCard('حوزه‌های بحرانی (🔴)', toPersianDigits(redCount), redCount ? 'text-red-700' : 'text-emerald-700') +
+                kpiCard('حوزه‌های نیازمند توجه (🟡)', toPersianDigits(yellowCount), yellowCount ? 'text-amber-700' : 'text-emerald-700');
         }
 
         function renderReportXrayDonut(latestByOrg) {
@@ -3497,24 +3412,27 @@
             ]);
         }
 
+        // Redesign backlog (P0 round 2): progress/risk-level variance no
+        // longer exists in check_ins (moved to/removed per اطلاعات تکمیلی
+        // simplification) — «انحراف پیشرفت» already has its own card from
+        // client_reports (renderClientReportCard) elsewhere on this page, so
+        // the strip here is reduced to what X-Ray (still collected) supports.
         function renderAiHealthStrip(latestByOrg) {
             const health = computeProjectHealth(latestByOrg);
             const orgs = ['کارفرما', 'مشاور', 'پیمانکار'].filter(o => latestByOrg[o]);
-            const maxRisk = Math.max(0, ...orgs.map(o => Number(latestByOrg[o].risk_severity) || 0));
-            const variances = orgs
-                .map(o => {
-                    const r = latestByOrg[o];
-                    return (typeof r.physical_progress === 'number' && typeof r.planned_progress === 'number') ? r.physical_progress - r.planned_progress : null;
-                })
-                .filter(v => v !== null);
-            const avgVariance = variances.length ? Math.round(variances.reduce((a, b) => a + b, 0) / variances.length) : null;
-            const openRisks = orgs.reduce((total, o) => total + ((latestByOrg[o].risks || []).filter(r => r.level === 'بحرانی' || r.level === 'زیاد').length), 0);
+            let redCount = 0, yellowCount = 0;
+            orgs.forEach(o => {
+                Object.values(latestByOrg[o].area_status || {}).forEach(a => {
+                    const s = a && a.status;
+                    if (s && s.includes('🔴')) redCount++;
+                    else if (s && s.includes('🟡')) yellowCount++;
+                });
+            });
 
             document.getElementById('reportAiHealthStrip').innerHTML = [
                 statCard('gauge', health === '🔴' ? 'bg-red-100 text-red-700' : health === '🟡' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700', health, 'وضعیت کلی پروژه'),
-                statCard('alertTriangle', maxRisk >= 4 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700', toPersianDigits(maxRisk) + '/۵', 'بیشترین شدت ریسک'),
-                statCard('trendingUp', avgVariance !== null && avgVariance < 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700', avgVariance !== null ? (avgVariance > 0 ? '+' : '') + toPersianDigits(avgVariance) + '٪' : '-', 'میانگین انحراف پیشرفت'),
-                statCard('shield', 'bg-purple-100 text-purple-700', toPersianDigits(openRisks), 'ریسک‌های بحرانی/زیاد باز'),
+                statCard('alertTriangle', redCount ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700', toPersianDigits(redCount), 'حوزه‌های بحرانی (🔴)'),
+                statCard('shield', yellowCount ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700', toPersianDigits(yellowCount), 'حوزه‌های نیازمند توجه (🟡)'),
             ].join('');
         }
 
@@ -3531,7 +3449,7 @@
             'کم': { text: 'text-emerald-700', bg: 'bg-emerald-100', hex: '#22c55e' },
         };
         const AI_SEVERITY_RANK = { 'بحرانی': 0, 'زیاد': 1, 'متوسط': 2, 'کم': 3 };
-        const AI_AREA_FRONT_LABELS = Object.fromEntries([...XRAY_AREAS, ...WORK_FRONTS]);
+        const AI_AREA_FRONT_LABELS = Object.fromEntries(XRAY_AREAS);
 
         function aiSevBadge(level) {
             const s = AI_SEVERITY_STYLE[level] || { text: 'text-slate-600', bg: 'bg-slate-100' };
@@ -3767,6 +3685,11 @@
                 kpiCard('انحراف پیشرفت', variance !== null ? (variance > 0 ? '+' : '') + toPersianDigits(variance) + '٪' : '-', variance !== null && variance < -5 ? 'text-red-700' : 'text-emerald-700') +
                 kpiCard('مدت سپری‌شده از قرارداد', elapsedPercent !== null ? toPersianDigits(elapsedPercent) + '٪' : '-', 'text-amber-700');
 
+            const disciplineProgressRow = (label, planned, actual) =>
+                (planned != null || actual != null)
+                    ? [label, `${planned != null ? toPersianDigits(planned) + '٪' : '-'} / ${actual != null ? toPersianDigits(actual) + '٪' : '-'}`]
+                    : [label, null];
+
             const rows = [
                 ['نام طرح', rec.plan_name],
                 ['شماره قرارداد', rec.contract_number],
@@ -3778,7 +3701,10 @@
                 ['مبلغ اولیه / فعلی قرارداد — ارزی (میلیون یورو)', [rec.contract_initial_amount_eur, rec.contract_current_amount_eur].filter(v => v != null).map(v => toPersianDigits(v)).join(' / ')],
                 ['تاریخ شروع / پایان قرارداد', [formatJalali(rec.contract_start_date), formatJalali(rec.contract_end_date)].filter(Boolean).join(' — ')],
                 ['مدت قرارداد / سپری‌شده (ماه)', [rec.contract_duration_months, rec.elapsed_months].filter(v => v != null).map(v => toPersianDigits(v)).join(' / ')],
-                ['پیشرفت مهندسی / تأمین / اجرا', [rec.progress_engineering, rec.progress_procurement, rec.progress_construction].map(v => v != null ? toPersianDigits(v) + '٪' : '-').join(' / ')],
+                ['تاریخ پیش‌بینی فعلی تکمیل', formatJalali(rec.forecast_completion_date)],
+                disciplineProgressRow('پیشرفت مهندسی — برنامه‌ای/واقعی', rec.progress_engineering_planned, rec.progress_engineering),
+                disciplineProgressRow('پیشرفت تأمین — برنامه‌ای/واقعی', rec.progress_procurement_planned, rec.progress_procurement),
+                disciplineProgressRow('پیشرفت اجرا — برنامه‌ای/واقعی', rec.progress_construction_planned, rec.progress_construction),
                 ['مهم‌ترین Milestone پیش‌رو', rec.milestone_name ? `${rec.milestone_name} — ${formatJalali(rec.milestone_planned_date)} — ${rec.milestone_status}${rec.milestone_delay_days ? ' (' + toPersianDigits(rec.milestone_delay_days) + ' روز تأخیر)' : ''}` : null],
             ];
 
@@ -3821,7 +3747,6 @@
             renderReportKpis(latestByOrg);
             renderClientReportCard(clientReports && clientReports[0]);
             renderReportTable(latestByOrg);
-            renderReportChart(latestByOrg);
             renderReportXrayDonut(latestByOrg);
             renderAiHealthStrip(latestByOrg);
 
@@ -4626,22 +4551,19 @@
             };
 
             // ---- Stat cards ----
-            const avgPhysical = projectNames.length
-                ? Math.round(projectNames.reduce((sum, p) => {
-                    const orgs = Object.values(byProject[p]);
-                    const avg = orgs.reduce((a, c) => a + (Number(c.physical_progress) || 0), 0) / orgs.length;
-                    return sum + avg;
-                }, 0) / projectNames.length)
-                : 0;
+            // Both progress and forecast date now come from client_reports —
+            // the PMO's one official reading per project — rather than being
+            // averaged across each organization's own check_ins self-report.
+            const avgPhysical = (() => {
+                const vals = projectNames.map(p => clientReportByProject[p]?.progress_physical).filter(v => typeof v === 'number');
+                return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
+            })();
 
             const deviations = projectNames
                 .map(p => {
                     const cr = clientReportByProject[p];
-                    if (!cr || !cr.contract_end_date) return null;
-                    const orgs = Object.values(byProject[p]).filter(c => c.forecast_completion_date);
-                    if (!orgs.length) return null;
-                    const avgForecastMs = orgs.reduce((a, c) => a + new Date(c.forecast_completion_date).getTime(), 0) / orgs.length;
-                    return Math.round((avgForecastMs - new Date(cr.contract_end_date).getTime()) / 86400000);
+                    if (!cr || !cr.contract_end_date || !cr.forecast_completion_date) return null;
+                    return Math.round((new Date(cr.forecast_completion_date).getTime() - new Date(cr.contract_end_date).getTime()) / 86400000);
                 })
                 .filter(v => v !== null);
             const avgDeviation = deviations.length ? Math.round(deviations.reduce((a, b) => a + b, 0) / deviations.length) : 0;
@@ -4657,9 +4579,9 @@
                 statCard('grid', 'bg-blue-900/15 text-blue-900', toPersianDigits(projectNames.length), 'تعداد پروژه‌ها',
                     'تعداد پروژه‌هایی که حداقل یک گزارش برایشان ثبت شده است.'),
                 statCard('gauge', 'bg-emerald-100 text-emerald-700', toPersianDigits(avgPhysical) + '٪', 'میانگین پیشرفت فیزیکی پروژه‌ها',
-                    'میانگین % «پیشرفت فیزیکی» خود پروژه (نه Quick Win) از فرم اطلاعات تکمیلی: ابتدا بین سه رکن هر پروژه، سپس بین همه پروژه‌ها.'),
+                    'میانگین % «پیشرفت واقعی کل» ثبت‌شده در فرم اطلاعات پایه و پیشرفت پروژه، بین همه پروژه‌ها.'),
                 statCard('calendar', 'bg-amber-100 text-amber-700', (avgDeviation > 0 ? '+' : '') + toPersianDigits(avgDeviation) + ' روز', 'میانگین انحراف زمان‌بندی',
-                    'میانگین تفاوت (روز) بین «تاریخ پیش‌بینی تکمیل» گزارش‌شده و «تاریخ پایان قراردادی» رسمی؛ عدد مثبت یعنی تأخیر نسبت به قرارداد.'),
+                    'میانگین تفاوت (روز) بین «تاریخ پیش‌بینی فعلی تکمیل» و «تاریخ پایان قراردادی» رسمی، هر دو از فرم اطلاعات پایه و پیشرفت پروژه؛ عدد مثبت یعنی تأخیر نسبت به قرارداد.'),
                 statCard('fileText', 'bg-slate-100 text-slate-700', toPersianDigits((checkins || []).length), 'گزارش‌های دریافتی',
                     'مجموع تعداد فرم‌های اطلاعات تکمیلی و پیشنهاد Quick Win ثبت‌شده توسط همه سازمان‌ها.'),
                 statCard('zap', 'bg-purple-100 text-purple-700', toPersianDigits(qwDefined), 'پیشنهادهای Quick Win ثبت‌شده',
@@ -4859,7 +4781,7 @@
         // is now picked, never typed. These inputs are static (always in the
         // DOM from page load, only their .value is read/written elsewhere),
         // so this needs to run once, not on every render.
-        ['ci_forecast_date', 'ci_plan_start_date', 'ci_plan_target_date', 'cr_start_date', 'cr_end_date', 'cr_milestone_date', 'ci_qwq_due']
+        ['ci_plan_start_date', 'ci_plan_target_date', 'cr_start_date', 'cr_forecast_date', 'cr_milestone_date', 'ci_qwq_due']
             .forEach(id => attachJalaliDatePicker(document.getElementById(id)));
 
         initApp();
