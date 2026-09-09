@@ -418,7 +418,7 @@
                     <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-3">
                         <div class="flex items-center gap-2.5">
                             <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-xs font-extrabold text-[#ffffff]" style="background: linear-gradient(135deg, #f59e0b, #db2777);">۴</span>
-                            <h3 class="text-sm font-bold text-slate-800">سه مسئله اصلی پروژه</h3>
+                            <h3 class="text-sm font-bold text-slate-800">⚠️ سه مسئله اصلی پروژه</h3>
                         </div>
                         <p class="text-[11px] text-slate-500">حداکثر سه مورد — ردیف‌های خالی نادیده گرفته می‌شوند.</p>
                         <div id="ci_issues" class="space-y-3"></div>
@@ -427,7 +427,7 @@
                     <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-3">
                         <div class="flex items-center gap-2.5">
                             <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-xs font-extrabold text-[#ffffff]" style="background: linear-gradient(135deg, #f59e0b, #db2777);">۵</span>
-                            <h3 class="text-sm font-bold text-slate-800">سه ریسک اصلی پروژه</h3>
+                            <h3 class="text-sm font-bold text-slate-800">⚡ سه ریسک اصلی پروژه</h3>
                         </div>
                         <div id="ci_risks" class="space-y-2.5"></div>
                     </div>
@@ -1938,13 +1938,20 @@
                 ['EFFECTIVENESS', rcaState.effectiveness !== null],
             ];
             const firstPending = steps.findIndex(([, done]) => !done);
-            return `<div class="bg-white rounded-2xl shadow-sm border p-3.5 overflow-x-auto">
-                <div class="flex items-center gap-1.5 min-w-max text-[11px] font-extrabold">
+            const activeIndex = firstPending === -1 ? steps.length : firstPending;
+            return `<div class="bg-white rounded-2xl shadow-sm border p-4 overflow-x-auto">
+                <div class="flex items-start min-w-max">
                     ${steps.map(([label, done], i) => {
                         const isCurrent = i === firstPending;
                         const icon = done ? '✓' : isCurrent ? '●' : '○';
-                        const cls = done ? 'text-emerald-600' : isCurrent ? 'text-amber-600' : 'text-slate-300';
-                        return `<span class="flex items-center gap-1 ${cls}">${icon} ${label}</span>${i < steps.length - 1 ? '<span class="text-slate-200">→</span>' : ''}`;
+                        const circleCls = done ? 'bg-emerald-600 text-[#ffffff]' : isCurrent ? 'bg-amber-500 text-[#ffffff]' : 'bg-slate-100 text-slate-400 border border-slate-200';
+                        const labelCls = done ? 'text-emerald-700' : isCurrent ? 'text-amber-700' : 'text-slate-400';
+                        const connectorCls = i <= activeIndex ? 'bg-emerald-500' : 'bg-slate-200';
+                        const connector = i > 0 ? `<div class="flex-1 h-1 rounded-full mt-3 mx-1 ${connectorCls}" style="min-width:20px"></div>` : '';
+                        return `${connector}<div class="flex flex-col items-center gap-1 shrink-0">
+                            <span class="h-7 w-7 rounded-full flex items-center justify-center text-xs font-extrabold ${circleCls}">${icon}</span>
+                            <span class="text-[10px] font-extrabold whitespace-nowrap ${labelCls}">${label}</span>
+                        </div>`;
                     }).join('')}
                 </div>
             </div>`;
@@ -2665,7 +2672,6 @@
                 const el = issueEls[i];
                 if (!el) return;
                 el.querySelector('.issue-desc').value = issue.description || '';
-                if (issue.severity) el.querySelector('.issue-severity').value = issue.severity;
             });
 
             const riskEls = document.querySelectorAll('#ci_risks [data-risk]');
@@ -2969,21 +2975,19 @@
         }
 
         function issueBlockHtml(n) {
-            return `<div class="p-3 bg-slate-50 rounded-xl space-y-2" data-issue="${n}">
-                <p class="text-xs font-bold text-slate-600">Issue No. ${toPersianDigits(n)}</p>
-                <textarea class="issue-desc w-full p-2 border rounded-lg text-xs" rows="2" placeholder="شرح مسئله"></textarea>
-                <select class="issue-severity p-1 border rounded text-xs">
-                    <option value="بالا">شدت: بالا</option>
-                    <option value="متوسط" selected>شدت: متوسط</option>
-                    <option value="پایین">شدت: پایین</option>
-                </select>
+            return `<div class="flex items-center gap-2.5 p-2.5 bg-slate-50 rounded-xl" data-issue="${n}">
+                <span class="shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-[11px] font-extrabold text-[#ffffff]" style="background: linear-gradient(135deg, #f59e0b, #db2777);">${toPersianDigits(n)}</span>
+                <textarea class="issue-desc flex-1 p-1.5 border rounded-lg text-xs bg-white" rows="1" placeholder="⚠️ شرح مسئله"></textarea>
             </div>`;
         }
 
         function riskBlockHtml(n) {
-            return `<div class="p-3 bg-slate-50 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-2 items-start" data-risk="${n}">
-                <input type="text" class="risk-desc md:col-span-1 p-2 border rounded-lg text-xs" placeholder="شرح ریسک ${toPersianDigits(n)}">
-                <input type="text" class="risk-action md:col-span-2 p-2 border rounded-lg text-xs" placeholder="اقدام فعلی">
+            return `<div class="flex items-center gap-2.5 p-2.5 bg-slate-50 rounded-xl" data-risk="${n}">
+                <span class="shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-[11px] font-extrabold text-[#ffffff]" style="background: linear-gradient(135deg, #f59e0b, #db2777);">${toPersianDigits(n)}</span>
+                <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <input type="text" class="risk-desc p-1.5 border rounded-lg text-xs bg-white" placeholder="⚡ شرح ریسک">
+                    <input type="text" class="risk-action p-1.5 border rounded-lg text-xs bg-white" placeholder="🛠 اقدام فعلی">
+                </div>
             </div>`;
         }
 
@@ -3036,10 +3040,7 @@
             document.querySelectorAll('#ci_issues [data-issue]').forEach(el => {
                 const description = el.querySelector('.issue-desc').value.trim();
                 if (!description) return;
-                result.push({
-                    description,
-                    severity: el.querySelector('.issue-severity').value
-                });
+                result.push({ description });
             });
             return result;
         }

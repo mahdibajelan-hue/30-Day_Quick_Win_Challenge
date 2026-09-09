@@ -251,13 +251,24 @@ Deno.serve(async (req) => {
     function summarizeIssues(issues: any): string {
       if (!issues || !issues.length) return "-";
       // deno-lint-ignore no-explicit-any
-      return issues.map((i: any, idx: number) => `  ${idx + 1}) ${i.description} [اثر: ${(i.impact || []).join(",")}] شدت:${i.severity}`).join("\n");
+      return issues.map((i: any, idx: number) => `  ${idx + 1}) ${i.description}`).join("\n");
     }
     // deno-lint-ignore no-explicit-any
     function summarizeRisks(risks: any): string {
       if (!risks || !risks.length) return "-";
       // deno-lint-ignore no-explicit-any
-      return risks.map((r: any, idx: number) => `  ${idx + 1}) ${r.risk} (احتمال:${r.probability}, اثر:${r.impact}, سطح:${r.level}) اقدام فعلی:${r.current_action || "-"}`).join("\n");
+      return risks.map((r: any, idx: number) => `  ${idx + 1}) ${r.risk} — اقدام فعلی: ${r.current_action || "-"}`).join("\n");
+    }
+    // deno-lint-ignore no-explicit-any
+    function summarizeConfirmedCauses(causes: any): string {
+      if (!causes || !causes.length) return "-";
+      // deno-lint-ignore no-explicit-any
+      return causes.map((c: any, idx: number) => `  ${idx + 1}) ${c.text}${c.evidence ? ` (شواهد: ${c.evidence})` : ""}`).join("\n");
+    }
+    // deno-lint-ignore no-explicit-any
+    function summarizeCapaAction(action: any): string {
+      if (!action || !action.action) return "-";
+      return `${action.action}${action.owner ? ` — مسئول: ${action.owner}` : ""}${action.due_date ? ` — سررسید: ${action.due_date}` : ""}${action.status ? ` — وضعیت: ${action.status}` : ""}`;
     }
 
     const perspectiveText = Object.entries(latestByOrg)
@@ -265,16 +276,14 @@ Deno.serve(async (req) => {
 ### دیدگاه ${org}
 - پاسخ‌دهنده: ${c.respondent || "-"} (${c.respondent_position || "-"})
 - وضعیت حوزه‌ها (X-Ray): ${summarizeStatusGroup(c.area_status)}
-- وضعیت جبهه‌های کاری: ${summarizeStatusGroup(c.work_fronts)}
-- پیشرفت برنامه‌ای: ${c.planned_progress ?? "-"}% | پیشرفت فیزیکی واقعی: ${c.physical_progress}%
-- تاریخ پیش‌بینی فعلی تکمیل: ${c.forecast_completion_date}
 - رویداد HSE: ${c.hse_incident ? "بله - " + c.hse_incident_note : "خیر"}
 - سه مسئله اصلی:\n${summarizeIssues(c.issues)}
 - سه ریسک اصلی:\n${summarizeRisks(c.risks)}
 - اگر اقدامی نشود (افق سه‌ماهه): ${c.q_negative_event || "-"}
-- گلوگاه فعلی: ${c.main_bottleneck} | علت ریشه‌ای: ${c.bottleneck_root_cause || "-"} | راه باز کردن: ${c.bottleneck_unlock_action || "-"}
+- گلوگاه فعلی (Criticality: ${c.bottleneck_criticality || "-"}, وضعیت: ${c.bottleneck_status || "-"}): ${c.main_bottleneck}
+- علت(های) ریشه‌ای شناسایی‌شده (روش تحلیل: ${c.rca_method || "-"}):\n${summarizeConfirmedCauses(c.rca_confirmed_causes)}
+- اقدام اصلاحی: ${summarizeCapaAction(c.capa_corrective)} | اقدام پیشگیرانه: ${summarizeCapaAction(c.capa_preventive)} | اثربخشی: ${c.capa_effectiveness || "-"}
 - نیاز به تصمیم مدیریت ارشد (اولویت ${c.senior_decision_priority || "-"}): ${c.senior_decision_needed || "-"}
-- ریسک پیش‌رو (شدت ${c.risk_severity ?? "-"}/۵): ${c.top_risk}
 - پیشنهاد Quick Win: ${c.quick_win_title} — اقدام: ${c.action_details} — چرا: ${c.qw_rationale || "-"} — نتیجه ۳۰ روزه: ${c.tangible_result}
 - برنامه تحقق: مسئول=${c.plan_responsible || "-"}, تاریخ هدف=${c.plan_target_date || "-"}, خروجی=${c.plan_deliverable || "-"}
 - اثر برآوردی: تأخیر=${c.impact_delay_days ?? "-"} روز, پیشرفت=${c.impact_progress_increase ?? "-"}%, هزینه=${c.impact_cost_avoided ?? "-"} ریال
