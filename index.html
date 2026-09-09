@@ -817,10 +817,26 @@
             </div>
 
             <!-- AI ANALYSIS (independent menu, admin-only) -->
-            <div id="aiAnalysisView" class="hidden space-y-6">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                    <h2 class="text-xl font-bold text-purple-700"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:-0.125em"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z"/></svg> تحلیل هوشمند پروژه‌ها</h2>
-                    <p class="text-xs text-slate-500">یک پروژه و ابزار تحلیل را انتخاب کنید تا هوش مصنوعی، با استفاده از تمام گزارش‌های ثبت‌شده (فرم اطلاعات پایه، اطلاعات تکمیلی و پیشنهادهای اقدامات زودبازده هر سه رکن)، یک گزارش تحلیلی جامع تهیه کند.</p>
+            <div id="aiAnalysisView" class="hidden space-y-4">
+                <div class="relative overflow-hidden p-6 md:p-7 rounded-2xl shadow-lg" style="background: linear-gradient(135deg, #7c3aed 0%, #4c1d95 100%);">
+                    <div class="absolute -top-10 -left-10 h-40 w-40 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(251,191,36,.25), transparent 70%);"></div>
+                    <div class="relative flex items-center gap-3 min-w-0">
+                        <div class="shrink-0 h-11 w-11 rounded-2xl flex items-center justify-center text-xl" style="background: rgba(255,255,255,.15); backdrop-filter: blur(4px);">
+                            <svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="currentColor" class="text-white"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z"/></svg>
+                        </div>
+                        <div class="min-w-0">
+                            <h2 class="text-lg md:text-xl font-extrabold text-[#ffffff]">تحلیل هوشمند پروژه‌ها</h2>
+                            <p class="text-xs" style="color: rgba(233,213,255,.9);">مقایسه خودکار دیدگاه کارفرما، مشاور و پیمانکار — نکات پنهان، تناقض‌ها و پیشنهادهای عملی</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-[#ffffff]" style="background: linear-gradient(135deg, #7c3aed, #4c1d95);"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z"/></svg></span>
+                        <h3 class="text-sm font-bold text-slate-800">تنظیمات تحلیل</h3>
+                    </div>
+                    <p class="text-[11px] text-slate-500">یک پروژه و ابزار تحلیل را انتخاب کنید تا هوش مصنوعی، با استفاده از تمام گزارش‌های ثبت‌شده (فرم اطلاعات پایه، اطلاعات تکمیلی و پیشنهادهای اقدامات زودبازده هر سه رکن)، یک گزارش تحلیلی جامع تهیه کند.</p>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
                         <select id="aiaProjectSelect" class="p-2.5 border rounded-xl text-sm md:col-span-2"></select>
                         <select id="aiaProviderSelect" class="p-2.5 border rounded-xl text-sm">
@@ -828,10 +844,16 @@
                             <option value="openai">ChatGPT</option>
                         </select>
                     </div>
-                    <button id="aiaGenerateBtn" type="button" class="w-full bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold py-2.5 rounded-xl transition"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:-0.125em"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z"/></svg> تولید تحلیل هوشمند</button>
+                    <button id="aiaGenerateBtn" type="button" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 rounded-xl transition shadow flex items-center justify-center gap-2">
+                        <svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z"/></svg> تولید تحلیل هوشمند
+                    </button>
                 </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-3">
-                    <h3 class="text-sm font-bold">وضعیت کلی پروژه‌ها</h3>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-[#ffffff]" style="background: linear-gradient(135deg, #1e3a8a, #4c1d95);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 12 17 7"/></svg></span>
+                        <h3 class="text-sm font-bold text-slate-800">وضعیت کلی پروژه‌ها</h3>
+                    </div>
                     <div id="aiaProjectList" class="space-y-1.5 text-xs">
                         <p class="text-center text-slate-400 p-4">در حال بارگذاری...</p>
                     </div>
@@ -970,13 +992,19 @@
                     </div>
                 </div>
 
-                <div class="print-card bg-white rounded-2xl shadow-sm border p-6 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div class="text-center md:text-right">
-                        <h2 class="text-lg font-extrabold text-blue-900">گزارش تحلیلی هوشمند پروژه</h2>
-                        <p class="text-sm font-bold text-slate-700 mt-1" id="reportProjectName">-</p>
-                        <p class="text-xs text-slate-500 mt-1">تاریخ تولید: <span id="reportGeneratedAt"></span> — تهیه‌کننده: <span id="reportGeneratedBy"></span> — ابزار تحلیل: <span id="reportAiProvider">-</span> — <span id="reportAiSource"></span></p>
+                <div class="print-card relative overflow-hidden p-6 md:p-7 rounded-2xl shadow-lg flex flex-col md:flex-row justify-between items-center gap-4" style="background: linear-gradient(135deg, #7c3aed 0%, #4c1d95 100%);">
+                    <div class="absolute -top-10 -left-10 h-40 w-40 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(251,191,36,.25), transparent 70%);"></div>
+                    <div class="relative flex items-center gap-3 min-w-0 text-center md:text-right">
+                        <div class="shrink-0 h-11 w-11 rounded-2xl hidden md:flex items-center justify-center text-xl" style="background: rgba(255,255,255,.15); backdrop-filter: blur(4px);">
+                            <svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="currentColor" class="text-white"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z"/></svg>
+                        </div>
+                        <div class="min-w-0">
+                            <h2 class="text-lg font-extrabold text-[#ffffff]">گزارش تحلیلی هوشمند پروژه</h2>
+                            <p class="text-sm font-bold mt-1 text-[#ffffff]" id="reportProjectName">-</p>
+                            <p class="text-xs mt-1" style="color: rgba(233,213,255,.9);">تاریخ تولید: <span id="reportGeneratedAt"></span> — تهیه‌کننده: <span id="reportGeneratedBy"></span> — ابزار تحلیل: <span id="reportAiProvider">-</span> — <span id="reportAiSource"></span></p>
+                        </div>
                     </div>
-                    <div class="flex flex-col items-center text-center gap-1">
+                    <div class="relative flex flex-col items-center text-center gap-1 shrink-0 bg-white/95 rounded-xl px-3 py-2">
                         <img src="logo.png" alt="لوگوی شرکت" class="h-10 w-10 object-contain" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
                         <p class="font-bold text-xs text-slate-800">شرکت مهندسی و توسعه گاز ایران</p>
                     </div>
@@ -984,13 +1012,19 @@
 
                 <div id="aiCacheWarningBanner" class="no-print"></div>
 
-                <div class="print-card bg-white rounded-2xl shadow-sm border p-6 space-y-4">
-                    <h3 class="text-sm font-bold text-slate-800 border-r-4 border-blue-900 pr-3">خلاصه شاخص‌ها</h3>
-                    <div id="reportKpiCards" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-[#ffffff]" style="background: linear-gradient(135deg, #1e3a8a, #4c1d95);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
+                        <h3 class="text-sm font-bold text-slate-800">خلاصه شاخص‌ها</h3>
+                    </div>
+                    <div id="reportKpiCards" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
                 </div>
 
-                <div id="reportClientCard" class="hidden print-card bg-white rounded-2xl shadow-sm border p-6 space-y-4">
-                    <h3 class="text-sm font-bold text-slate-800 border-r-4 border-blue-900 pr-3">اطلاعات پایه و پیشرفت پروژه</h3>
+                <div id="reportClientCard" class="hidden print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-[#ffffff]" style="background: linear-gradient(135deg, #1e3a8a, #4c1d95);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6a1 1 0 0 1 1 1v2H8V3a1 1 0 0 1 1-1z"/><rect x="5" y="4" width="14" height="18" rx="2"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="15" y2="15"/></svg></span>
+                        <h3 class="text-sm font-bold text-slate-800">اطلاعات پایه و پیشرفت پروژه</h3>
+                    </div>
                     <div id="reportClientKpis" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-right text-xs">
@@ -999,9 +1033,12 @@
                     </div>
                 </div>
 
-                <div class="print-card bg-white rounded-2xl shadow-sm border p-6 space-y-3">
-                    <h3 class="text-sm font-bold text-slate-800 border-r-4 border-amber-500 pr-3">وضعیت حوزه‌ها (X-Ray)</h3>
-                    <p class="text-[10px] text-slate-400">هر رکن (کارفرما/مشاور/پیمانکار) ۷ حوزه را جداگانه رنگ‌بندی می‌کند؛ نمودار زیر مجموع همه این رتبه‌بندی‌ها را نشان می‌دهد، نه تعداد حوزه‌ها.</p>
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-[#ffffff]" style="background: linear-gradient(135deg, #f59e0b, #db2777);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
+                        <h3 class="text-sm font-bold text-slate-800">وضعیت حوزه‌ها (X-Ray)</h3>
+                    </div>
+                    <p class="text-[11px] text-slate-500">هر رکن (کارفرما/مشاور/پیمانکار) ۷ حوزه را جداگانه رنگ‌بندی می‌کند؛ نمودار زیر مجموع همه این رتبه‌بندی‌ها را نشان می‌دهد، نه تعداد حوزه‌ها.</p>
                     <div class="flex flex-col sm:flex-row items-center gap-6">
                         <div class="relative h-32 shrink-0 overflow-hidden" style="max-width:150px">
                             <canvas id="reportXrayDonut"></canvas>
@@ -1014,8 +1051,11 @@
                     </div>
                 </div>
 
-                <div class="print-card bg-white rounded-2xl shadow-sm border p-6 space-y-4">
-                    <h3 class="text-sm font-bold text-slate-800 border-r-4 border-blue-900 pr-3">جدول تطبیقی ۳ دیدگاه</h3>
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-[#ffffff]" style="background: linear-gradient(135deg, #f59e0b, #db2777);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+                        <h3 class="text-sm font-bold text-slate-800">جدول تطبیقی ۳ دیدگاه</h3>
+                    </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-right text-xs">
                             <thead class="bg-slate-100 text-slate-700">
@@ -1031,9 +1071,11 @@
                     </div>
                 </div>
 
-                <div class="print-card bg-white rounded-2xl shadow-sm border p-6 space-y-4">
-                    <h3 class="text-sm font-bold text-slate-800 border-r-4 border-purple-600 pr-3"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" class="text-purple-600" style="display:inline-block;vertical-align:-0.125em"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z"/></svg> تحلیل و پیشنهاد هوش مصنوعی</h3>
-                    <div id="reportAiHealthStrip" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-[#ffffff]" style="background: linear-gradient(135deg, #7c3aed, #4c1d95);"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z"/></svg></span>
+                        <h3 class="text-sm font-bold text-slate-800">تحلیل و پیشنهاد هوش مصنوعی</h3>
+                    </div>
                     <div id="reportAiText" class="text-sm leading-loose space-y-3"></div>
                 </div>
             </div>
@@ -4141,21 +4183,20 @@
         // Redesign backlog (P0 round 2): «پیشرفت»/«ریسک» ستون‌بندی‌شده دیگر
         // اینجا وجود ندارد (هر دو از فرم اطلاعات تکمیلی حذف شدند) — این دو KPI
         // به‌جایش از همان X-Ray که هنوز جمع‌آوری می‌شود ساخته می‌شوند.
+        // The 🔴/🟡 area-status breakdown these two cards used to show here
+        // is already the exact subject of the X-Ray donut + legend right
+        // below on this same page (which also adds the 🟢 count they
+        // omitted) — showing the same two numbers again here was pure
+        // duplication, so this strip is now just the two numbers that
+        // aren't shown anywhere else on the report: how many of the three
+        // organizations reported, and the overall health traffic-light
+        // (moved up from the old, now-removed, AI health strip).
         function renderReportKpis(latestByOrg) {
             const orgs = ['کارفرما', 'مشاور', 'پیمانکار'].filter(o => latestByOrg[o]);
-            let redCount = 0, yellowCount = 0;
-            orgs.forEach(o => {
-                Object.values(latestByOrg[o].area_status || {}).forEach(a => {
-                    const s = a && a.status;
-                    if (s && s.includes('🔴')) redCount++;
-                    else if (s && s.includes('🟡')) yellowCount++;
-                });
-            });
-
+            const health = computeProjectHealth(latestByOrg);
             document.getElementById('reportKpiCards').innerHTML =
-                kpiCard('دیدگاه‌های دریافتی', `${toPersianDigits(orgs.length)} / ۳`, 'text-blue-900') +
-                kpiCard('حوزه‌های بحرانی (🔴)', toPersianDigits(redCount), redCount ? 'text-red-700' : 'text-emerald-700') +
-                kpiCard('حوزه‌های نیازمند توجه (🟡)', toPersianDigits(yellowCount), yellowCount ? 'text-amber-700' : 'text-emerald-700');
+                statCard('checkCircle', orgs.length === 3 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700', `${toPersianDigits(orgs.length)} / ۳`, 'دیدگاه‌های دریافتی', 'تعداد ارکانی (کارفرما/مشاور/پیمانکار) که فرم اطلاعات تکمیلی این دوره را ثبت کرده‌اند') +
+                statCard('gauge', health === '🔴' ? 'bg-red-100 text-red-700' : health === '🟡' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700', health, 'وضعیت کلی پروژه', 'بر اساس بحرانی‌ترین حوزه X-Ray و بالاترین سطح ریسک گزارش‌شده');
         }
 
         function renderReportXrayDonut(latestByOrg) {
@@ -4178,29 +4219,9 @@
             ]);
         }
 
-        // Redesign backlog (P0 round 2): progress/risk-level variance no
-        // longer exists in check_ins (moved to/removed per اطلاعات تکمیلی
-        // simplification) — «انحراف پیشرفت» already has its own card from
-        // client_reports (renderClientReportCard) elsewhere on this page, so
-        // the strip here is reduced to what X-Ray (still collected) supports.
-        function renderAiHealthStrip(latestByOrg) {
-            const health = computeProjectHealth(latestByOrg);
-            const orgs = ['کارفرما', 'مشاور', 'پیمانکار'].filter(o => latestByOrg[o]);
-            let redCount = 0, yellowCount = 0;
-            orgs.forEach(o => {
-                Object.values(latestByOrg[o].area_status || {}).forEach(a => {
-                    const s = a && a.status;
-                    if (s && s.includes('🔴')) redCount++;
-                    else if (s && s.includes('🟡')) yellowCount++;
-                });
-            });
-
-            document.getElementById('reportAiHealthStrip').innerHTML = [
-                statCard('gauge', health === '🔴' ? 'bg-red-100 text-red-700' : health === '🟡' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700', health, 'وضعیت کلی پروژه'),
-                statCard('alertTriangle', redCount ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700', toPersianDigits(redCount), 'حوزه‌های بحرانی (🔴)'),
-                statCard('shield', yellowCount ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700', toPersianDigits(yellowCount), 'حوزه‌های نیازمند توجه (🟡)'),
-            ].join('');
-        }
+        // «وضعیت کلی پروژه» moved up into renderReportKpis()'s summary strip
+        // above; the 🔴/🟡 counts that used to duplicate here were removed
+        // outright (see the comment on renderReportKpis for why).
 
         // Renders the AI's structured JSON analysis (see the prompt schema in
         // supabase/functions/analyze-project/index.ts) as charts, gauges and
@@ -4219,7 +4240,43 @@
 
         function aiSevBadge(level) {
             const s = AI_SEVERITY_STYLE[level] || { text: 'text-slate-600', bg: 'bg-slate-100' };
-            return `<span class="${s.bg} ${s.text} px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap">${esc(level || '-')}</span>`;
+            const icon = { 'بحرانی': '🛑', 'زیاد': '⚠️', 'متوسط': '🔶', 'کم': '🟢' }[level] || '';
+            return `<span class="${s.bg} ${s.text} px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap">${icon} ${esc(level || '-')}</span>`;
+        }
+
+        // Small circular icon badge used as every sub-card's header marker in
+        // renderAiAnalysisSections() — same shape/size as the numbered badges
+        // on اطلاعات پایه/اطلاعات تکمیلی/پیشنهاد اقدام زودبازده, just with an
+        // icon instead of a step number since this report isn't a sequential
+        // form.
+        function sectionIconBadge(iconName, colorFrom, colorTo) {
+            return `<span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-[#ffffff]" style="background: linear-gradient(135deg, ${colorFrom}, ${colorTo});">${iconSvg(iconName, 'w-3.5 h-3.5')}</span>`;
+        }
+
+        function renderRiskSeverityChart(riskRegister) {
+            const el = document.getElementById('aiRiskSeverityChart');
+            if (!el || !riskRegister.length) return;
+            const levels = ['بحرانی', 'زیاد', 'متوسط', 'کم'];
+            new Chart(el.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: levels,
+                    datasets: [{
+                        data: levels.map(lv => riskRegister.filter(r => r.level === lv).length),
+                        backgroundColor: levels.map(lv => (AI_SEVERITY_STYLE[lv] || {}).hex || '#94a3b8'),
+                    }],
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { min: 0, ticks: { stepSize: 1, precision: 0, callback: (v) => toPersianDigits(v) }, title: { display: true, text: 'تعداد ریسک', color: '#8b96ad' }, grid: { color: '#22304f' } },
+                        y: { grid: { display: false } },
+                    },
+                    plugins: { legend: { display: false } },
+                },
+            });
         }
 
         function renderDivergenceGauge(score) {
@@ -4271,13 +4328,24 @@
             }
 
             const overall = analysis.overall || {};
-            const overallBorder = { '🟢': 'border-emerald-600 bg-emerald-100', '🟡': 'border-amber-500 bg-amber-100', '🔴': 'border-red-600 bg-red-100' }[overall.status_color] || 'border-slate-400 bg-slate-50';
+            const overallTheme = {
+                '🟢': { border: 'border-emerald-600', bg: 'bg-emerald-50', badge: '#059669, #047857' },
+                '🟡': { border: 'border-amber-500', bg: 'bg-amber-50', badge: '#f59e0b, #b45309' },
+                '🔴': { border: 'border-red-600', bg: 'bg-red-50', badge: '#dc2626, #7f1d1d' },
+            }[overall.status_color] || { border: 'border-slate-400', bg: 'bg-slate-50', badge: '#64748b, #334155' };
             const sections = [];
 
+            // This headline card is the one deliberate exception to the
+            // plain-white-card convention below — it's the report's at-a-
+            // glance verdict (like a traffic light), so it keeps its status
+            // color as a background tint instead of just an icon badge.
             sections.push(`
-                <div class="rounded-xl border-r-4 ${overallBorder} p-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                    <div class="md:col-span-2 space-y-1">
-                        <h4 class="text-sm font-bold flex items-center gap-2"><span class="text-base">${esc(overall.status_color || '⚪')}</span> جمع‌بندی هوش مصنوعی</h4>
+                <div class="rounded-2xl border-r-4 ${overallTheme.border} ${overallTheme.bg} p-5 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                    <div class="md:col-span-2 space-y-1.5">
+                        <h4 class="text-sm font-bold flex items-center gap-2.5">
+                            <span class="shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-base" style="background: linear-gradient(135deg, ${overallTheme.badge});">${esc(overall.status_color || '⚪')}</span>
+                            جمع‌بندی هوش مصنوعی
+                        </h4>
                         <p class="text-xs leading-relaxed text-slate-700">${esc(overall.status_summary || '-')}</p>
                     </div>
                     <div class="text-center">
@@ -4292,11 +4360,14 @@
 
             if (Array.isArray(analysis.overlooked_insights) && analysis.overlooked_insights.length) {
                 sections.push(`
-                    <div class="rounded-xl border-r-4 border-purple-700 bg-purple-100 p-4 space-y-3">
-                        <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('activity', 'w-4 h-4 shrink-0')}🔍 نکات پنهان و نادیده‌گرفته‌شده</h4>
+                    <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <div class="flex items-center gap-2.5">
+                            ${sectionIconBadge('activity', '#7c3aed', '#4c1d95')}
+                            <h4 class="text-sm font-bold text-slate-800">🔍 نکات پنهان و نادیده‌گرفته‌شده</h4>
+                        </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             ${analysis.overlooked_insights.map(i => `
-                                <div class="bg-white rounded-lg p-3 border border-purple-100 space-y-1">
+                                <div class="bg-purple-50 rounded-lg p-3 border border-purple-100 space-y-1">
                                     <p class="text-xs font-bold text-purple-800">${esc(i.insight || '-')}</p>
                                     ${i.evidence ? `<p class="text-[11px] text-slate-600">📎 ${esc(i.evidence)}</p>` : ''}
                                     ${i.why_it_matters ? `<p class="text-[11px] text-slate-500">چرا مهم است: ${esc(i.why_it_matters)}</p>` : ''}
@@ -4307,10 +4378,13 @@
 
             if (Array.isArray(analysis.cross_perspective_contradictions) && analysis.cross_perspective_contradictions.length) {
                 sections.push(`
-                    <div class="rounded-xl border-r-4 border-amber-500 bg-amber-100 p-4 space-y-3">
-                        <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('alertTriangle', 'w-4 h-4 shrink-0')}تناقض‌های کلیدی بین دیدگاه‌ها</h4>
+                    <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <div class="flex items-center gap-2.5">
+                            ${sectionIconBadge('alertTriangle', '#f59e0b', '#b45309')}
+                            <h4 class="text-sm font-bold text-slate-800">تناقض‌های کلیدی بین دیدگاه‌ها</h4>
+                        </div>
                         <div class="overflow-x-auto">
-                            <table class="w-full text-right text-[11px] bg-white rounded-lg overflow-hidden">
+                            <table class="w-full text-right text-[11px] rounded-lg overflow-hidden">
                                 <thead class="bg-slate-100 text-slate-700"><tr>
                                     <th class="p-2 border">موضوع</th><th class="p-2 border text-blue-900">کارفرما</th><th class="p-2 border text-amber-900">مشاور</th><th class="p-2 border text-emerald-900">پیمانکار</th><th class="p-2 border">چرا مهم است</th>
                                 </tr></thead>
@@ -4332,12 +4406,15 @@
             if (Array.isArray(analysis.problem_areas) && analysis.problem_areas.length) {
                 const sortedAreas = [...analysis.problem_areas].sort((a, b) => (b.flagged_by || []).length - (a.flagged_by || []).length);
                 sections.push(`
-                    <div class="rounded-xl border-r-4 border-red-600 bg-red-100 p-4 space-y-3">
-                        <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('zap', 'w-4 h-4 shrink-0')}حوزه‌ها و جبهه‌های کاری مسئله‌ساز</h4>
+                    <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <div class="flex items-center gap-2.5">
+                            ${sectionIconBadge('zap', '#dc2626', '#7f1d1d')}
+                            <h4 class="text-sm font-bold text-slate-800">حوزه‌ها و جبهه‌های کاری مسئله‌ساز</h4>
+                        </div>
                         <div style="height:${Math.max(120, sortedAreas.length * 36)}px"><canvas id="aiProblemAreasChart"></canvas></div>
                         <div class="space-y-2">
                             ${sortedAreas.map(p => `
-                                <div class="bg-white rounded-lg p-2.5 border border-red-100 flex flex-wrap items-center gap-2 justify-between">
+                                <div class="bg-red-50 rounded-lg p-2.5 border border-red-100 flex flex-wrap items-center gap-2 justify-between">
                                     <span class="text-xs font-bold">${esc(AI_AREA_FRONT_LABELS[p.key] || p.key)}</span>
                                     <span class="flex items-center gap-1.5">${aiSevBadge(p.severity)}<span class="text-[10px] text-slate-500">${(p.flagged_by || []).join('، ') || '-'}</span></span>
                                     ${p.synthesis ? `<span class="text-[11px] text-slate-600 w-full">${esc(p.synthesis)}</span>` : ''}
@@ -4349,8 +4426,12 @@
             if (Array.isArray(analysis.risk_register) && analysis.risk_register.length) {
                 const sortedRisks = [...analysis.risk_register].sort((a, b) => (AI_SEVERITY_RANK[a.level] ?? 9) - (AI_SEVERITY_RANK[b.level] ?? 9));
                 sections.push(`
-                    <div class="rounded-xl border-r-4 border-red-600 bg-white p-4 space-y-3 border border-slate-200">
-                        <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('shield', 'w-4 h-4 shrink-0')}ثبت ریسک‌ها</h4>
+                    <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <div class="flex items-center gap-2.5">
+                            ${sectionIconBadge('shield', '#dc2626', '#7f1d1d')}
+                            <h4 class="text-sm font-bold text-slate-800">ثبت ریسک‌ها</h4>
+                        </div>
+                        <div style="height:90px"><canvas id="aiRiskSeverityChart"></canvas></div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-right text-[11px]">
                                 <thead class="bg-slate-100 text-slate-700"><tr><th class="p-2 border">ریسک</th><th class="p-2 border">منبع</th><th class="p-2 border">سطح</th><th class="p-2 border">اقدام</th></tr></thead>
@@ -4372,25 +4453,31 @@
                 const ranked = [...analysis.quick_win_comparison].sort((a, b) => (a.recommended_rank || 9) - (b.recommended_rank || 9));
                 const medal = ['🥇', '🥈', '🥉'];
                 sections.push(`
-                    <div class="rounded-xl border-r-4 border-emerald-600 bg-emerald-50 p-4 space-y-3">
-                        <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('target', 'w-4 h-4 shrink-0')}مقایسه پیشنهادهای اقدامات زودبازده</h4>
+                    <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <div class="flex items-center gap-2.5">
+                            ${sectionIconBadge('target', '#059669', '#047857')}
+                            <h4 class="text-sm font-bold text-slate-800">مقایسه پیشنهادهای اقدامات زودبازده</h4>
+                        </div>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                             ${ranked.map((q, i) => `
-                                <div class="bg-white rounded-lg p-3 border border-emerald-100 space-y-1">
+                                <div class="bg-emerald-50 rounded-lg p-3 border border-emerald-100 space-y-1">
                                     <p class="text-xs font-bold">${medal[i] || '•'} ${esc(q.organization || '-')}</p>
                                     <p class="text-[11px] font-bold text-slate-700">${esc(q.title || '-')}</p>
                                     <p class="text-[11px] text-slate-600">${esc(q.impact_summary || '-')}</p>
                                     ${q.time_estimate_days != null ? `<p class="text-[10px] text-slate-400">برآورد زمان: ${toPersianDigits(q.time_estimate_days)} روز</p>` : ''}
                                 </div>`).join('')}
                         </div>
-                        ${analysis.selected_quick_win_assessment ? `<p class="text-[11px] text-slate-600 bg-white rounded-lg p-2.5 border border-emerald-100">🎯 ارزیابی اقدام زودبازده برگزیده فعلی: ${esc(analysis.selected_quick_win_assessment)}</p>` : ''}
+                        ${analysis.selected_quick_win_assessment ? `<p class="text-[11px] text-slate-600 bg-emerald-50 rounded-lg p-2.5 border border-emerald-100">🎯 ارزیابی اقدام زودبازده برگزیده فعلی: ${esc(analysis.selected_quick_win_assessment)}</p>` : ''}
                     </div>`);
             }
 
             if (analysis.root_cause_analysis && analysis.root_cause_analysis.primary_root_cause) {
                 sections.push(`
-                    <div class="rounded-xl border-r-4 border-blue-900 bg-blue-100 p-4 space-y-1">
-                        <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('fileText', 'w-4 h-4 shrink-0')}علت ریشه‌ای مشترک</h4>
+                    <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-1.5">
+                        <div class="flex items-center gap-2.5">
+                            ${sectionIconBadge('fileText', '#1e3a8a', '#4c1d95')}
+                            <h4 class="text-sm font-bold text-slate-800">علت ریشه‌ای مشترک</h4>
+                        </div>
                         <p class="text-xs font-bold text-slate-800">${esc(analysis.root_cause_analysis.primary_root_cause)}</p>
                         ${analysis.root_cause_analysis.summary ? `<p class="text-xs text-slate-600">${esc(analysis.root_cause_analysis.summary)}</p>` : ''}
                     </div>`);
@@ -4398,33 +4485,50 @@
 
             if (Array.isArray(analysis.action_plan_30_days) && analysis.action_plan_30_days.length) {
                 sections.push(`
-                    <div class="rounded-xl border-r-4 border-blue-900 bg-blue-100 p-4 space-y-2">
-                        <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('calendar', 'w-4 h-4 shrink-0')}برنامه اقدام ۳۰ روزه</h4>
-                        <div class="space-y-2">
-                            ${analysis.action_plan_30_days.map(a => `
-                                <div class="bg-white rounded-lg p-2.5 border border-blue-200 flex flex-wrap items-center gap-2">
-                                    <span class="text-[10px] font-bold text-blue-900 bg-blue-100 px-2 py-0.5 rounded-lg whitespace-nowrap">${esc(a.week || '-')}</span>
-                                    <span class="text-xs flex-1">${esc(a.action || '-')}</span>
-                                    <span class="text-[10px] text-slate-500 whitespace-nowrap">مسئول: ${esc(a.owner || '-')}</span>
-                                </div>`).join('')}
+                    <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <div class="flex items-center gap-2.5">
+                            ${sectionIconBadge('calendar', '#1e3a8a', '#4c1d95')}
+                            <h4 class="text-sm font-bold text-slate-800">برنامه اقدام ۳۰ روزه</h4>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <div class="flex items-start min-w-max">
+                                ${analysis.action_plan_30_days.map((a, i) => `
+                                    ${i > 0 ? `<div class="flex-1 h-1 rounded-full mt-4 mx-1 bg-blue-200" style="min-width:24px"></div>` : ''}
+                                    <div class="flex flex-col items-center gap-1.5 shrink-0 text-center" style="width:150px">
+                                        <span class="h-8 w-8 rounded-full flex items-center justify-center text-xs font-extrabold text-[#ffffff] bg-blue-900">${toPersianDigits(i + 1)}</span>
+                                        <span class="text-[10px] font-extrabold text-blue-900 bg-blue-100 px-2 py-0.5 rounded-lg whitespace-nowrap">${esc(a.week || '-')}</span>
+                                        <p class="text-[11px] text-slate-700 leading-snug">${esc(a.action || '-')}</p>
+                                        <p class="text-[10px] text-slate-400">مسئول: ${esc(a.owner || '-')}</p>
+                                    </div>`).join('')}
+                            </div>
                         </div>
                     </div>`);
             }
 
             if (Array.isArray(analysis.executive_decisions_needed) && analysis.executive_decisions_needed.length) {
                 sections.push(`
-                    <div class="rounded-xl border-r-4 border-red-600 bg-red-100 p-4 space-y-2">
-                        <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('checkCircle', 'w-4 h-4 shrink-0')}تصمیمات مورد نیاز مدیریت ارشد</h4>
-                        <ul class="list-disc pr-5 space-y-1 text-xs text-slate-700">
-                            ${analysis.executive_decisions_needed.map(d => `<li>${esc(d)}</li>`).join('')}
-                        </ul>
+                    <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-2">
+                        <div class="flex items-center gap-2.5">
+                            ${sectionIconBadge('checkCircle', '#dc2626', '#7f1d1d')}
+                            <h4 class="text-sm font-bold text-slate-800">تصمیمات مورد نیاز مدیریت ارشد</h4>
+                        </div>
+                        <div class="space-y-1.5">
+                            ${analysis.executive_decisions_needed.map((d, i) => `
+                                <div class="bg-red-50 rounded-lg p-2.5 border border-red-100 flex items-start gap-2.5">
+                                    <span class="shrink-0 h-5 w-5 rounded-full bg-red-600 text-[#ffffff] text-[10px] font-extrabold flex items-center justify-center mt-0.5">${toPersianDigits(i + 1)}</span>
+                                    <span class="text-xs text-slate-700 leading-relaxed">${esc(d)}</span>
+                                </div>`).join('')}
+                        </div>
                     </div>`);
             }
 
             if (analysis.final_recommendation) {
                 sections.push(`
-                    <div class="rounded-xl border-r-4 border-purple-700 bg-purple-100 p-4 space-y-1">
-                        <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('trendingUp', 'w-4 h-4 shrink-0')}توصیه پایانی</h4>
+                    <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-1.5">
+                        <div class="flex items-center gap-2.5">
+                            ${sectionIconBadge('trendingUp', '#7c3aed', '#4c1d95')}
+                            <h4 class="text-sm font-bold text-slate-800">توصیه پایانی</h4>
+                        </div>
                         <p class="text-xs leading-relaxed text-slate-800">${esc(analysis.final_recommendation)}</p>
                     </div>`);
             }
@@ -4433,6 +4537,7 @@
 
             renderDivergenceGauge(overall.divergence_score);
             if (Array.isArray(analysis.problem_areas)) renderProblemAreasChart(analysis.problem_areas);
+            if (Array.isArray(analysis.risk_register)) renderRiskSeverityChart(analysis.risk_register);
         }
 
         function renderClientReportCard(rec) {
@@ -4494,7 +4599,6 @@
             document.getElementById('reportAiSource').textContent = '';
             document.getElementById('aiCacheWarningBanner').innerHTML = '';
             document.getElementById('reportAiText').innerHTML = '<p class="text-purple-700 text-xs"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:-0.125em"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z"/></svg> در حال بارگذاری...</p>';
-            document.getElementById('reportAiHealthStrip').innerHTML = '';
             document.getElementById('reportTableBody').innerHTML = '';
             document.getElementById('reportKpiCards').innerHTML = '';
 
@@ -4514,7 +4618,6 @@
             renderClientReportCard(clientReports && clientReports[0]);
             renderReportTable(latestByOrg);
             renderReportXrayDonut(latestByOrg);
-            renderAiHealthStrip(latestByOrg);
 
             try {
                 // Default: read the last saved analysis straight from the
