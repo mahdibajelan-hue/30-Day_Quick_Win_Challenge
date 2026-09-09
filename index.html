@@ -1451,13 +1451,6 @@
         const QW_AREA_OPTIONS = ['Engineering', 'Procurement', 'Construction', 'Contract / Commercial', 'Finance', 'HSE', 'Quality', 'Management / Decision Making', 'سایر'];
         const QW_CONSEQUENCE_TAGS = ['تأخیر زمانی', 'افزایش هزینه', 'کاهش پیشرفت', 'ایجاد Claim', 'ایجاد ریسک', 'افت کیفیت', 'توقف جبهه کاری', 'تأخیر در بهره‌برداری', 'سایر'];
         const QW_SUPPORT_TAGS = ['تصمیم مدیرعامل', 'تصمیم مجری طرح', 'تصمیم مدیریت طرح', 'تصمیم قراردادی', 'تصمیم مهندسی', 'تأمین منابع مالی', 'تأمین کالا', 'رفع محدودیت اجرایی', 'هماهنگی بین واحدها', 'سایر'];
-        const QW_CRITERIA = [
-            ['score_time', 'اثر بر زمان پروژه', 0.25],
-            ['score_cost', 'اثر بر هزینه', 0.20],
-            ['score_urgency', 'فوریت', 0.20],
-            ['score_feasibility', 'قابلیت تحقق در ۳۰ روز', 0.20],
-            ['score_leverage', 'اهرم مدیریتی / اثرگذاری بین‌واحدی', 0.15]
-        ];
         const QW_DECISION_OPTIONS = ['اقدام زودبازده منتخب', 'نیازمند بررسی بیشتر', 'ادغام با پیشنهاد دیگر', 'تبدیل به اقدام میان‌مدت', 'رد پیشنهاد'];
 
         // --------------------------------------------------
@@ -3733,22 +3726,6 @@
         // --------------------------------------------------
         // SELECTION: compare latest Quick Win proposal per project and pick one
         // --------------------------------------------------
-        function evalCriteriaHtml() {
-            return QW_CRITERIA.map(([key, label, weight]) => `
-                <div class="flex justify-between items-center gap-2 text-xs">
-                    <span>${esc(label)} <span class="text-slate-400">(${Math.round(weight * 100)}%)</span></span>
-                    <select class="eval-score border rounded p-1" data-key="${key}" data-weight="${weight}">
-                        ${[1, 2, 3, 4, 5].map(n => `<option value="${n}" ${n === 3 ? 'selected' : ''}>${n}</option>`).join('')}
-                    </select>
-                </div>`).join('');
-        }
-
-        function computeWeightedScore(selects) {
-            let total = 0;
-            selects.forEach(s => { total += Number(s.value) * Number(s.dataset.weight); });
-            return total;
-        }
-
         // --------------------------------------------------
         // check_ins is now filled by two independent forms (اطلاعات تکمیلی
         // and پیشنهاد Quick Win), so a project+org's "current state" is
@@ -3874,6 +3851,7 @@
             'مشاور': { border: 'border-amber-500', badge: 'bg-amber-100 text-amber-800', text: 'text-amber-800' },
             'پیمانکار': { border: 'border-emerald-600', badge: 'bg-emerald-100 text-emerald-800', text: 'text-emerald-800' },
         };
+        const ORG_ORDER = ['کارفرما', 'مشاور', 'پیمانکار'];
 
         function qwImpactChips(prop) {
             const chips = [];
@@ -3887,14 +3865,27 @@
             `).join('')}</div>`;
         }
 
-        function scoreBarColor(score) {
-            return score >= 4 ? '#22c55e' : score >= 3 ? '#f59e0b' : '#ef4444';
+        // Every possible outcome of «ثبت ارزیابی» gets its own visible tag on
+        // the proposal card — not just the one eventually selected — so at a
+        // glance you can see what happened to all three orgs' proposals.
+        const QW_DECISION_TAG_STYLE = {
+            'اقدام زودبازده منتخب': { bg: 'bg-emerald-500', text: 'text-[#ffffff]', icon: '🏆' },
+            'نیازمند بررسی بیشتر': { bg: 'bg-amber-100', text: 'text-amber-800', icon: '🔍' },
+            'ادغام با پیشنهاد دیگر': { bg: 'bg-slate-200', text: 'text-slate-700', icon: '🔗' },
+            'تبدیل به اقدام میان‌مدت': { bg: 'bg-blue-100', text: 'text-blue-900', icon: '🕒' },
+            'رد پیشنهاد': { bg: 'bg-red-100', text: 'text-red-700', icon: '❌' },
+        };
+
+        function qwDecisionTagHtml(decision) {
+            if (!decision) return '';
+            const s = QW_DECISION_TAG_STYLE[decision] || { bg: 'bg-slate-100', text: 'text-slate-600', icon: '🏷' };
+            return `<span class="absolute -top-2 left-3 ${s.bg} ${s.text} text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm whitespace-nowrap">${s.icon} ${esc(decision)}</span>`;
         }
 
-        function qwProposalCardHtml(prop, isSelected, existingEval, isAdmin, hasDecision) {
+        function qwProposalCardHtml(prop, isSelected, isAdmin) {
             const style = ORG_STYLE[prop.organization] || ORG_STYLE['کارفرما'];
             return `<div class="bg-slate-50 rounded-2xl border-r-4 ${style.border} p-4 space-y-3 text-xs ${isSelected ? 'ring-2 ring-emerald-400' : ''} relative">
-                ${isSelected ? '<span class="absolute -top-2 left-3 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">🏆 منتخب</span>' : ''}
+                ${qwDecisionTagHtml(prop.decision)}
                 <div class="flex justify-between items-start gap-2">
                     <b class="text-sm leading-snug">${esc(prop.title)}</b>
                     <span class="shrink-0 ${style.badge} px-2 py-1 rounded-lg font-bold">${esc(prop.organization)}</span>
@@ -3908,20 +3899,10 @@
                 ${qwImpactChips(prop)}
                 ${isAdmin ? `
                 <div class="pt-3 border-t space-y-2">
-                    ${evalCriteriaHtml()}
-                    <div class="space-y-1 pt-1">
-                        <div class="flex justify-between items-center">
-                            <span class="text-slate-500">امتیاز نهایی</span>
-                            <span class="eval-final-score font-extrabold text-sm">۳٫۰۰ / ۵</span>
-                        </div>
-                        <div class="w-full bg-slate-200 rounded-full h-1.5">
-                            <div class="eval-score-bar h-1.5 rounded-full transition-all" style="width:60%;background:#f59e0b"></div>
-                        </div>
-                    </div>
-                    <select class="eval-decision w-full border rounded-lg p-1.5 text-xs mt-1">
-                        ${QW_DECISION_OPTIONS.map(o => `<option value="${esc(o)}" ${existingEval && existingEval.decision === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
+                    <select class="eval-decision w-full border rounded-lg p-1.5 text-xs">
+                        ${QW_DECISION_OPTIONS.map(o => `<option value="${esc(o)}" ${prop.decision === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
                     </select>
-                    <button type="button" class="eval-save-btn w-full bg-blue-900 hover:bg-blue-800 text-white rounded-lg py-1.5 font-bold mt-1 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-blue-900" ${hasDecision && !isSelected ? 'disabled title="یک اقدام زودبازده دیگر برای این پروژه قبلاً انتخاب شده است"' : ''}>ثبت ارزیابی</button>
+                    <button type="button" class="eval-save-btn w-full bg-blue-900 hover:bg-blue-800 text-white rounded-lg py-1.5 font-bold">ثبت ارزیابی</button>
                 </div>` : ''}
             </div>`;
         }
@@ -3995,58 +3976,40 @@
                     header.querySelector('.qw-chevron').style.transform = isOpen ? 'rotate(-90deg)' : '';
                 });
 
-                if (isAdmin) {
-                    const aiRow = document.createElement('div');
-                    aiRow.className = 'flex items-center gap-2 flex-wrap';
-                    aiRow.innerHTML = `<select class="ai-provider-select text-xs border rounded-lg p-1.5">
-                            <option value="gemini">Gemini (رایگان)</option>
-                            <option value="openai">ChatGPT</option>
-                        </select>
-                        <button type="button" class="ai-btn text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-lg font-bold hover:bg-purple-200"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:-0.125em"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z"/></svg> تحلیل هوشمند</button>`;
-                    const providerSelect = aiRow.querySelector('.ai-provider-select');
-                    aiRow.querySelector('.ai-btn').addEventListener('click', () => showAiReport(pName, providerSelect.value));
-                    body.appendChild(aiRow);
-                }
+                // A dedicated «تحلیل هوشمند» analyzed-with-Gemini/ChatGPT page
+                // already exists in the sidebar for this — no need to
+                // duplicate a provider picker + analyze button on every
+                // project card here too.
 
                 if (decision) {
                     const banner = document.createElement('div');
                     banner.className = 'bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm space-y-1';
                     banner.innerHTML = `
                         <p class="font-bold text-emerald-800">✅ منتخب نهایی: ${esc(decision.title)} <span class="font-normal text-emerald-700">(${esc(decision.organization)})</span></p>
-                        <p class="text-xs text-slate-500">امتیاز اولویت: ${decision.weighted_score?.toFixed?.(2) ?? decision.weighted_score} | مهلت: ${formatJalali(decision.execution_target_date)}</p>
+                        <p class="text-xs text-slate-500">مهلت: ${formatJalali(decision.execution_target_date)}</p>
                         ${isAdmin ? '<button type="button" class="clear-btn text-xs text-red-600 underline mt-1">تغییر انتخاب</button>' : ''}`;
                     if (isAdmin) banner.querySelector('.clear-btn').addEventListener('click', () => clearDecision(pName));
                     body.appendChild(banner);
                 }
 
                 const grid = document.createElement('div');
-                grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-3';
+                grid.className = 'grid grid-cols-1 md:grid-cols-3 gap-3';
 
-                byProject[pName].forEach(prop => {
+                // Fixed column order (کارفرما, مشاور, پیمانکار) rather than
+                // insertion/submission order — so the same organization
+                // always lands in the same column across every project,
+                // which is what actually makes a side-by-side comparison
+                // easy to scan.
+                const orderedProps = [...byProject[pName]].sort((a, b) => ORG_ORDER.indexOf(a.organization) - ORG_ORDER.indexOf(b.organization));
+                orderedProps.forEach(prop => {
                     const isSelected = decision && decision.id === prop.id;
                     const wrap = document.createElement('div');
-                    wrap.innerHTML = qwProposalCardHtml(prop, isSelected, prop, isAdmin, !!decision);
+                    wrap.innerHTML = qwProposalCardHtml(prop, isSelected, isAdmin);
                     const propEl = wrap.firstElementChild;
                     if (isAdmin) {
-                        const scoreSelects = Array.from(propEl.querySelectorAll('.eval-score'));
-                        const finalScoreEl = propEl.querySelector('.eval-final-score');
-                        const scoreBarEl = propEl.querySelector('.eval-score-bar');
                         const decisionSelect = propEl.querySelector('.eval-decision');
-
-                        scoreSelects.forEach(s => { if (prop[s.dataset.key] != null) s.value = prop[s.dataset.key]; });
-                        const refreshScore = () => {
-                            const score = computeWeightedScore(scoreSelects);
-                            finalScoreEl.textContent = toPersianDigits(score.toFixed(2)) + ' / ۵';
-                            scoreBarEl.style.width = Math.round((score / 5) * 100) + '%';
-                            scoreBarEl.style.background = scoreBarColor(score);
-                        };
-                        scoreSelects.forEach(s => s.addEventListener('change', refreshScore));
-                        refreshScore();
-
                         propEl.querySelector('.eval-save-btn').addEventListener('click', () => {
-                            const scores = {};
-                            scoreSelects.forEach(s => { scores[s.dataset.key] = Number(s.value); });
-                            saveEvaluation(pName, prop, scores, computeWeightedScore(scoreSelects), decisionSelect.value);
+                            saveEvaluation(pName, prop, decisionSelect.value);
                         });
                     }
                     grid.appendChild(propEl);
@@ -4693,28 +4656,36 @@
 
         const DECIDED_STATUSES = ['انتخاب‌شده', 'در حال اجرا', 'بسته‌شده'];
 
-        async function saveEvaluation(projectName, prop, scores, weightedScore, decision) {
+        async function saveEvaluation(projectName, prop, decision) {
             const patch = {
-                score_time: scores.score_time,
-                score_cost: scores.score_cost,
-                score_urgency: scores.score_urgency,
-                score_feasibility: scores.score_feasibility,
-                score_leverage: scores.score_leverage,
-                weighted_score: weightedScore,
                 decision,
                 evaluated_by: currentUser.email,
                 evaluated_at: new Date().toISOString(),
             };
             const isNewlySelected = decision === 'اقدام زودبازده منتخب';
-            // Re-saving the already-decided proposal's evaluation (still
-            // allowed, e.g. to update its score/rationale) must not reset its
-            // execution status backwards if it has since moved further along.
+            const isNewlyMediumTerm = decision === 'تبدیل به اقدام میان‌مدت';
+            // Re-saving an already-decided proposal's evaluation must not
+            // reset its execution status backwards if it has since moved
+            // further along (e.g. a selected Quick Win now «در حال اجرا»).
+            // اقدام میان‌مدت is deliberately NOT in DECIDED_STATUSES — unlike
+            // the one selected Quick Win, several proposals can independently
+            // become میان‌مدت, and re-evaluating one (even to change its
+            // decision away from میان‌مدت) should still go through normally.
             if (!DECIDED_STATUSES.includes(prop.status)) {
                 if (isNewlySelected) {
                     patch.status = 'انتخاب‌شده';
                     patch.decided_by = currentUser.email;
                     patch.decided_at = new Date().toISOString();
                     patch.execution_target_date = prop.plan_target_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+                } else if (isNewlyMediumTerm) {
+                    // میان‌مدت actions aren't time-boxed to 30 days like a Quick
+                    // Win, so no synthetic +30-day fallback deadline — leave
+                    // execution_target_date unset unless the proposal's own
+                    // plan already named a target date.
+                    patch.status = 'اقدام میان‌مدت';
+                    patch.decided_by = currentUser.email;
+                    patch.decided_at = new Date().toISOString();
+                    patch.execution_target_date = prop.plan_target_date || null;
                 } else {
                     patch.status = 'ارزیابی‌شده';
                 }
@@ -4785,7 +4756,7 @@
                 <div class="flex items-center justify-between gap-2 text-xs bg-slate-50 rounded-lg px-3 py-2 flex-wrap">
                     <div class="min-w-0">
                         <p class="font-bold truncate ${isDone ? 'line-through text-slate-400' : ''}">${esc(task.title)}</p>
-                        <p class="text-slate-500">👤 ${esc(task.responsible_name)} — مهلت: ${formatJalali(task.due_date)}</p>
+                        <p class="text-slate-500">👤 ${esc(task.responsible_name)} — ${task.start_date ? `شروع: ${formatJalali(task.start_date)} — ` : ''}پایان: ${formatJalali(task.due_date)}</p>
                         ${task.submitted_note ? `<p class="text-slate-400 italic truncate">📝 ${esc(task.submitted_note)}</p>` : ''}
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
@@ -4815,7 +4786,8 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                         <input class="task-edit-title border rounded-lg p-2 md:col-span-2" type="text" value="${esc(task.title)}" placeholder="عنوان تسک">
                         <select class="task-edit-resp-select border rounded-lg p-2 md:col-span-2 bg-white">${optionsHtml}</select>
-                        <input class="task-edit-due border rounded-lg p-2 text-center md:col-span-2" type="text" dir="ltr" value="${formatJalali(task.due_date)}" placeholder="۱۴۰۵/۰۶/۳۰">
+                        <input class="task-edit-start border rounded-lg p-2 text-center" type="text" dir="ltr" value="${formatJalali(task.start_date)}" placeholder="شروع: ۱۴۰۵/۰۶/۰۱">
+                        <input class="task-edit-due border rounded-lg p-2 text-center" type="text" dir="ltr" value="${formatJalali(task.due_date)}" placeholder="پایان: ۱۴۰۵/۰۶/۳۰">
                     </div>
                     <div class="flex gap-2">
                         <button type="button" class="task-save-btn flex-1 bg-blue-900 hover:bg-blue-800 text-white rounded-lg py-1.5 font-bold">ذخیره</button>
@@ -4847,6 +4819,7 @@
                 } else if (e.target.closest('.task-edit-btn')) {
                     row.outerHTML = quickWinTaskEditFormHtml(task, projectUsers);
                     const newRow = listEl.querySelector(`[data-task-id="${taskId}"]`);
+                    attachJalaliDatePicker(newRow.querySelector('.task-edit-start'));
                     attachJalaliDatePicker(newRow.querySelector('.task-edit-due'));
                 } else if (e.target.closest('.task-cancel-btn')) {
                     row.outerHTML = quickWinTaskItemHtml(task, isAdmin);
@@ -4857,6 +4830,7 @@
                         row.querySelector('.task-edit-title').value.trim(),
                         respName || '',
                         respEmail || '',
+                        row.querySelector('.task-edit-start').value.trim(),
                         row.querySelector('.task-edit-due').value.trim(),
                     );
                 }
@@ -4900,29 +4874,33 @@
             loadTrackingData();
         }
 
-        async function updateQuickWinTask(taskId, title, responsibleName, responsibleEmail, dueDateJalali) {
+        async function updateQuickWinTask(taskId, title, responsibleName, responsibleEmail, startDateJalali, dueDateJalali) {
+            const startDateIso = jalaliInputToIso(startDateJalali);
             const dueDateIso = jalaliInputToIso(dueDateJalali);
-            if (!title || !responsibleName || !responsibleEmail || !dueDateIso) {
-                alert('عنوان، مسئول، ایمیل مسئول و مهلت انجام (به‌صورت ۱۴۰۵/۰۶/۳۰) الزامی است.');
+            if (!title || !responsibleName || !responsibleEmail || !startDateIso || !dueDateIso) {
+                alert('عنوان، مسئول، ایمیل مسئول، تاریخ شروع و پایان (به‌صورت ۱۴۰۵/۰۶/۳۰) الزامی است.');
                 return;
             }
+            if (startDateIso > dueDateIso) { alert('تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد.'); return; }
             const { error } = await _supabase.from('case_updates').update({
-                title, responsible_name: responsibleName, responsible_email: responsibleEmail, due_date: dueDateIso,
-                overdue_notified_at: null,
+                title, responsible_name: responsibleName, responsible_email: responsibleEmail,
+                start_date: startDateIso, due_date: dueDateIso, overdue_notified_at: null,
             }).eq('id', taskId);
             if (error) { alert('خطا در ذخیره ویرایش: ' + error.message); return; }
             loadTrackingData();
         }
 
-        async function addQuickWinTask(caseId, title, responsibleName, responsibleEmail, dueDateJalali) {
+        async function addQuickWinTask(caseId, title, responsibleName, responsibleEmail, startDateJalali, dueDateJalali) {
+            const startDateIso = jalaliInputToIso(startDateJalali);
             const dueDateIso = jalaliInputToIso(dueDateJalali);
-            if (!title || !responsibleName || !responsibleEmail || !dueDateIso) {
-                alert('عنوان، مسئول، ایمیل مسئول و مهلت انجام (به‌صورت ۱۴۰۵/۰۶/۳۰) الزامی است.');
+            if (!title || !responsibleName || !responsibleEmail || !startDateIso || !dueDateIso) {
+                alert('عنوان، مسئول، ایمیل مسئول، تاریخ شروع و پایان (به‌صورت ۱۴۰۵/۰۶/۳۰) الزامی است.');
                 return;
             }
+            if (startDateIso > dueDateIso) { alert('تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد.'); return; }
             const { error } = await _supabase.from('case_updates').insert([{
-                case_id: caseId, kind: 'task', title, responsible_name: responsibleName,
-                responsible_email: responsibleEmail, due_date: dueDateIso, task_status: 'باز', created_by: currentUser.email,
+                case_id: caseId, kind: 'task', title, responsible_name: responsibleName, responsible_email: responsibleEmail,
+                start_date: startDateIso, due_date: dueDateIso, task_status: 'باز', created_by: currentUser.email,
             }]);
             if (error) { alert('خطا در ثبت تسک: ' + error.message); return; }
             loadTrackingData();
@@ -4980,7 +4958,11 @@
             const container = document.getElementById('trackingContainer');
             container.innerHTML = '<p class="text-center text-slate-400 p-4">در حال دریافت اطلاعات پایش...</p>';
 
-            const { data: decisions, error: e1 } = await _supabase.from('cases').select('*').in('status', DECIDED_STATUSES).order('execution_target_date', { ascending: true });
+            // اقدام میان‌مدت cases get execution tasks too, alongside the
+            // project's selected Quick Win (DECIDED_STATUSES) — kept separate
+            // from that constant since only the selected Quick Win competes
+            // for the "one per project" exclusivity in saveEvaluation.
+            const { data: decisions, error: e1 } = await _supabase.from('cases').select('*').in('status', [...DECIDED_STATUSES, 'اقدام میان‌مدت']).order('execution_target_date', { ascending: true });
             const { data: allUpdates, error: e2 } = await _supabase.from('case_updates').select('*').order('created_at', { ascending: true });
             const { data: checkins, error: e3 } = await _supabase.from('check_ins').select('*').order('created_at', { ascending: true });
             if (e1 || e2 || e3) { container.innerHTML = '<p class="text-red-600 p-4">خطا در دریافت داده‌ها.</p>'; return; }
@@ -4988,7 +4970,7 @@
             if (!decisions || decisions.length === 0) {
                 document.getElementById('trackingOverdueBanner').innerHTML = '';
                 document.getElementById('trackingTaskReport').innerHTML = '';
-                container.innerHTML = '<p class="text-center text-slate-400 p-4">هنوز هیچ اقدام زودبازده‌ای انتخاب نشده.</p>';
+                container.innerHTML = '<p class="text-center text-slate-400 p-4">هنوز هیچ اقدام زودبازده یا اقدام میان‌مدتی ثبت نشده.</p>';
                 return;
             }
 
@@ -5069,10 +5051,16 @@
                     : '<p class="text-xs text-slate-400">هنوز تسکی برای این اقدام زودبازده ثبت نشده.</p>';
 
                 const wrap = document.createElement('div');
+                const kindTag = dec.status === 'اقدام میان‌مدت'
+                    ? '<span class="bg-blue-100 text-blue-900 text-[10px] font-bold px-2 py-0.5 rounded-full">🕒 اقدام میان‌مدت</span>'
+                    : '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">🏆 اقدام زودبازده منتخب</span>';
                 wrap.innerHTML = `<div class="print-card bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-3">
                     <div class="flex justify-between items-center flex-wrap gap-2">
                         <div>
-                            <h3 class="font-bold text-blue-900">${esc(dec.project_name)}</h3>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h3 class="font-bold text-blue-900">${esc(dec.project_name)}</h3>
+                                ${kindTag}
+                            </div>
                             <p class="text-xs text-slate-500">${esc(dec.title)} (${esc(dec.organization)})</p>
                         </div>
                         ${badge}
@@ -5087,10 +5075,11 @@
                         <p class="text-xs font-bold text-slate-700">✅ تسک‌های اجرایی</p>
                         <div class="tasks-list space-y-1.5">${tasksHtml}</div>
                         ${isAdmin ? `
-                        <div class="no-print grid grid-cols-1 md:grid-cols-4 gap-2 pt-1 text-xs">
+                        <div class="no-print grid grid-cols-1 md:grid-cols-5 gap-2 pt-1 text-xs">
                             <input class="task-title-input border rounded-lg p-2 md:col-span-2" type="text" placeholder="عنوان تسک">
                             <select class="task-resp-select border rounded-lg p-2 bg-white"><option value="">-- مسئول --</option>${(usersByProject[dec.project_name] || []).map(u => `<option value="${esc(personDisplayName(u))}|||${esc(u.email)}">${esc(personDisplayName(u))} — ${esc(u.organization)}</option>`).join('')}</select>
-                            <input class="task-due-input border rounded-lg p-2 text-center" type="text" dir="ltr" placeholder="۱۴۰۵/۰۶/۳۰">
+                            <input class="task-start-input border rounded-lg p-2 text-center" type="text" dir="ltr" placeholder="شروع: ۱۴۰۵/۰۶/۰۱">
+                            <input class="task-due-input border rounded-lg p-2 text-center" type="text" dir="ltr" placeholder="پایان: ۱۴۰۵/۰۶/۳۰">
                         </div>
                         <button type="button" class="task-add-btn no-print w-full bg-slate-700 hover:bg-slate-600 text-white rounded-lg py-1.5 font-bold text-xs">➕ افزودن تسک</button>` : ''}
                     </div>
@@ -5126,7 +5115,9 @@
                 if (isAdmin) {
                     const taskAddBtn = cardEl.querySelector('.task-add-btn');
                     if (taskAddBtn) {
+                        const taskStartInput = cardEl.querySelector('.task-start-input');
                         const taskDueInput = cardEl.querySelector('.task-due-input');
+                        attachJalaliDatePicker(taskStartInput);
                         attachJalaliDatePicker(taskDueInput);
                         taskAddBtn.addEventListener('click', () => {
                             const [respName, respEmail] = cardEl.querySelector('.task-resp-select').value.split('|||');
@@ -5135,6 +5126,7 @@
                                 cardEl.querySelector('.task-title-input').value.trim(),
                                 respName || '',
                                 respEmail || '',
+                                taskStartInput.value.trim(),
                                 taskDueInput.value.trim(),
                             );
                         });
