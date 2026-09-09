@@ -132,7 +132,7 @@ function buildEmail(task: any): { subject: string; html: string } {
     : "<p>لطفاً وضعیت این اقدام را در سامانه بروزرسانی کنید.</p>";
   const html = `
     <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;font-size:14px;line-height:1.8;color:#1e293b">
-      <p>یک اقدام از تایم‌لاین پیگیری اجرای Quick Win هنوز تا موعد مقررش به تایید نهایی نرسیده است:</p>
+      <p>یک اقدام از تایم‌لاین پیگیری اجرای اقدامات زودبازده هنوز تا موعد مقررش به تایید نهایی نرسیده است:</p>
       <ul>
         <li><b>پروژه:</b> ${escapeHtml(task.project_name)}</li>
         <li><b>عنوان اقدام:</b> ${escapeHtml(task.title)}</li>
@@ -197,7 +197,7 @@ Deno.serve(async (req) => {
 
       try {
         await transporter.sendMail({
-          from: `"پیگیری Quick Win" <${GMAIL_USER}>`,
+          from: `"پیگیری اقدامات زودبازده" <${GMAIL_USER}>`,
           to: toEmails,
           ...(ccEmails.length ? { cc: ccEmails } : {}),
           subject,
