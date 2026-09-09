@@ -178,14 +178,16 @@
             }
             body { background: #fff !important; }
             body * { visibility: hidden; }
-            #aiReportView, #aiReportView *, #execReportView, #execReportView *, #trackingView, #trackingView *, #projectsReportModal, #projectsReportModal * { visibility: visible; }
-            #aiReportView, #execReportView, #trackingView, #projectsReportModal { position: absolute; inset: 0; padding: 0; margin: 0; background: #fff; }
+            #aiReportView, #aiReportView *, #execReportView, #execReportView *, #trackingView, #trackingView *, #issuesView, #issuesView *, #projectsReportModal, #projectsReportModal * { visibility: visible; }
+            #aiReportView, #execReportView, #trackingView, #issuesView, #projectsReportModal { position: absolute; inset: 0; padding: 0; margin: 0; background: #fff; }
             .no-print { display: none !important; }
-            #aiReportView, #execReportView, #trackingView, #projectsReportModal, .print-card { background: #fff !important; color: #111 !important; border-color: #ccc !important; }
+            #aiReportView, #execReportView, #trackingView, #issuesView, #projectsReportModal, .print-card { background: #fff !important; color: #111 !important; border-color: #ccc !important; }
             #aiReportView h1, #aiReportView h2, #aiReportView h3, #aiReportView p, #aiReportView span, #aiReportView td, #aiReportView th, #aiReportView b,
             #execReportView h1, #execReportView h2, #execReportView h3, #execReportView p, #execReportView span, #execReportView td, #execReportView th, #execReportView b,
             #trackingView h1, #trackingView h2, #trackingView h3, #trackingView p, #trackingView span, #trackingView td, #trackingView th, #trackingView b,
+            #issuesView h1, #issuesView h2, #issuesView h3, #issuesView p, #issuesView span, #issuesView td, #issuesView th, #issuesView b,
             #projectsReportModal h1, #projectsReportModal h2, #projectsReportModal h3, #projectsReportModal p, #projectsReportModal span, #projectsReportModal td, #projectsReportModal th, #projectsReportModal b { color: #111 !important; }
+            #issueDrawerOverlay, #issueDrawerOverlay *, #newIssueModal, #newIssueModal * { display: none !important; }
             .print-card { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: avoid; }
             /* The modal's own flex-centering and 90vh scroll box only make
                sense on screen — on paper they'd clip the table to one
@@ -1187,8 +1189,181 @@
                 </div>
             </div>
 
+            <div id="issuesView" class="hidden space-y-5">
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-5">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                        <div class="flex items-center gap-3">
+                            <span class="shrink-0 h-11 w-11 rounded-2xl flex items-center justify-center text-[#ffffff]" style="background: linear-gradient(135deg, #0f172a, #334155);">
+                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+                            </span>
+                            <div>
+                                <h2 class="text-lg font-extrabold text-slate-800">Issue Control Tower</h2>
+                                <p class="text-xs text-slate-500 mt-0.5">مرکز پایش، تحلیل و پیگیری مسائل پروژه</p>
+                            </div>
+                        </div>
+                        <div class="no-print flex items-center gap-2 flex-wrap">
+                            <button type="button" id="issuesRefreshBtn" title="بروزرسانی" class="h-9 w-9 flex items-center justify-center rounded-xl border text-slate-500 hover:bg-slate-50">⟲</button>
+                            <button type="button" id="issuesExportCsvBtn" class="text-xs font-bold px-3 py-2 rounded-xl border text-slate-600 hover:bg-slate-50">خروجی CSV</button>
+                            <button type="button" id="issuesPrintBtn" class="text-xs font-bold px-3 py-2 rounded-xl border text-slate-600 hover:bg-slate-50">🖨 چاپ / PDF</button>
+                            <button type="button" id="issuesNewBtn" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow">+ ثبت Issue جدید</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="no-print bg-white rounded-2xl shadow-sm border p-4 space-y-3">
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
+                        <div><label class="block text-[10px] font-bold text-slate-500 mb-1">پروژه</label><select id="issFilterProject" multiple class="w-full border rounded-lg p-1 h-20 bg-white"></select></div>
+                        <div><label class="block text-[10px] font-bold text-slate-500 mb-1">واحد مسئول</label><select id="issFilterUnit" multiple class="w-full border rounded-lg p-1 h-20 bg-white"></select></div>
+                        <div><label class="block text-[10px] font-bold text-slate-500 mb-1">شدت (Priority/Severity)</label><select id="issFilterSeverity" multiple class="w-full border rounded-lg p-1 h-20 bg-white"></select></div>
+                        <div><label class="block text-[10px] font-bold text-slate-500 mb-1">وضعیت</label><select id="issFilterStatus" multiple class="w-full border rounded-lg p-1 h-20 bg-white"></select></div>
+                        <div><label class="block text-[10px] font-bold text-slate-500 mb-1">مسئول پیگیری</label><select id="issFilterPerson" multiple class="w-full border rounded-lg p-1 h-20 bg-white"></select></div>
+                        <div><label class="block text-[10px] font-bold text-slate-500 mb-1">ثبت‌کننده</label><select id="issFilterRaisedBy" multiple class="w-full border rounded-lg p-1 h-20 bg-white"></select></div>
+                    </div>
+                    <div class="flex flex-wrap items-end gap-3 pt-2 border-t text-xs">
+                        <label class="flex items-center gap-1.5 font-bold text-red-700"><input type="checkbox" id="issFilterOverdueOnly"> فقط معوق‌ها</label>
+                        <label class="flex items-center gap-1.5 font-bold text-amber-700"><input type="checkbox" id="issFilterDueSoonOnly"> فقط نزدیک به سررسید</label>
+                        <div><label class="block text-[10px] font-bold text-slate-500 mb-1">از تاریخ</label><input id="issFilterDateFrom" type="text" dir="ltr" placeholder="۱۴۰۵/۰۱/۰۱" class="border rounded-lg p-1.5 text-center w-28"></div>
+                        <div><label class="block text-[10px] font-bold text-slate-500 mb-1">تا تاریخ</label><input id="issFilterDateTo" type="text" dir="ltr" placeholder="۱۴۰۵/۰۶/۳۰" class="border rounded-lg p-1.5 text-center w-28"></div>
+                        <button type="button" id="issuesApplyFiltersBtn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-1.5 rounded-lg">اعمال فیلتر</button>
+                        <button type="button" id="issuesClearFiltersBtn" class="text-slate-500 underline">پاک‌کردن همه فیلترها</button>
+                    </div>
+                    <div id="issueActiveFilterChips" class="flex flex-wrap gap-1.5 text-[11px] pt-1"></div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5" id="issueKpiRow"></div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <h3 class="text-sm font-bold text-slate-800">وضعیت Issueها</h3>
+                        <div class="relative h-48 mx-auto" style="max-width:220px">
+                            <canvas id="issueStatusDonut"></canvas>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <span id="issueStatusDonutCenter" class="text-2xl font-extrabold text-slate-800"></span>
+                                <span class="text-[10px] text-slate-400">Issue فعال</span>
+                            </div>
+                        </div>
+                        <div id="issueStatusLegend" class="space-y-1 text-xs"></div>
+                    </div>
+                    <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <h3 class="text-sm font-bold text-slate-800">توزیع شدت (Severity)</h3>
+                        <div style="height:190px"><canvas id="issueSeverityChart"></canvas></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <h3 class="text-sm font-bold text-slate-800">Issue Aging Analysis</h3>
+                            <p class="text-[11px] text-slate-500">قدیمی‌ترین Issue باز: <span id="issueOldestOpen" class="font-extrabold text-slate-800"></span></p>
+                        </div>
+                        <div style="height:190px"><canvas id="issueAgingChart"></canvas></div>
+                    </div>
+                    <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <h3 class="text-sm font-bold text-slate-800">🎯 Overdue Radar</h3>
+                        <div id="issueOverdueRadarList" class="space-y-1.5 max-h-56 overflow-y-auto"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <h3 class="text-sm font-bold text-slate-800">Issues by Responsible Unit</h3>
+                        <div style="height:200px"><canvas id="issueByUnitChart"></canvas></div>
+                    </div>
+                    <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <h3 class="text-sm font-bold text-slate-800">Issues by Responsible Person</h3>
+                        <div style="height:200px"><canvas id="issueByPersonChart"></canvas></div>
+                    </div>
+                </div>
+
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3 hidden" id="issueProjectComparisonCard">
+                    <div class="flex justify-between items-center flex-wrap gap-2">
+                        <h3 class="text-sm font-bold text-slate-800">مقایسه پروژه‌ها</h3>
+                        <div class="no-print flex gap-1 text-[10px] flex-wrap" id="issueProjectSortBtns"></div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs">
+                            <thead class="bg-slate-100 text-slate-700"><tr>
+                                <th class="p-2 border">پروژه</th><th class="p-2 border">کل</th><th class="p-2 border">باز</th>
+                                <th class="p-2 border">معوق</th><th class="p-2 border">بحرانی</th><th class="p-2 border">نرخ بسته‌شدن</th>
+                            </tr></thead>
+                            <tbody id="issueProjectComparisonBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                    <div class="flex justify-between items-center flex-wrap gap-2">
+                        <h3 class="text-sm font-bold text-slate-800">Issue Trend</h3>
+                        <div class="no-print flex gap-1 text-[10px]" id="issueTrendGranularityBtns"></div>
+                    </div>
+                    <div style="height:220px"><canvas id="issueTrendChart"></canvas></div>
+                </div>
+
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                    <h3 class="text-sm font-bold text-slate-800">Action Center</h3>
+                    <div class="no-print flex gap-1 border-b text-xs" id="issueActionTabs"></div>
+                    <div id="issueActionCenterBody" class="space-y-1.5 pt-1"></div>
+                </div>
+
+                <div class="print-card rounded-2xl shadow-sm p-5 space-y-2.5" style="background: linear-gradient(135deg, #1e3a8a 0%, #4c1d95 100%);">
+                    <h3 class="text-sm font-bold text-[#ffffff] flex items-center gap-2">💡 AI Management Insight</h3>
+                    <div id="issueAiInsightList" class="space-y-1.5"></div>
+                </div>
+            </div>
+
         </div>
             </main>
+        </div>
+    </div>
+
+    <!-- Issue Detail Drawer -->
+    <div id="issueDrawerOverlay" class="no-print hidden fixed inset-0 z-40 bg-black/50"></div>
+    <div id="issueDrawer" class="no-print fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl overflow-y-auto" style="transform: translateX(100%); transition: transform .25s ease;">
+        <div class="p-5 space-y-4" id="issueDrawerContent"></div>
+    </div>
+
+    <!-- New Issue Modal -->
+    <div id="newIssueModal" class="no-print hidden fixed inset-0 z-40 bg-black/50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-5 space-y-3">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-slate-800">+ ثبت Issue جدید</h3>
+                <button type="button" id="newIssueCloseBtn" class="text-slate-400 hover:text-slate-700 text-xl leading-none">&times;</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs">
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1">پروژه *</label>
+                    <select id="newIssueProject" class="w-full border rounded-lg p-2 bg-white"><option value="">-- انتخاب پروژه --</option></select>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1">عنوان Issue *</label>
+                    <input id="newIssueTitle" type="text" class="w-full border rounded-lg p-2" placeholder="عنوان کوتاه و مشخص">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1">شرح</label>
+                    <textarea id="newIssueDescription" rows="2" class="w-full border rounded-lg p-2"></textarea>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1">واحد مسئول</label>
+                    <select id="newIssueUnit" class="w-full border rounded-lg p-2 bg-white"><option value="">-- انتخاب --</option></select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1">شدت (Priority/Severity)</label>
+                    <select id="newIssueSeverity" class="w-full border rounded-lg p-2 bg-white"></select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1">مسئول پیگیری</label>
+                    <select id="newIssueResponsible" class="w-full border rounded-lg p-2 bg-white"><option value="">-- انتخاب پروژه لازم است --</option></select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1">مهلت رفع (Target Date)</label>
+                    <input id="newIssueTargetDate" type="text" dir="ltr" placeholder="۱۴۰۵/۰۶/۳۰" class="w-full border rounded-lg p-2 text-center">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1">مرتبط با اقدام زودبازده (اختیاری)</label>
+                    <select id="newIssueCaseLink" class="w-full border rounded-lg p-2 bg-white"><option value="">-- بدون ارتباط --</option></select>
+                </div>
+            </div>
+            <button type="button" id="newIssueSubmitBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl shadow">ثبت Issue</button>
         </div>
     </div>
 
@@ -1523,12 +1698,14 @@
             calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
             activity: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
             shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+            users: '<path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+            inbox: '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
         };
         function iconSvg(name, cls) {
             return `<svg class="${cls || 'w-5 h-5'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name] || ''}</svg>`;
         }
 
-        const NAV_ICON = { overview: 'grid', aiAnalysis: 'activity', admin: 'tool', selection: 'zap', tracking: 'calendar', execReport: 'fileText', checkin: 'edit', clientReport: 'clipboard', qwProposal: 'target' };
+        const NAV_ICON = { overview: 'grid', aiAnalysis: 'activity', admin: 'tool', selection: 'zap', tracking: 'calendar', execReport: 'fileText', checkin: 'edit', clientReport: 'clipboard', qwProposal: 'target', issues: 'inbox' };
         const SIDEBAR_ACTIVE_CLASS = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold bg-blue-900/10 text-blue-900 transition';
         const SIDEBAR_INACTIVE_CLASS = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition';
         const MOBILE_ACTIVE_CLASS = 'flex flex-col items-center gap-0.5 px-3 py-2 shrink-0 text-blue-900';
@@ -1660,10 +1837,10 @@
             mobileNav.innerHTML = '';
 
             const buttons = currentProfile.role === 'admin'
-                ? [['overview', 'نمای کلی'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب اقدام زودبازده'], ['tracking', 'پیگیری اجرای اقدامات زودبازده'], ['execReport', 'گزارش تحلیلی مدیریتی'], ['admin', 'مدیریت کاربران']]
+                ? [['overview', 'نمای کلی'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب اقدام زودبازده'], ['tracking', 'پیگیری اجرای اقدامات زودبازده'], ['issues', 'پایش ایشوها'], ['execReport', 'گزارش تحلیلی مدیریتی'], ['admin', 'مدیریت کاربران']]
                 : hasOrganization('کارفرما')
-                    ? [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['selection', 'پیشنهادها'], ['tracking', 'پیگیری اجرای اقدامات زودبازده']]
-                    : [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['tracking', 'پیگیری اجرای اقدامات زودبازده']];
+                    ? [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['selection', 'پیشنهادها'], ['tracking', 'پیگیری اجرای اقدامات زودبازده'], ['issues', 'پایش ایشوها']]
+                    : [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['tracking', 'پیگیری اجرای اقدامات زودبازده'], ['issues', 'پایش ایشوها']];
 
             buttons.forEach(([view, label], i) => {
                 const iconName = NAV_ICON[view] || 'grid';
@@ -1685,7 +1862,7 @@
             switchView(buttons[0][0]);
         }
 
-        const ALL_VIEWS = ['overview', 'checkin', 'clientReport', 'qwProposal', 'admin', 'selection', 'aiAnalysis', 'tracking', 'execReport'];
+        const ALL_VIEWS = ['overview', 'checkin', 'clientReport', 'qwProposal', 'admin', 'selection', 'aiAnalysis', 'tracking', 'execReport', 'issues'];
 
         function switchView(view) {
             ALL_VIEWS.forEach(v => {
@@ -1708,6 +1885,7 @@
             if (view === 'aiAnalysis') loadAiAnalysisView();
             if (view === 'tracking') loadTrackingData();
             if (view === 'execReport') loadExecReport();
+            if (view === 'issues') loadIssuesView();
         }
 
         function startTopbarClock() {
@@ -5113,7 +5291,10 @@
                             </div>
                             <p class="text-xs text-slate-500">${esc(dec.title)} (${esc(dec.organization)})</p>
                         </div>
-                        ${badge}
+                        <div class="flex items-center gap-2 flex-wrap">
+                            ${badge}
+                            <button type="button" class="issue-quick-add-btn no-print bg-red-50 hover:bg-red-100 text-red-700 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-red-200" data-project="${esc(dec.project_name)}" data-case-id="${dec.id}">+ ثبت Issue</button>
+                        </div>
                     </div>
                     <div class="w-full bg-slate-100 rounded-full h-2.5">
                         <div class="${barColor} h-2.5 rounded-full" style="width:${Math.min(percent, 100)}%"></div>
@@ -5161,6 +5342,7 @@
                 </div>`;
 
                 const cardEl = wrap.firstElementChild;
+                cardEl.querySelector('.issue-quick-add-btn').addEventListener('click', () => openNewIssueModalForProject(dec.project_name, dec.id));
                 wireTasksList(cardEl.querySelector('.tasks-list'), tasksById, isAdmin, usersByProject[dec.project_name] || []);
                 if (isAdmin) {
                     const taskAddBtn = cardEl.querySelector('.task-add-btn');
@@ -5982,8 +6164,716 @@
         // is now picked, never typed. These inputs are static (always in the
         // DOM from page load, only their .value is read/written elsewhere),
         // so this needs to run once, not on every render.
-        ['ci_plan_start_date', 'ci_plan_target_date', 'cr_start_date', 'cr_forecast_date', 'cr_milestone_date', 'ci_qwq_due']
+        ['ci_plan_start_date', 'ci_plan_target_date', 'cr_start_date', 'cr_forecast_date', 'cr_milestone_date', 'ci_qwq_due',
+         'issFilterDateFrom', 'issFilterDateTo', 'newIssueTargetDate']
             .forEach(id => attachJalaliDatePicker(document.getElementById(id)));
+
+        // ============================================================
+        // ISSUE CONTROL TOWER (پایش ایشوها)
+        // ============================================================
+        // Deliberately scoped down from the full brief: one severity scale
+        // reused as both "priority" and "severity" (matches every other
+        // severity-style field in this app — see AI_SEVERITY_STYLE), no
+        // Portfolio/Plan hierarchy (this app has no such entities — only
+        // projects), no PDF/Excel/PPT report generator beyond the existing
+        // print-card + window.print() mechanism plus a CSV export, no
+        // Saved Views / role-based dashboard variants, and no attachment
+        // upload (no file-storage infra exists anywhere in this app yet).
+        // Escalation is a computed flag + a logged action note, not a
+        // routed notification.
+        const ISSUE_UNITS = ['مهندسی', 'تأمین', 'اجرا', 'برنامه‌ریزی', 'قرارداد', 'کنترل کیفیت', 'HSE', 'سایر'];
+        const ISSUE_SEVERITIES = ['بحرانی', 'زیاد', 'متوسط', 'کم'];
+        const ISSUE_STATUSES = ['شناسایی‌شده', 'تخصیص‌یافته', 'اقدام برنامه‌ریزی‌شده', 'در حال اجرا', 'حل‌شده', 'تأییدشده', 'بسته‌شده', 'رد‌شده'];
+        const ISSUE_CLOSED_STATUSES = ['بسته‌شده', 'رد‌شده'];
+        const ISSUE_STATUS_GROUP = {
+            'شناسایی‌شده': 'باز', 'تخصیص‌یافته': 'باز',
+            'اقدام برنامه‌ریزی‌شده': 'در حال اجرا', 'در حال اجرا': 'در حال اجرا',
+            'حل‌شده': 'در انتظار تأیید',
+            'تأییدشده': 'حل‌شده',
+            'بسته‌شده': 'بسته‌شده',
+            'رد‌شده': 'رد‌شده',
+        };
+        const ISSUE_STATUS_GROUP_COLOR = {
+            'باز': '#3b82f6', 'در حال اجرا': '#f59e0b', 'در انتظار تأیید': '#a855f7',
+            'حل‌شده': '#14b8a6', 'بسته‌شده': '#22c55e', 'رد‌شده': '#94a3b8',
+        };
+        const ISSUE_DUE_SOON_DAYS = 5;
+        const ISSUE_NO_ACTION_DAYS = 10;
+
+        let issueCharts = {};
+        let allIssuesRaw = [];
+        let allIssueUpdatesRaw = [];
+        let issueProjectsCache = [];
+        let issueCasesCache = [];
+        let issueUsersByProject = {};
+        let issueFilters = { projects: [], units: [], severities: [], statuses: [], people: [], raisedBy: [], overdueOnly: false, dueSoonOnly: false, dateFrom: null, dateTo: null };
+        let issueActionTab = 'overdue';
+        let issueTrendGranularity = 'monthly';
+        let issueProjectSort = 'total';
+        let currentDrawerIssueId = null;
+        let issueStaticControlsWired = false;
+
+        function issueTodayIso() { return new Date().toISOString().slice(0, 10); }
+        function issueDaysBetween(isoA, isoB) { return Math.round((new Date(isoB) - new Date(isoA)) / 86400000); }
+
+        function isIssueOverdue(issue) {
+            return !ISSUE_CLOSED_STATUSES.includes(issue.status) && !!issue.target_date && issue.target_date < issueTodayIso();
+        }
+        function isIssueDueSoon(issue) {
+            if (ISSUE_CLOSED_STATUSES.includes(issue.status) || !issue.target_date || isIssueOverdue(issue)) return false;
+            const days = issueDaysBetween(issueTodayIso(), issue.target_date);
+            return days >= 0 && days <= ISSUE_DUE_SOON_DAYS;
+        }
+        function issueAgeDays(issue) {
+            return Math.max(0, issueDaysBetween(issue.date_raised, issue.actual_closure_date || issueTodayIso()));
+        }
+        function issueOverdueDays(issue) {
+            return isIssueOverdue(issue) ? issueDaysBetween(issue.target_date, issueTodayIso()) : 0;
+        }
+        function issueIsEscalated(issue) {
+            if (ISSUE_CLOSED_STATUSES.includes(issue.status)) return false;
+            if (issue.severity === 'بحرانی' && isIssueOverdue(issue)) return true;
+            return issueOverdueDays(issue) > 14;
+        }
+
+        async function loadIssuesView() {
+            const isAdmin = currentProfile.role === 'admin';
+            const { data: projects } = await _supabase.from('projects').select('*').order('name');
+            issueProjectsCache = (projects || []).filter(p => p.is_guide || isAdmin || myProjectAccess.some(a => a.project_name === p.name));
+
+            const [{ data: issuesData }, { data: updatesData }, { data: casesData }] = await Promise.all([
+                _supabase.from('issues').select('*').order('date_raised', { ascending: false }),
+                _supabase.from('issue_updates').select('id, issue_id, created_at'),
+                _supabase.from('cases').select('id, project_name, title').order('proposed_at', { ascending: false }),
+            ]);
+            allIssuesRaw = issuesData || [];
+            allIssueUpdatesRaw = updatesData || [];
+            issueCasesCache = casesData || [];
+
+            const uniqueProjectNames = [...new Set(issueProjectsCache.map(p => p.name))];
+            const entries = await Promise.all(uniqueProjectNames.map(async pn => {
+                const { data } = await _supabase.rpc('list_project_users', { p_project_name: pn });
+                return [pn, data || []];
+            }));
+            issueUsersByProject = {};
+            entries.forEach(([pn, users]) => { issueUsersByProject[pn] = users; });
+
+            renderIssueFilterOptions();
+            renderNewIssueFormOptions();
+            wireIssueStaticControls();
+            renderAllIssueSections();
+        }
+
+        function computeFilteredIssues() {
+            return allIssuesRaw.filter(iss => {
+                if (issueFilters.projects.length && !issueFilters.projects.includes(iss.project_name)) return false;
+                if (issueFilters.units.length && !issueFilters.units.includes(iss.responsible_unit)) return false;
+                if (issueFilters.severities.length && !issueFilters.severities.includes(iss.severity)) return false;
+                if (issueFilters.statuses.length && !issueFilters.statuses.includes(iss.status)) return false;
+                if (issueFilters.people.length && !issueFilters.people.includes(iss.responsible_name)) return false;
+                if (issueFilters.raisedBy.length && !issueFilters.raisedBy.includes(iss.raised_by)) return false;
+                if (issueFilters.overdueOnly && !isIssueOverdue(iss)) return false;
+                if (issueFilters.dueSoonOnly && !isIssueDueSoon(iss)) return false;
+                if (issueFilters.dateFrom && iss.date_raised < issueFilters.dateFrom) return false;
+                if (issueFilters.dateTo && iss.date_raised > issueFilters.dateTo) return false;
+                return true;
+            });
+        }
+
+        function renderIssueFilterOptions() {
+            document.getElementById('issFilterProject').innerHTML = issueProjectsCache.map(p => `<option value="${esc(p.name)}">${esc(p.name)}</option>`).join('');
+            document.getElementById('issFilterUnit').innerHTML = ISSUE_UNITS.map(u => `<option value="${esc(u)}">${esc(u)}</option>`).join('');
+            document.getElementById('issFilterSeverity').innerHTML = ISSUE_SEVERITIES.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+            document.getElementById('issFilterStatus').innerHTML = ISSUE_STATUSES.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+            const people = [...new Set(allIssuesRaw.map(i => i.responsible_name).filter(Boolean))].sort();
+            document.getElementById('issFilterPerson').innerHTML = people.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
+            const raisers = [...new Set(allIssuesRaw.map(i => i.raised_by).filter(Boolean))].sort();
+            document.getElementById('issFilterRaisedBy').innerHTML = raisers.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
+            syncIssueFilterSelectsFromState();
+        }
+
+        function syncIssueFilterSelectsFromState() {
+            const sync = (id, values) => { [...document.getElementById(id).options].forEach(o => { o.selected = values.includes(o.value); }); };
+            sync('issFilterProject', issueFilters.projects);
+            sync('issFilterUnit', issueFilters.units);
+            sync('issFilterSeverity', issueFilters.severities);
+            sync('issFilterStatus', issueFilters.statuses);
+            sync('issFilterPerson', issueFilters.people);
+            sync('issFilterRaisedBy', issueFilters.raisedBy);
+            document.getElementById('issFilterOverdueOnly').checked = issueFilters.overdueOnly;
+            document.getElementById('issFilterDueSoonOnly').checked = issueFilters.dueSoonOnly;
+        }
+
+        function readIssueFiltersFromForm() {
+            const vals = id => [...document.getElementById(id).selectedOptions].map(o => o.value);
+            issueFilters.projects = vals('issFilterProject');
+            issueFilters.units = vals('issFilterUnit');
+            issueFilters.severities = vals('issFilterSeverity');
+            issueFilters.statuses = vals('issFilterStatus');
+            issueFilters.people = vals('issFilterPerson');
+            issueFilters.raisedBy = vals('issFilterRaisedBy');
+            issueFilters.overdueOnly = document.getElementById('issFilterOverdueOnly').checked;
+            issueFilters.dueSoonOnly = document.getElementById('issFilterDueSoonOnly').checked;
+            issueFilters.dateFrom = jalaliInputToIso(document.getElementById('issFilterDateFrom').value) || null;
+            issueFilters.dateTo = jalaliInputToIso(document.getElementById('issFilterDateTo').value) || null;
+        }
+
+        function clearAllIssueFilters() {
+            issueFilters = { projects: [], units: [], severities: [], statuses: [], people: [], raisedBy: [], overdueOnly: false, dueSoonOnly: false, dateFrom: null, dateTo: null };
+            document.getElementById('issFilterDateFrom').value = '';
+            document.getElementById('issFilterDateTo').value = '';
+            syncIssueFilterSelectsFromState();
+            renderAllIssueSections();
+        }
+
+        function renderActiveFilterChips() {
+            const el = document.getElementById('issueActiveFilterChips');
+            const chips = [];
+            issueFilters.projects.forEach(v => chips.push({ text: '📁 ' + v, remove: () => { issueFilters.projects = issueFilters.projects.filter(x => x !== v); } }));
+            issueFilters.units.forEach(v => chips.push({ text: '🏷 ' + v, remove: () => { issueFilters.units = issueFilters.units.filter(x => x !== v); } }));
+            issueFilters.severities.forEach(v => chips.push({ text: '⚡ ' + v, remove: () => { issueFilters.severities = issueFilters.severities.filter(x => x !== v); } }));
+            issueFilters.statuses.forEach(v => chips.push({ text: '● ' + v, remove: () => { issueFilters.statuses = issueFilters.statuses.filter(x => x !== v); } }));
+            issueFilters.people.forEach(v => chips.push({ text: '👤 ' + v, remove: () => { issueFilters.people = issueFilters.people.filter(x => x !== v); } }));
+            issueFilters.raisedBy.forEach(v => chips.push({ text: '✍️ ' + v, remove: () => { issueFilters.raisedBy = issueFilters.raisedBy.filter(x => x !== v); } }));
+            if (issueFilters.overdueOnly) chips.push({ text: 'فقط معوق', remove: () => { issueFilters.overdueOnly = false; } });
+            if (issueFilters.dueSoonOnly) chips.push({ text: 'فقط نزدیک سررسید', remove: () => { issueFilters.dueSoonOnly = false; } });
+            if (issueFilters.dateFrom) chips.push({ text: 'از ' + formatJalali(issueFilters.dateFrom), remove: () => { issueFilters.dateFrom = null; document.getElementById('issFilterDateFrom').value = ''; } });
+            if (issueFilters.dateTo) chips.push({ text: 'تا ' + formatJalali(issueFilters.dateTo), remove: () => { issueFilters.dateTo = null; document.getElementById('issFilterDateTo').value = ''; } });
+
+            if (!chips.length) { el.innerHTML = '<span class="text-slate-400">فیلتری فعال نیست.</span>'; return; }
+            el.innerHTML = chips.map((c, idx) => `<span class="bg-slate-100 text-slate-700 px-2 py-1 rounded-full flex items-center gap-1">${esc(c.text)}<button type="button" data-idx="${idx}" class="issue-chip-remove font-bold text-slate-400 hover:text-red-600">×</button></span>`).join('');
+            el.querySelectorAll('.issue-chip-remove').forEach((btn, idx) => btn.addEventListener('click', () => { chips[idx].remove(); syncIssueFilterSelectsFromState(); renderAllIssueSections(); }));
+        }
+
+        function renderIssueKpis(filtered) {
+            const total = filtered.length;
+            const openIssues = filtered.filter(i => !ISSUE_CLOSED_STATUSES.includes(i.status));
+            const overdue = filtered.filter(isIssueOverdue);
+            const critical = filtered.filter(i => i.severity === 'بحرانی' && !ISSUE_CLOSED_STATUSES.includes(i.status));
+            const dueSoon = filtered.filter(isIssueDueSoon);
+            const avgAging = openIssues.length ? Math.round(openIssues.reduce((a, i) => a + issueAgeDays(i), 0) / openIssues.length) : 0;
+            const terminal = filtered.filter(i => ISSUE_CLOSED_STATUSES.includes(i.status));
+            const closureRate = total ? Math.round((terminal.length / total) * 100) : 0;
+
+            const cards = [
+                { label: 'Total Issues — کل Issueها', value: toPersianDigits(total), icon: 'inbox', color: 'bg-slate-100 text-slate-700', onClick: () => document.getElementById('issueStatusDonut').scrollIntoView({ behavior: 'smooth' }) },
+                { label: 'Open Issues — Issueهای باز', value: toPersianDigits(openIssues.length), icon: 'activity', color: 'bg-blue-100 text-blue-900', onClick: () => document.getElementById('issueStatusDonut').scrollIntoView({ behavior: 'smooth' }) },
+                { label: 'Overdue Issues — معوق', value: toPersianDigits(overdue.length), icon: 'alertTriangle', color: overdue.length ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700', onClick: () => { issueFilters.overdueOnly = true; issueActionTab = 'overdue'; syncIssueFilterSelectsFromState(); renderAllIssueSections(); document.getElementById('issueActionCenterBody').scrollIntoView({ behavior: 'smooth' }); } },
+                { label: 'Critical Issues — بحرانی', value: toPersianDigits(critical.length), icon: 'shield', color: critical.length ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700', onClick: () => { if (!issueFilters.severities.includes('بحرانی')) issueFilters.severities.push('بحرانی'); syncIssueFilterSelectsFromState(); renderAllIssueSections(); } },
+                { label: 'Due Soon — نزدیک سررسید', value: toPersianDigits(dueSoon.length), icon: 'clock', color: 'bg-amber-100 text-amber-700', onClick: () => { issueFilters.dueSoonOnly = true; issueActionTab = 'dueSoon'; syncIssueFilterSelectsFromState(); renderAllIssueSections(); document.getElementById('issueActionCenterBody').scrollIntoView({ behavior: 'smooth' }); } },
+                { label: 'Average Aging — میانگین سن', value: toPersianDigits(avgAging) + ' روز', icon: 'gauge', color: 'bg-slate-100 text-slate-700', onClick: () => document.getElementById('issueAgingChart').scrollIntoView({ behavior: 'smooth' }) },
+                { label: 'Closure Rate — نرخ بسته‌شدن', value: toPersianDigits(closureRate) + '٪', icon: 'checkCircle', color: 'bg-emerald-100 text-emerald-700', onClick: () => document.getElementById('issueTrendChart').scrollIntoView({ behavior: 'smooth' }) },
+            ];
+
+            const row = document.getElementById('issueKpiRow');
+            row.innerHTML = cards.map((c, idx) => `
+                <button type="button" class="issue-kpi-card text-right bg-white rounded-2xl shadow-sm border p-3 space-y-1.5 hover:shadow-md hover:-translate-y-0.5 transition" data-idx="${idx}" title="${esc(c.label)}">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center ${c.color}">${iconSvg(c.icon, 'w-4 h-4')}</div>
+                    <p class="text-lg font-extrabold text-slate-800 leading-tight">${c.value}</p>
+                    <p class="text-[10px] text-slate-500 leading-snug">${esc(c.label)}</p>
+                </button>`).join('');
+            row.querySelectorAll('.issue-kpi-card').forEach((btn, idx) => btn.addEventListener('click', cards[idx].onClick));
+        }
+
+        function renderIssueSeverityChart(filtered) {
+            const counts = ISSUE_SEVERITIES.map(s => filtered.filter(i => i.severity === s).length);
+            if (issueCharts.issueSeverityChart) issueCharts.issueSeverityChart.destroy();
+            issueCharts.issueSeverityChart = new Chart(document.getElementById('issueSeverityChart').getContext('2d'), {
+                type: 'bar',
+                data: { labels: ISSUE_SEVERITIES, datasets: [{ data: counts, backgroundColor: ISSUE_SEVERITIES.map(s => AI_SEVERITY_STYLE[s].hex) }] },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    onClick: (evt, els) => { if (els.length) { const sev = ISSUE_SEVERITIES[els[0].index]; if (!issueFilters.severities.includes(sev)) { issueFilters.severities.push(sev); syncIssueFilterSelectsFromState(); renderAllIssueSections(); } } },
+                    scales: { x: { min: 0, ticks: { stepSize: 1, precision: 0, callback: v => toPersianDigits(v) }, grid: { color: '#f1f5f9' } }, y: { grid: { display: false } } },
+                    plugins: { legend: { display: false } },
+                },
+            });
+        }
+
+        function renderIssueAgingChart(filtered) {
+            const open = filtered.filter(i => !ISSUE_CLOSED_STATUSES.includes(i.status));
+            const buckets = [
+                { label: '۰-۷ روز', test: d => d <= 7 },
+                { label: '۸-۱۴ روز', test: d => d >= 8 && d <= 14 },
+                { label: '۱۵-۳۰ روز', test: d => d >= 15 && d <= 30 },
+                { label: '۳۱-۶۰ روز', test: d => d >= 31 && d <= 60 },
+                { label: '۶۱-۹۰ روز', test: d => d >= 61 && d <= 90 },
+                { label: '+۹۰ روز', test: d => d > 90 },
+            ];
+            const ages = open.map(issueAgeDays);
+            const counts = buckets.map(b => ages.filter(b.test).length);
+            document.getElementById('issueOldestOpen').textContent = ages.length ? toPersianDigits(Math.max(...ages)) + ' روز' : '-';
+            if (issueCharts.issueAgingChart) issueCharts.issueAgingChart.destroy();
+            issueCharts.issueAgingChart = new Chart(document.getElementById('issueAgingChart').getContext('2d'), {
+                type: 'bar',
+                data: { labels: buckets.map(b => b.label), datasets: [{ data: counts, backgroundColor: buckets.map((b, i) => i >= 4 ? '#dc2626' : i >= 2 ? '#f59e0b' : '#3b82f6') }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, ticks: { stepSize: 1, precision: 0, callback: v => toPersianDigits(v) } }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } },
+            });
+        }
+
+        function renderOverdueRadar(filtered) {
+            const overdue = filtered.filter(isIssueOverdue).slice().sort((a, b) => issueOverdueDays(b) - issueOverdueDays(a));
+            const el = document.getElementById('issueOverdueRadarList');
+            if (!overdue.length) { el.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">هیچ Issue معوقی وجود ندارد. 🎉</p>'; return; }
+            const dot = { 'بحرانی': '🔴', 'زیاد': '🟠', 'متوسط': '🟡', 'کم': '🟢' };
+            el.innerHTML = overdue.map(i => `
+                <div class="issue-radar-row flex items-center justify-between gap-2 border rounded-lg px-2.5 py-1.5 hover:bg-slate-50 cursor-pointer" data-issue-id="${i.id}" title="${esc(i.title)} — ${esc(i.responsible_unit || '-')} / ${esc(i.responsible_name || '-')}">
+                    <span class="flex items-center gap-1.5 min-w-0 text-xs"><span>${dot[i.severity] || '⚪'}</span><span class="font-bold truncate">${esc(i.title)}</span></span>
+                    <span class="shrink-0 flex items-center gap-2 text-[10px] text-slate-500">
+                        <span class="hidden sm:inline">${esc(i.responsible_unit || '-')}</span><span class="hidden sm:inline">${esc(i.responsible_name || '-')}</span>
+                        <span class="bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full whitespace-nowrap">${toPersianDigits(issueOverdueDays(i))} روز تأخیر</span>
+                    </span>
+                </div>`).join('');
+            el.querySelectorAll('.issue-radar-row').forEach(row => row.addEventListener('click', () => openIssueDrawer(Number(row.dataset.issueId))));
+        }
+
+        function renderResponsibilityCharts(filtered) {
+            const byUnit = {};
+            filtered.forEach(i => { const u = i.responsible_unit || 'نامشخص'; byUnit[u] = (byUnit[u] || 0) + 1; });
+            const unitEntries = Object.entries(byUnit).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            if (issueCharts.issueByUnitChart) issueCharts.issueByUnitChart.destroy();
+            issueCharts.issueByUnitChart = new Chart(document.getElementById('issueByUnitChart').getContext('2d'), {
+                type: 'bar',
+                data: { labels: unitEntries.map(e => e[0]), datasets: [{ data: unitEntries.map(e => e[1]), backgroundColor: '#1e3a8a' }] },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    onClick: (evt, els) => { if (els.length) { const unit = unitEntries[els[0].index][0]; if (!issueFilters.units.includes(unit)) { issueFilters.units.push(unit); syncIssueFilterSelectsFromState(); renderAllIssueSections(); } } },
+                    scales: { x: { min: 0, ticks: { stepSize: 1, precision: 0, callback: v => toPersianDigits(v) }, grid: { color: '#f1f5f9' } }, y: { grid: { display: false } } },
+                    plugins: { legend: { display: false } },
+                },
+            });
+
+            const byPerson = {};
+            filtered.forEach(i => { const p = i.responsible_name || 'تخصیص‌نشده'; byPerson[p] = (byPerson[p] || 0) + 1; });
+            const personEntries = Object.entries(byPerson).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            if (issueCharts.issueByPersonChart) issueCharts.issueByPersonChart.destroy();
+            issueCharts.issueByPersonChart = new Chart(document.getElementById('issueByPersonChart').getContext('2d'), {
+                type: 'bar',
+                data: { labels: personEntries.map(e => e[0]), datasets: [{ data: personEntries.map(e => e[1]), backgroundColor: '#7c3aed' }] },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    scales: { x: { min: 0, ticks: { stepSize: 1, precision: 0, callback: v => toPersianDigits(v) }, grid: { color: '#f1f5f9' } }, y: { grid: { display: false } } },
+                    plugins: { legend: { display: false } },
+                },
+            });
+        }
+
+        function renderProjectComparison(filtered) {
+            const card = document.getElementById('issueProjectComparisonCard');
+            const distinctProjects = [...new Set(filtered.map(i => i.project_name))];
+            if (distinctProjects.length < 2) { card.classList.add('hidden'); return; }
+            card.classList.remove('hidden');
+            let rows = distinctProjects.map(pn => {
+                const projRows = filtered.filter(i => i.project_name === pn);
+                const open = projRows.filter(i => !ISSUE_CLOSED_STATUSES.includes(i.status)).length;
+                const overdue = projRows.filter(isIssueOverdue).length;
+                const critical = projRows.filter(i => i.severity === 'بحرانی' && !ISSUE_CLOSED_STATUSES.includes(i.status)).length;
+                const closed = projRows.filter(i => ISSUE_CLOSED_STATUSES.includes(i.status)).length;
+                const closureRate = projRows.length ? Math.round((closed / projRows.length) * 100) : 0;
+                return { project: pn, total: projRows.length, open, overdue, critical, closureRate };
+            });
+            const sorters = { total: (a, b) => b.total - a.total, overdue: (a, b) => b.overdue - a.overdue, critical: (a, b) => b.critical - a.critical, closureRate: (a, b) => a.closureRate - b.closureRate };
+            rows = rows.sort(sorters[issueProjectSort] || sorters.total);
+            document.getElementById('issueProjectComparisonBody').innerHTML = rows.map(r => `
+                <tr class="hover:bg-slate-50 cursor-pointer issue-proj-row" data-project="${esc(r.project)}">
+                    <td class="p-2 border font-bold">${esc(r.project)}</td>
+                    <td class="p-2 border">${toPersianDigits(r.total)}</td>
+                    <td class="p-2 border">${toPersianDigits(r.open)}</td>
+                    <td class="p-2 border ${r.overdue ? 'text-red-700 font-bold' : ''}">${toPersianDigits(r.overdue)}</td>
+                    <td class="p-2 border ${r.critical ? 'text-red-700 font-bold' : ''}">${toPersianDigits(r.critical)}</td>
+                    <td class="p-2 border">${toPersianDigits(r.closureRate)}٪</td>
+                </tr>`).join('');
+            document.querySelectorAll('.issue-proj-row').forEach(row => row.addEventListener('click', () => {
+                issueFilters.projects = [row.dataset.project];
+                syncIssueFilterSelectsFromState();
+                renderAllIssueSections();
+            }));
+
+            const sortBtnsEl = document.getElementById('issueProjectSortBtns');
+            const sortOptions = [['total', 'بیشترین Issue'], ['overdue', 'بیشترین معوق'], ['critical', 'بیشترین بحرانی'], ['closureRate', 'کمترین نرخ بسته‌شدن']];
+            sortBtnsEl.innerHTML = sortOptions.map(([key, label]) => `<button type="button" data-sort="${key}" class="px-2 py-1 rounded-lg border ${issueProjectSort === key ? 'bg-slate-800 text-white' : 'text-slate-500'}">${label}</button>`).join('');
+            sortBtnsEl.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { issueProjectSort = b.dataset.sort; renderProjectComparison(computeFilteredIssues()); }));
+        }
+
+        function issueTrendBucketKey(iso, granularity) {
+            if (granularity === 'daily') return { key: iso, label: formatJalali(iso) };
+            if (granularity === 'weekly') {
+                const d = new Date(iso + 'T00:00:00Z');
+                const dayOfWeek = d.getUTCDay();
+                const monday = new Date(d); monday.setUTCDate(d.getUTCDate() - ((dayOfWeek + 6) % 7));
+                const mondayIso = monday.toISOString().slice(0, 10);
+                return { key: mondayIso, label: formatJalali(mondayIso) };
+            }
+            const [y, m, day] = iso.split('-').map(Number);
+            const [jy, jm] = gregorianToJalali(y, m, day);
+            if (granularity === 'quarterly') {
+                const q = Math.ceil(jm / 3);
+                return { key: `${jy}-Q${q}`, label: `فصل ${toPersianDigits(q)} - ${toPersianDigits(jy)}` };
+            }
+            return { key: `${jy}-${String(jm).padStart(2, '0')}`, label: `${toPersianDigits(jm)}/${toPersianDigits(jy)}` };
+        }
+
+        function renderIssueTrend(filtered) {
+            const g = issueTrendGranularity;
+            const bucketMap = {};
+            const touch = (iso) => { const { key, label } = issueTrendBucketKey(iso, g); if (!bucketMap[key]) bucketMap[key] = { key, label, created: 0, closed: 0 }; return bucketMap[key]; };
+            filtered.forEach(i => {
+                touch(i.date_raised).created++;
+                if (i.actual_closure_date) touch(i.actual_closure_date).closed++;
+            });
+            const buckets = Object.values(bucketMap).sort((a, b) => a.key < b.key ? -1 : a.key > b.key ? 1 : 0);
+            let running = 0;
+            const netOpen = buckets.map(b => { running += b.created - b.closed; return running; });
+            if (issueCharts.issueTrendChart) issueCharts.issueTrendChart.destroy();
+            issueCharts.issueTrendChart = new Chart(document.getElementById('issueTrendChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: buckets.map(b => b.label),
+                    datasets: [
+                        { label: 'ایجادشده (Created)', data: buckets.map(b => b.created), borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,.1)', tension: .3 },
+                        { label: 'بسته‌شده (Closed)', data: buckets.map(b => b.closed), borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.1)', tension: .3 },
+                        { label: 'خالص باز (Net Open)', data: netOpen, borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,.08)', fill: true, tension: .3 },
+                    ],
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, ticks: { precision: 0, callback: v => toPersianDigits(v) } }, x: { grid: { display: false } } }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } },
+            });
+        }
+
+        function renderActionCenter(filtered) {
+            const tabsEl = document.getElementById('issueActionTabs');
+            const tabs = [['overdue', 'Overdue'], ['dueSoon', 'Due Soon'], ['noRecentAction', 'No Recent Action']];
+            tabsEl.innerHTML = tabs.map(([key, label]) => `<button type="button" data-tab="${key}" class="px-3 py-1.5 font-bold ${issueActionTab === key ? 'text-red-700 border-b-2 border-red-600' : 'text-slate-400'}">${label}</button>`).join('');
+            tabsEl.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { issueActionTab = b.dataset.tab; renderActionCenter(computeFilteredIssues()); }));
+
+            let rows;
+            if (issueActionTab === 'overdue') rows = filtered.filter(isIssueOverdue).sort((a, b) => issueOverdueDays(b) - issueOverdueDays(a));
+            else if (issueActionTab === 'dueSoon') rows = filtered.filter(isIssueDueSoon).sort((a, b) => (a.target_date || '') < (b.target_date || '') ? -1 : 1);
+            else {
+                const lastActionByIssue = {};
+                allIssueUpdatesRaw.forEach(u => { if (!lastActionByIssue[u.issue_id] || u.created_at > lastActionByIssue[u.issue_id]) lastActionByIssue[u.issue_id] = u.created_at; });
+                const cutoff = new Date(Date.now() - ISSUE_NO_ACTION_DAYS * 86400000).toISOString();
+                rows = filtered.filter(i => !ISSUE_CLOSED_STATUSES.includes(i.status) && (lastActionByIssue[i.id] || i.created_at) < cutoff);
+            }
+
+            const body = document.getElementById('issueActionCenterBody');
+            if (!rows.length) { body.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">موردی برای نمایش نیست.</p>'; return; }
+            body.innerHTML = rows.slice(0, 30).map(i => `
+                <div class="flex items-center justify-between gap-2 border-b py-1.5 text-xs flex-wrap">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-slate-400 shrink-0">#${toPersianDigits(i.id)}</span>
+                        <span class="font-bold truncate">${esc(i.title)}</span>
+                        ${issueIsEscalated(i) ? '<span class="bg-red-600 text-[#ffffff] text-[9px] font-extrabold px-1.5 py-0.5 rounded shrink-0">ESCALATED</span>' : ''}
+                    </div>
+                    <div class="flex items-center gap-2 text-[10px] text-slate-500 shrink-0">
+                        <span>${esc(i.project_name)}</span>${aiSevBadge(i.severity)}<span>${esc(i.responsible_name || '-')}</span>
+                        <span>${i.target_date ? formatJalali(i.target_date) : '-'}</span>
+                        <span class="issue-action-view-btn text-blue-900 font-bold cursor-pointer" data-issue-id="${i.id}">مشاهده →</span>
+                    </div>
+                </div>`).join('');
+            body.querySelectorAll('.issue-action-view-btn').forEach(b => b.addEventListener('click', () => openIssueDrawer(Number(b.dataset.issueId))));
+        }
+
+        function renderIssueAiInsight(filtered) {
+            const el = document.getElementById('issueAiInsightList');
+            if (!filtered.length) { el.innerHTML = '<p class="text-xs text-blue-100">داده کافی برای تحلیل وجود ندارد.</p>'; return; }
+            const insights = [];
+            const byUnit = {};
+            filtered.forEach(i => { const u = i.responsible_unit || 'نامشخص'; byUnit[u] = (byUnit[u] || 0) + 1; });
+            const topUnit = Object.entries(byUnit).sort((a, b) => b[1] - a[1])[0];
+            if (topUnit) insights.push(`📌 ${toPersianDigits(Math.round(topUnit[1] / filtered.length * 100))}٪ از Issueهای ثبت‌شده مربوط به واحد «${esc(topUnit[0])}» است.`);
+
+            const criticalOverdue = filtered.filter(i => i.severity === 'بحرانی' && isIssueOverdue(i));
+            if (criticalOverdue.length) insights.push(`🚨 ${toPersianDigits(criticalOverdue.length)} Issue بحرانی از موعد خود عبور کرده‌اند (حداکثر ${toPersianDigits(Math.max(...criticalOverdue.map(issueOverdueDays)))} روز تأخیر).`);
+
+            const byProject = {};
+            filtered.forEach(i => { (byProject[i.project_name] = byProject[i.project_name] || []).push(i); });
+            const projectRates = Object.entries(byProject).map(([pn, rows]) => ({ pn, rate: rows.length ? rows.filter(r => ISSUE_CLOSED_STATUSES.includes(r.status)).length / rows.length : 0 }));
+            if (projectRates.length > 1) {
+                const worst = projectRates.slice().sort((a, b) => a.rate - b.rate)[0];
+                insights.push(`📉 پروژه «${esc(worst.pn)}» با نرخ بسته‌شدن ${toPersianDigits(Math.round(worst.rate * 100))}٪ پایین‌ترین Closure Rate را در این مجموعه دارد.`);
+            }
+
+            const chronic = filtered.filter(i => !ISSUE_CLOSED_STATUSES.includes(i.status) && issueAgeDays(i) > 30);
+            if (chronic.length) insights.push(`⏳ ${toPersianDigits(chronic.length)} Issue بیش از ۳۰ روز است که باز مانده‌اند و نیاز به پیگیری جدی دارند.`);
+
+            const escalatedCount = filtered.filter(issueIsEscalated).length;
+            if (escalatedCount) insights.push(`⚠️ ${toPersianDigits(escalatedCount)} Issue شرایط Escalation را دارند و باید به سطح مدیریتی بالاتر ارجاع شوند.`);
+
+            el.innerHTML = insights.length
+                ? insights.slice(0, 5).map(t => `<div class="bg-white/10 rounded-lg px-3 py-2 text-xs text-[#ffffff]">${t}</div>`).join('')
+                : '<p class="text-xs text-blue-100">در وضعیت فعلی نکته قابل توجهی شناسایی نشد.</p>';
+        }
+
+        function renderAllIssueSections() {
+            const filtered = computeFilteredIssues();
+            renderActiveFilterChips();
+            renderIssueKpis(filtered);
+            const groups = ['باز', 'در حال اجرا', 'در انتظار تأیید', 'حل‌شده', 'بسته‌شده', 'رد‌شده'];
+            renderStatusDonut('issueStatusDonut', 'issueStatusDonutCenter', 'issueStatusLegend', groups.map(g => ({ label: g, value: filtered.filter(i => ISSUE_STATUS_GROUP[i.status] === g).length, color: ISSUE_STATUS_GROUP_COLOR[g] })));
+            renderIssueSeverityChart(filtered);
+            renderIssueAgingChart(filtered);
+            renderOverdueRadar(filtered);
+            renderResponsibilityCharts(filtered);
+            renderProjectComparison(filtered);
+            renderIssueTrend(filtered);
+            renderActionCenter(filtered);
+            renderIssueAiInsight(filtered);
+        }
+
+        function wireIssueStaticControls() {
+            if (issueStaticControlsWired) return;
+            issueStaticControlsWired = true;
+            document.getElementById('issuesApplyFiltersBtn').addEventListener('click', () => { readIssueFiltersFromForm(); renderAllIssueSections(); });
+            document.getElementById('issuesClearFiltersBtn').addEventListener('click', clearAllIssueFilters);
+            document.getElementById('issuesRefreshBtn').addEventListener('click', loadIssuesView);
+            document.getElementById('issuesPrintBtn').addEventListener('click', () => window.print());
+            document.getElementById('issuesExportCsvBtn').addEventListener('click', () => exportIssuesCsv(computeFilteredIssues()));
+            document.getElementById('issuesNewBtn').addEventListener('click', () => openNewIssueModal());
+            document.getElementById('newIssueCloseBtn').addEventListener('click', closeNewIssueModal);
+            document.getElementById('newIssueModal').addEventListener('click', (e) => { if (e.target.id === 'newIssueModal') closeNewIssueModal(); });
+            document.getElementById('newIssueSubmitBtn').addEventListener('click', submitNewIssue);
+            document.getElementById('newIssueProject').addEventListener('change', onNewIssueProjectChange);
+            document.getElementById('issueDrawerOverlay').addEventListener('click', closeIssueDrawer);
+
+            const granBtnsEl = document.getElementById('issueTrendGranularityBtns');
+            const granOptions = [['daily', 'روزانه'], ['weekly', 'هفتگی'], ['monthly', 'ماهانه'], ['quarterly', 'فصلی']];
+            granBtnsEl.innerHTML = granOptions.map(([key, label]) => `<button type="button" data-gran="${key}" class="px-2 py-1 rounded-lg border ${key === issueTrendGranularity ? 'bg-slate-800 text-white' : 'text-slate-500'}">${label}</button>`).join('');
+            granBtnsEl.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+                issueTrendGranularity = b.dataset.gran;
+                granBtnsEl.querySelectorAll('button').forEach(x => { x.className = 'px-2 py-1 rounded-lg border ' + (x.dataset.gran === issueTrendGranularity ? 'bg-slate-800 text-white' : 'text-slate-500'); });
+                renderIssueTrend(computeFilteredIssues());
+            }));
+        }
+
+        function renderNewIssueFormOptions() {
+            document.getElementById('newIssueProject').innerHTML = '<option value="">-- انتخاب پروژه --</option>' + issueProjectsCache.map(p => `<option value="${esc(p.name)}">${esc(p.name)}</option>`).join('');
+            document.getElementById('newIssueUnit').innerHTML = '<option value="">-- انتخاب --</option>' + ISSUE_UNITS.map(u => `<option value="${esc(u)}">${esc(u)}</option>`).join('');
+            document.getElementById('newIssueSeverity').innerHTML = ISSUE_SEVERITIES.map(s => `<option value="${esc(s)}" ${s === 'متوسط' ? 'selected' : ''}>${esc(s)}</option>`).join('');
+        }
+
+        function onNewIssueProjectChange() {
+            const pn = document.getElementById('newIssueProject').value;
+            const respSel = document.getElementById('newIssueResponsible');
+            const users = issueUsersByProject[pn] || [];
+            respSel.innerHTML = '<option value="">-- بدون تخصیص --</option>' + users.map(u => `<option value="${esc(personDisplayName(u))}|||${esc(u.email)}">${esc(personDisplayName(u))} — ${esc(u.organization)}</option>`).join('');
+            const caseSel = document.getElementById('newIssueCaseLink');
+            const cases = issueCasesCache.filter(c => c.project_name === pn);
+            caseSel.innerHTML = '<option value="">-- بدون ارتباط --</option>' + cases.map(c => `<option value="${c.id}">${esc(c.title)}</option>`).join('');
+        }
+
+        function openNewIssueModal(prefillProjectName, prefillCaseId) {
+            document.getElementById('newIssueTitle').value = '';
+            document.getElementById('newIssueDescription').value = '';
+            document.getElementById('newIssueTargetDate').value = '';
+            document.getElementById('newIssueUnit').value = '';
+            document.getElementById('newIssueProject').value = prefillProjectName || '';
+            onNewIssueProjectChange();
+            if (prefillCaseId) document.getElementById('newIssueCaseLink').value = String(prefillCaseId);
+            document.getElementById('newIssueModal').classList.remove('hidden');
+        }
+        function closeNewIssueModal() { document.getElementById('newIssueModal').classList.add('hidden'); }
+
+        // Reachable from پیگیری اجرای اقدامات زودبازده directly (each project
+        // card gets a "+ ثبت Issue" button) without requiring a prior visit to
+        // Issue Control Tower — so this loads its own minimal data on demand
+        // instead of depending on loadIssuesView() having already run.
+        async function openNewIssueModalForProject(projectName, caseId) {
+            if (!issueProjectsCache.length) {
+                const isAdmin = currentProfile.role === 'admin';
+                const { data: projects } = await _supabase.from('projects').select('*').order('name');
+                issueProjectsCache = (projects || []).filter(p => p.is_guide || isAdmin || myProjectAccess.some(a => a.project_name === p.name));
+            }
+            if (!issueUsersByProject[projectName]) {
+                const { data } = await _supabase.rpc('list_project_users', { p_project_name: projectName });
+                issueUsersByProject[projectName] = data || [];
+            }
+            if (!issueCasesCache.length) {
+                const { data: cases } = await _supabase.from('cases').select('id, project_name, title').order('proposed_at', { ascending: false });
+                issueCasesCache = cases || [];
+            }
+            renderNewIssueFormOptions();
+            wireIssueStaticControls();
+            openNewIssueModal(projectName, caseId);
+        }
+
+        async function submitNewIssue() {
+            const projectName = document.getElementById('newIssueProject').value;
+            const title = document.getElementById('newIssueTitle').value.trim();
+            if (!projectName || !title) { alert('پروژه و عنوان Issue الزامی است.'); return; }
+            const [respName, respEmail] = (document.getElementById('newIssueResponsible').value || '').split('|||');
+            const caseIdRaw = document.getElementById('newIssueCaseLink').value;
+            const targetDateIso = jalaliInputToIso(document.getElementById('newIssueTargetDate').value);
+
+            const { error } = await _supabase.from('issues').insert([{
+                project_name: projectName,
+                case_id: caseIdRaw ? Number(caseIdRaw) : null,
+                title,
+                description: document.getElementById('newIssueDescription').value.trim() || null,
+                responsible_unit: document.getElementById('newIssueUnit').value || null,
+                severity: document.getElementById('newIssueSeverity').value,
+                responsible_name: respName || null,
+                responsible_email: respEmail || null,
+                raised_by: personDisplayName({ first_name: currentProfile.first_name, last_name: currentProfile.last_name, email: currentUser.email }),
+                date_raised: issueTodayIso(),
+                target_date: targetDateIso || null,
+                created_by: currentUser.email,
+            }]);
+            if (error) { alert('خطا در ثبت Issue: ' + error.message); return; }
+            closeNewIssueModal();
+            if (!document.getElementById('issuesView').classList.contains('hidden')) loadIssuesView();
+        }
+
+        function exportIssuesCsv(filtered) {
+            const headers = ['ID', 'Project', 'Title', 'Unit', 'Severity', 'Status', 'Responsible', 'RaisedBy', 'DateRaised', 'TargetDate', 'ActualClosure'];
+            const rows = filtered.map(i => [i.id, i.project_name, i.title, i.responsible_unit || '', i.severity, i.status, i.responsible_name || '', i.raised_by || '', i.date_raised || '', i.target_date || '', i.actual_closure_date || '']);
+            const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+            const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'issues_export.csv';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        async function openIssueDrawer(issueId) {
+            currentDrawerIssueId = issueId;
+            const issue = allIssuesRaw.find(i => i.id === issueId);
+            if (!issue) return;
+            document.getElementById('issueDrawerContent').innerHTML = '<p class="text-center text-slate-400 p-6">در حال بارگذاری...</p>';
+            document.getElementById('issueDrawerOverlay').classList.remove('hidden');
+            document.getElementById('issueDrawer').style.transform = 'translateX(0)';
+
+            const { data: updates } = await _supabase.from('issue_updates').select('*').eq('issue_id', issueId).order('created_at', { ascending: false });
+            if (currentDrawerIssueId === issueId) renderIssueDrawerContent(issue, updates || []);
+        }
+
+        function closeIssueDrawer() {
+            document.getElementById('issueDrawer').style.transform = 'translateX(100%)';
+            document.getElementById('issueDrawerOverlay').classList.add('hidden');
+            currentDrawerIssueId = null;
+        }
+
+        function renderIssueDrawerContent(issue, updates) {
+            const isAdmin = currentProfile.role === 'admin';
+            const isOwner = !isAdmin && issue.responsible_email === currentUser.email;
+            const canEdit = isAdmin || isOwner;
+            const overdue = isIssueOverdue(issue);
+
+            const timelineHtml = updates.length ? updates.map(u => `
+                <div class="flex gap-2 text-[11px] border-r-2 border-slate-200 pr-2.5 py-1">
+                    <span class="text-slate-400 whitespace-nowrap shrink-0">${formatJalali(u.created_at)}</span>
+                    <span class="text-slate-700">${u.kind === 'lifecycle' ? `تغییر وضعیت به «${esc(u.stage)}»` : esc(u.comment || '')}</span>
+                    <span class="text-slate-400 shrink-0">- ${esc(u.created_by || '')}</span>
+                </div>`).join('') : '<p class="text-[11px] text-slate-400">هنوز رویدادی ثبت نشده.</p>';
+
+            document.getElementById('issueDrawerContent').innerHTML = `
+                <div class="flex justify-between items-start gap-2">
+                    <div class="min-w-0">
+                        <p class="text-[10px] text-slate-400">#${toPersianDigits(issue.id)} — ${esc(issue.project_name)}</p>
+                        <h3 class="font-extrabold text-slate-800 leading-snug">${esc(issue.title)}</h3>
+                    </div>
+                    <button type="button" id="issueDrawerCloseBtn" class="text-slate-400 hover:text-slate-700 text-xl leading-none shrink-0">&times;</button>
+                </div>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    ${aiSevBadge(issue.severity)}
+                    <span class="bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-lg">${esc(issue.status)}</span>
+                    ${overdue ? `<span class="bg-red-600 text-[#ffffff] text-[10px] font-bold px-2 py-0.5 rounded-lg">⏰ ${toPersianDigits(issueOverdueDays(issue))} روز تأخیر</span>` : ''}
+                    ${issueIsEscalated(issue) ? '<span class="bg-red-100 text-red-700 text-[10px] font-extrabold px-2 py-0.5 rounded-lg">🚩 ESCALATED</span>' : ''}
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 text-[11px] bg-slate-50 rounded-xl p-3">
+                    <p><b>واحد مسئول:</b> ${esc(issue.responsible_unit || '-')}</p>
+                    <p><b>مسئول پیگیری:</b> ${esc(issue.responsible_name || '-')}</p>
+                    <p><b>ثبت‌کننده:</b> ${esc(issue.raised_by || '-')}</p>
+                    <p><b>تاریخ ثبت:</b> ${formatJalali(issue.date_raised)}</p>
+                    <p><b>مهلت رفع:</b> ${issue.target_date ? formatJalali(issue.target_date) : '-'}</p>
+                    <p><b>تاریخ بسته‌شدن:</b> ${issue.actual_closure_date ? formatJalali(issue.actual_closure_date) : '-'}</p>
+                    <p><b>سن Issue:</b> ${toPersianDigits(issueAgeDays(issue))} روز</p>
+                </div>
+
+                ${issue.description ? `<div><p class="text-[10px] font-bold text-slate-500 mb-1">شرح</p><p class="text-xs text-slate-700 leading-relaxed">${esc(issue.description)}</p></div>` : ''}
+
+                <div class="grid grid-cols-1 gap-2 text-xs">
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1">علت ریشه‌ای (Root Cause)</label><textarea id="drawerRootCause" rows="2" class="w-full border rounded-lg p-2" ${canEdit ? '' : 'readonly'}>${esc(issue.root_cause || '')}</textarea></div>
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1">اقدام اصلاحی (Corrective Action)</label><textarea id="drawerCorrectiveAction" rows="2" class="w-full border rounded-lg p-2" ${canEdit ? '' : 'readonly'}>${esc(issue.corrective_action || '')}</textarea></div>
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1">اقدام پیشگیرانه (Preventive Action)</label><textarea id="drawerPreventiveAction" rows="2" class="w-full border rounded-lg p-2" ${canEdit ? '' : 'readonly'}>${esc(issue.preventive_action || '')}</textarea></div>
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1">آخرین بروزرسانی (Latest Update)</label><textarea id="drawerLatestUpdate" rows="2" class="w-full border rounded-lg p-2" ${canEdit ? '' : 'readonly'}>${esc(issue.latest_update || '')}</textarea></div>
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1">اقدام بعدی (Next Action)</label><textarea id="drawerNextAction" rows="2" class="w-full border rounded-lg p-2" ${canEdit ? '' : 'readonly'}>${esc(issue.next_action || '')}</textarea></div>
+                </div>
+
+                ${canEdit ? `
+                <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t">
+                    <select id="drawerStatusSelect" class="border rounded-lg p-2 bg-white">${ISSUE_STATUSES.map(s => `<option value="${esc(s)}" ${s === issue.status ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select>
+                    <button type="button" id="drawerUpdateBtn" class="bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-lg py-2">Update Issue</button>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <button type="button" id="drawerCloseIssueBtn" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-lg py-2">Close Issue</button>
+                    <button type="button" id="drawerEscalateBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg py-2">ثبت ارجاع (Escalate)</button>
+                </div>` : '<p class="text-[11px] text-slate-400 text-center">فقط مسئول پیگیری یا ادمین می‌تواند این Issue را بروزرسانی کند.</p>'}
+
+                <div class="pt-2 border-t space-y-2">
+                    <div class="flex gap-2">
+                        <input id="drawerCommentInput" type="text" placeholder="افزودن یادداشت (Add Comment)..." class="flex-1 border rounded-lg p-2 text-xs">
+                        <button type="button" id="drawerAddCommentBtn" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-3 rounded-lg">افزودن</button>
+                    </div>
+                    <p class="text-[10px] font-bold text-slate-500">تاریخچه (Activity Timeline)</p>
+                    <div class="space-y-1 max-h-52 overflow-y-auto">${timelineHtml}</div>
+                </div>
+            `;
+
+            document.getElementById('issueDrawerCloseBtn').addEventListener('click', closeIssueDrawer);
+            document.getElementById('drawerAddCommentBtn').addEventListener('click', () => addIssueComment(issue.id));
+            if (canEdit) {
+                document.getElementById('drawerUpdateBtn').addEventListener('click', () => updateIssueFromDrawer(issue.id));
+                document.getElementById('drawerCloseIssueBtn').addEventListener('click', () => closeIssueFromDrawer(issue.id));
+                document.getElementById('drawerEscalateBtn').addEventListener('click', () => escalateIssueFromDrawer(issue.id));
+            }
+        }
+
+        async function updateIssueFromDrawer(issueId) {
+            const issue = allIssuesRaw.find(i => i.id === issueId);
+            const patch = {
+                status: document.getElementById('drawerStatusSelect').value,
+                root_cause: document.getElementById('drawerRootCause').value.trim() || null,
+                corrective_action: document.getElementById('drawerCorrectiveAction').value.trim() || null,
+                preventive_action: document.getElementById('drawerPreventiveAction').value.trim() || null,
+                latest_update: document.getElementById('drawerLatestUpdate').value.trim() || null,
+                next_action: document.getElementById('drawerNextAction').value.trim() || null,
+            };
+            const { error } = await _supabase.from('issues').update(patch).eq('id', issueId);
+            if (error) { alert('خطا در بروزرسانی: ' + error.message); return; }
+            if (issue && patch.status !== issue.status) {
+                await _supabase.from('issue_updates').insert([{ issue_id: issueId, kind: 'lifecycle', stage: patch.status, created_by: currentUser.email }]);
+            }
+            await loadIssuesView();
+            openIssueDrawer(issueId);
+        }
+
+        async function closeIssueFromDrawer(issueId) {
+            if (!confirm('این Issue بسته شود؟')) return;
+            const { error } = await _supabase.from('issues').update({ status: 'بسته‌شده', actual_closure_date: issueTodayIso() }).eq('id', issueId);
+            if (error) { alert('خطا: ' + error.message); return; }
+            await _supabase.from('issue_updates').insert([{ issue_id: issueId, kind: 'lifecycle', stage: 'بسته‌شده', created_by: currentUser.email }]);
+            await loadIssuesView();
+            closeIssueDrawer();
+        }
+
+        async function escalateIssueFromDrawer(issueId) {
+            const target = prompt('ارجاع به چه سطحی؟ (مثال: مدیر پروژه / PMO / مدیر طرح / کمیته راهبری)', 'PMO');
+            if (!target) return;
+            await _supabase.from('issue_updates').insert([{ issue_id: issueId, kind: 'action', comment: `ارجاع (Escalation) به: ${target}`, created_by: currentUser.email }]);
+            openIssueDrawer(issueId);
+        }
+
+        async function addIssueComment(issueId) {
+            const input = document.getElementById('drawerCommentInput');
+            const text = input.value.trim();
+            if (!text) return;
+            const { error } = await _supabase.from('issue_updates').insert([{ issue_id: issueId, kind: 'comment', comment: text, created_by: currentUser.email }]);
+            if (error) { alert('خطا: ' + error.message); return; }
+            input.value = '';
+            openIssueDrawer(issueId);
+        }
 
         initApp();
     </script>
