@@ -4655,6 +4655,10 @@
         });
 
         const DECIDED_STATUSES = ['انتخاب‌شده', 'در حال اجرا', 'بسته‌شده'];
+        // Set right before switchView('tracking') when the admin follows the
+        // "تعریف تسک" jump out of saveEvaluation() — loadTrackingData() reads
+        // and clears it once, to scroll/highlight that one case's card.
+        let pendingTrackingScrollToCaseId = null;
 
         async function saveEvaluation(projectName, prop, decision) {
             const patch = {
@@ -4705,7 +4709,20 @@
                 if (demoteError) { alert('خطا در به‌روزرسانی پیشنهادهای دیگر: ' + demoteError.message); return; }
             }
 
-            alert('ارزیابی با موفقیت ثبت شد.');
+            // Selected/میان‌مدت proposals are exactly the ones that can now
+            // have execution tasks defined on them (پیگیری اجرا) — offer a
+            // direct jump there instead of just a plain "saved" alert, so
+            // defining the first task doesn't need a separate manual detour
+            // through the sidebar.
+            if (isNewlySelected || isNewlyMediumTerm) {
+                if (confirm('ارزیابی با موفقیت ثبت شد.\n\nبرای تعریف تسک‌های اجرایی این اقدام به صفحه «پیگیری اجرا» بروید؟')) {
+                    pendingTrackingScrollToCaseId = prop.id;
+                    switchView('tracking');
+                    return;
+                }
+            } else {
+                alert('ارزیابی با موفقیت ثبت شد.');
+            }
             loadSelectionData();
         }
 
@@ -5054,7 +5071,7 @@
                 const kindTag = dec.status === 'اقدام میان‌مدت'
                     ? '<span class="bg-blue-100 text-blue-900 text-[10px] font-bold px-2 py-0.5 rounded-full">🕒 اقدام میان‌مدت</span>'
                     : '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">🏆 اقدام زودبازده منتخب</span>';
-                wrap.innerHTML = `<div class="print-card bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-3">
+                wrap.innerHTML = `<div class="print-card bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-3" data-case-id="${dec.id}">
                     <div class="flex justify-between items-center flex-wrap gap-2">
                         <div>
                             <div class="flex items-center gap-2 flex-wrap">
@@ -5151,6 +5168,21 @@
                 }
                 container.appendChild(cardEl);
             });
+
+            // Arrived here via the "تعریف تسک" jump out of saveEvaluation() —
+            // bring that one case's card into view and flash it, so landing
+            // on a page full of every project's cases still feels like it
+            // went straight to the right place.
+            if (pendingTrackingScrollToCaseId != null) {
+                const targetId = pendingTrackingScrollToCaseId;
+                pendingTrackingScrollToCaseId = null;
+                const targetCard = container.querySelector(`[data-case-id="${targetId}"]`);
+                if (targetCard) {
+                    targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    targetCard.classList.add('ring-2', 'ring-blue-400');
+                    setTimeout(() => targetCard.classList.remove('ring-2', 'ring-blue-400'), 2500);
+                }
+            }
         }
 
         async function addProgressUpdate(caseId, status, rawPercent, note) {
