@@ -1101,11 +1101,31 @@
 
             <!-- EXECUTIVE PORTFOLIO REPORT (admin-only, printable, 5-7 pages) -->
             <div id="execReportView" class="hidden space-y-6">
-                <div class="no-print flex justify-between items-center">
+                <div class="no-print flex justify-between items-center flex-wrap gap-2">
                     <h2 class="text-lg font-bold text-blue-900">📄 گزارش تحلیلی مدیریتی پورتفولیو</h2>
                     <button type="button" onclick="window.print()" class="bg-blue-900 hover:bg-blue-800 text-white text-xs px-4 py-2 rounded-lg font-bold">🖨 چاپ / ذخیره PDF</button>
                 </div>
 
+                <div class="no-print bg-white rounded-2xl shadow-sm border p-4 space-y-2">
+                    <p class="text-xs font-bold text-slate-700">🖼 گزارش مصور یک پروژه</p>
+                    <p class="text-[11px] text-slate-500">یک پروژه را انتخاب کنید تا به‌جای جدول پورتفولیو، یک گزارش مصور یک‌صفحه‌ای (نمای کلی، سه رکن اصلی، اقدام زودبازده منتخب، نقشه راه، رادار ریسک، تصمیمات مدیرعامل و جمع‌بندی) مخصوص همان پروژه ساخته شود — بر اساس آخرین تحلیل هوشمند ذخیره‌شده‌ی آن.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+                        <select id="execSpProjectSelect" class="p-2.5 border rounded-xl text-sm md:col-span-2">
+                            <option value="">-- بازگشت به گزارش پورتفولیو --</option>
+                        </select>
+                        <select id="execSpProviderSelect" class="p-2.5 border rounded-xl text-sm">
+                            <option value="gemini">Gemini (رایگان)</option>
+                            <option value="openai">ChatGPT</option>
+                        </select>
+                        <button type="button" id="execSpGenerateBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 rounded-xl transition shadow flex items-center justify-center gap-2">
+                            <svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z"/></svg> تولید گزارش مصور
+                        </button>
+                    </div>
+                </div>
+
+                <div id="execSingleProjectContent" class="hidden space-y-4"></div>
+
+                <div id="execPortfolioContent" class="space-y-6">
                 <div class="print-card bg-white rounded-2xl shadow-sm border p-8 space-y-6">
                     <div class="flex flex-col md:flex-row justify-between items-center gap-4 border-b pb-4">
                         <div class="text-center md:text-right">
@@ -1163,6 +1183,7 @@
                             <tbody id="execSummaryTableBody"></tbody>
                         </table>
                     </div>
+                </div>
                 </div>
             </div>
 
@@ -4201,6 +4222,14 @@
         const AI_SEVERITY_RANK = { 'بحرانی': 0, 'زیاد': 1, 'متوسط': 2, 'کم': 3 };
         const AI_AREA_FRONT_LABELS = Object.fromEntries(XRAY_AREAS);
 
+        // executive_decisions_needed items used to be plain strings; newer AI
+        // analyses (and this normalizer) shape them as {decision, why_now,
+        // impact} — this reads the decision text out of either shape so
+        // already-cached old rows keep rendering correctly too.
+        function execDecisionText(d) {
+            return (d && typeof d === 'object') ? (d.decision || '') : String(d ?? '');
+        }
+
         function aiSevBadge(level) {
             const s = AI_SEVERITY_STYLE[level] || { text: 'text-slate-600', bg: 'bg-slate-100' };
             const icon = { 'بحرانی': '🛑', 'زیاد': '⚠️', 'متوسط': '🔶', 'کم': '🟢' }[level] || '';
@@ -4479,7 +4508,11 @@
                             ${analysis.executive_decisions_needed.map((d, i) => `
                                 <div class="bg-red-50 rounded-lg p-2.5 border border-red-100 flex items-start gap-2.5">
                                     <span class="shrink-0 h-5 w-5 rounded-full bg-red-600 text-[#ffffff] text-[10px] font-extrabold flex items-center justify-center mt-0.5">${toPersianDigits(i + 1)}</span>
-                                    <span class="text-xs text-slate-700 leading-relaxed">${esc(d)}</span>
+                                    <div class="min-w-0 space-y-1">
+                                        <p class="text-xs text-slate-700 leading-relaxed font-bold">${esc(execDecisionText(d))}</p>
+                                        ${d && d.why_now ? `<p class="text-[11px] text-slate-600"><b>چرا الان؟</b> ${esc(d.why_now)}</p>` : ''}
+                                        ${d && d.impact ? `<p class="text-[11px] text-slate-500"><b>اثر:</b> ${esc(d.impact)}</p>` : ''}
+                                    </div>
                                 </div>`).join('')}
                         </div>
                     </div>`);
@@ -5252,6 +5285,19 @@
         async function loadExecReport() {
             document.getElementById('execGeneratedAt').textContent = todayJalali();
 
+            // Always land on the portfolio view on a fresh visit to this
+            // page — never leave a stale single-project report showing from
+            // a previous visit. (The select's own value resets naturally
+            // below when its options get rebuilt.)
+            document.getElementById('execSingleProjectContent').classList.add('hidden');
+            document.getElementById('execSingleProjectContent').innerHTML = '';
+            document.getElementById('execPortfolioContent').classList.remove('hidden');
+
+            const { data: projects } = await _supabase.from('projects').select('*').order('name');
+            const spSelect = document.getElementById('execSpProjectSelect');
+            spSelect.innerHTML = '<option value="">-- بازگشت به گزارش پورتفولیو --</option>'
+                + (projects || []).map(p => `<option value="${esc(p.name)}">${esc(p.name)}</option>`).join('');
+
             const { data: checkins } = await _supabase.from('check_ins').select('*').order('created_at', { ascending: true });
             const { data: allCases } = await _supabase.from('cases').select('*');
             const decisions = (allCases || []).filter(c => ['انتخاب‌شده', 'در حال اجرا', 'بسته‌شده'].includes(c.status));
@@ -5357,6 +5403,268 @@
                         <td class="p-2 border">${esc(status)}</td>
                     </tr>`;
                 }).join('');
+        }
+
+        document.getElementById('execSpGenerateBtn').addEventListener('click', () => {
+            const projectName = document.getElementById('execSpProjectSelect').value;
+            const provider = document.getElementById('execSpProviderSelect').value;
+            if (!projectName) {
+                document.getElementById('execSingleProjectContent').classList.add('hidden');
+                document.getElementById('execSingleProjectContent').innerHTML = '';
+                document.getElementById('execPortfolioContent').classList.remove('hidden');
+                return;
+            }
+            loadSingleProjectExecReport(projectName, provider);
+        });
+
+        function execSpAiEmptyStateHtml() {
+            return `<div class="text-center py-4 space-y-2">
+                <p class="text-xs text-slate-400">این بخش نیاز به تحلیل هوشمند دارد — هنوز تحلیلی برای این پروژه ذخیره نشده.</p>
+                <button type="button" class="no-print text-xs text-purple-700 underline exec-sp-go-ai-btn">→ ساخت تحلیل هوشمند برای این پروژه</button>
+            </div>`;
+        }
+
+        function renderExecSpHealthGauge(healthIndex) {
+            const el = document.getElementById('execSpHealthGauge');
+            if (!el) return;
+            const value = Math.max(0, Math.min(100, Number(healthIndex) || 0));
+            const color = value >= 66 ? '#22c55e' : value >= 33 ? '#f59e0b' : '#ef4444';
+            new Chart(el.getContext('2d'), {
+                type: 'doughnut',
+                data: { datasets: [{ data: [value, 100 - value], backgroundColor: [color, '#e2e8f0'], borderWidth: 0 }] },
+                options: { circumference: 180, rotation: 270, cutout: '75%', plugins: { legend: { display: false }, tooltip: { enabled: false } } },
+            });
+        }
+
+        function renderExecSpRiskRadar(riskRegister) {
+            const el = document.getElementById('execSpRiskRadar');
+            if (!el) return;
+            const sevValue = { 'بحرانی': 4, 'زیاد': 3, 'متوسط': 2, 'کم': 1 };
+            new Chart(el.getContext('2d'), {
+                type: 'radar',
+                data: {
+                    labels: riskRegister.map(r => ((r.risk || '-').length > 22 ? r.risk.slice(0, 20) + '…' : (r.risk || '-'))),
+                    datasets: [{
+                        label: 'شدت ریسک',
+                        data: riskRegister.map(r => sevValue[r.level] || 0),
+                        backgroundColor: 'rgba(220,38,38,.15)',
+                        borderColor: '#dc2626',
+                        pointBackgroundColor: riskRegister.map(r => (AI_SEVERITY_STYLE[r.level] || {}).hex || '#94a3b8'),
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { r: { min: 0, max: 4, ticks: { stepSize: 1, display: false }, pointLabels: { font: { size: 10 } }, grid: { color: '#e2e8f0' } } },
+                    plugins: { legend: { display: false } },
+                },
+            });
+        }
+
+        // Single-project, print-ready infographic report — reuses the SAME
+        // cached تحلیل هوشمند data (ai_analyses) that loadAiReport() reads
+        // (cache-only here: never forces a fresh AI call), plus client_reports
+        // and cases, to build the 7 sections of the reference layout without
+        // fabricating anything a project doesn't actually have yet.
+        async function loadSingleProjectExecReport(projectName, provider) {
+            const container = document.getElementById('execSingleProjectContent');
+            document.getElementById('execPortfolioContent').classList.add('hidden');
+            container.classList.remove('hidden');
+            container.innerHTML = '<p class="text-center text-slate-400 p-6">در حال ساخت گزارش مصور...</p>';
+
+            const [{ data: clientReports }, { data: allCases }, { data: cachedAi }] = await Promise.all([
+                _supabase.from('client_reports').select('*').eq('project_name', projectName).order('created_at', { ascending: false }).limit(1),
+                _supabase.from('cases').select('*').eq('project_name', projectName).order('proposed_at', { ascending: false }),
+                _supabase.from('ai_analyses').select('analysis_json, created_at').eq('project_name', projectName).eq('provider', provider).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+            ]);
+
+            const cr = (clientReports && clientReports[0]) || null;
+            let analysis = null;
+            if (cachedAi && cachedAi.analysis_json) {
+                analysis = cachedAi.analysis_json;
+                if (typeof analysis === 'string') { try { analysis = JSON.parse(analysis); } catch (e) { analysis = null; } }
+            }
+
+            const latestByOrg = {};
+            (allCases || []).forEach(c => { if (!latestByOrg[c.organization]) latestByOrg[c.organization] = c; });
+            const decidedCase = (allCases || []).find(c => DECIDED_STATUSES.includes(c.status)) || null;
+
+            const variance = (cr && typeof cr.progress_physical === 'number' && typeof cr.progress_planned === 'number')
+                ? cr.progress_physical - cr.progress_planned : null;
+            const criticalRiskCount = (analysis && Array.isArray(analysis.risk_register))
+                ? analysis.risk_register.filter(r => r.level === 'بحرانی').length : null;
+            const healthIndex = (analysis && analysis.overall && analysis.overall.divergence_score != null)
+                ? Math.max(0, 100 - Number(analysis.overall.divergence_score)) : null;
+
+            const sortedProblemAreas = (analysis?.problem_areas?.length)
+                ? [...analysis.problem_areas].sort((a, b) => (AI_SEVERITY_RANK[a.severity] ?? 9) - (AI_SEVERITY_RANK[b.severity] ?? 9)) : [];
+            const sortedRisks = (analysis?.risk_register?.length)
+                ? [...analysis.risk_register].sort((a, b) => (AI_SEVERITY_RANK[a.level] ?? 9) - (AI_SEVERITY_RANK[b.level] ?? 9)) : [];
+            const achievement = decidedCase?.actual_result
+                || (analysis?.quick_win_comparison?.length ? [...analysis.quick_win_comparison].sort((a, b) => (a.recommended_rank || 9) - (b.recommended_rank || 9))[0].impact_summary : null)
+                || null;
+            const concern = (sortedProblemAreas[0] && sortedProblemAreas[0].synthesis) || (sortedRisks[0] && sortedRisks[0].risk) || null;
+            const urgentDecisionItem = analysis?.executive_decisions_needed?.[0] || null;
+
+            const sections = [];
+
+            sections.push(`
+                <div class="print-card relative overflow-hidden p-6 md:p-8 rounded-2xl shadow-lg" style="background: linear-gradient(135deg, #1e3a8a 0%, #4c1d95 100%);">
+                    <div class="absolute -top-10 -left-10 h-40 w-40 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(251,191,36,.25), transparent 70%);"></div>
+                    <div class="relative flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div class="flex items-center gap-3 min-w-0 text-center md:text-right">
+                            <div class="shrink-0 h-12 w-12 rounded-2xl hidden md:flex items-center justify-center text-2xl" style="background: rgba(255,255,255,.15);">📄</div>
+                            <div class="min-w-0">
+                                <h2 class="text-xl md:text-2xl font-extrabold text-[#ffffff]">گزارش اجرایی پروژه</h2>
+                                <p class="text-base font-bold text-[#ffffff] mt-0.5">${esc(projectName)}</p>
+                                <p class="text-xs mt-1" style="color: rgba(219,234,254,.9);">تاریخ تولید: ${todayJalali()} — ابزار تحلیل: ${provider === 'openai' ? 'ChatGPT' : 'Gemini'}${cachedAi ? ` — آخرین تحلیل: ${formatJalali(cachedAi.created_at)}` : ''}</p>
+                            </div>
+                        </div>
+                        <div class="relative flex flex-col items-center text-center gap-1 shrink-0 bg-white/95 rounded-xl px-3 py-2">
+                            <img src="logo.png" alt="لوگوی شرکت" class="h-10 w-10 object-contain" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
+                            <p class="font-bold text-xs text-slate-800">شرکت مهندسی و توسعه گاز ایران</p>
+                        </div>
+                    </div>
+                </div>`);
+
+            const achievementConcernHtml = (achievement || concern) ? `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    ${achievement ? `<div class="bg-emerald-50 border border-emerald-100 rounded-lg p-3 text-xs"><p class="font-bold text-emerald-800 mb-1">🏆 مهم‌ترین دستاورد</p><p class="text-slate-700">${esc(achievement)}</p></div>` : ''}
+                    ${concern ? `<div class="bg-amber-50 border border-amber-100 rounded-lg p-3 text-xs"><p class="font-bold text-amber-800 mb-1">⚠️ مهم‌ترین نگرانی</p><p class="text-slate-700">${esc(concern)}</p></div>` : ''}
+                </div>` : '';
+
+            sections.push(`
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                    <div class="flex items-center gap-2.5">${sectionIconBadge('fileText', '#1e3a8a', '#4c1d95')}<h3 class="text-sm font-bold text-slate-800">۱. نمای کلی اجرایی</h3></div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        ${statCard('trendingUp', 'bg-blue-900/10 text-blue-900', cr && cr.progress_physical != null ? toPersianDigits(cr.progress_physical) + '٪' : '-', 'پیشرفت فیزیکی', 'از فرم اطلاعات پایه و پیشرفت پروژه')}
+                        ${statCard('gauge', variance != null ? (variance < -5 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700') : 'bg-slate-100 text-slate-500', variance != null ? `${variance > 0 ? '+' : ''}${toPersianDigits(variance)}٪` : '-', 'انحراف پیشرفت از برنامه')}
+                        ${statCard('alertTriangle', criticalRiskCount ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700', criticalRiskCount != null ? toPersianDigits(criticalRiskCount) : '-', 'ریسک‌های بحرانی')}
+                    </div>
+                    ${healthIndex != null ? `
+                    <div class="flex flex-col sm:flex-row items-center gap-4 bg-slate-50 rounded-xl p-3">
+                        <div class="text-center shrink-0">
+                            <div class="relative h-16 mx-auto" style="max-width:130px"><canvas id="execSpHealthGauge"></canvas></div>
+                            <p class="text-base font-extrabold -mt-6">${toPersianDigits(Math.round(healthIndex))}<span class="text-[10px] font-normal text-slate-500">/۱۰۰</span></p>
+                        </div>
+                        <p class="text-[11px] text-slate-500 leading-relaxed">شاخص همسویی دیدگاه‌ها — بر اساس میزان تطابق گزارش‌های کارفرما، مشاور و پیمانکار در آخرین تحلیل هوشمند (عدد بالاتر یعنی دیدگاه‌ها همسوتر و تناقض کمتر).</p>
+                    </div>` : ''}
+                    ${achievementConcernHtml}
+                    ${urgentDecisionItem ? `<div class="bg-red-50 border border-red-100 rounded-lg p-3 text-xs"><b>🚨 تصمیم فوری مورد نیاز مدیرعامل:</b> ${esc(execDecisionText(urgentDecisionItem))}</div>` : ''}
+                </div>`);
+
+            sections.push(`
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                    <div class="flex items-center gap-2.5">${sectionIconBadge('activity', '#7c3aed', '#4c1d95')}<h3 class="text-sm font-bold text-slate-800">۲. سه رکن اصلی و پیشنهادات</h3></div>
+                    <div class="flex justify-center">
+                        <span class="bg-purple-100 text-purple-800 text-[11px] font-bold px-3 py-1.5 rounded-full">🤝 هم‌افزایی برای موفقیت پروژه</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        ${ORG_ORDER.map(org => {
+                            const c = latestByOrg[org];
+                            const style = ORG_STYLE[org];
+                            return `<div class="bg-slate-50 rounded-xl border-r-4 ${style.border} p-3 space-y-1.5 text-xs">
+                                <span class="${style.badge} px-2 py-1 rounded-lg font-bold inline-block">${esc(org)}</span>
+                                ${c ? `<p class="font-bold text-slate-700">${esc(c.title)}</p><p class="text-slate-500">${esc(c.action_details || '-')}</p>` : `<p class="text-slate-400">هنوز پیشنهادی ثبت نشده.</p>`}
+                            </div>`;
+                        }).join('')}
+                    </div>
+                    ${analysis?.root_cause_analysis?.primary_root_cause ? `<div class="bg-amber-50 border border-amber-100 rounded-lg p-3 text-xs"><b>⚠️ مسئله مشترک:</b> ${esc(analysis.root_cause_analysis.primary_root_cause)}</div>` : ''}
+                </div>`);
+
+            sections.push(decidedCase ? `
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <div class="flex items-center gap-2.5">${sectionIconBadge('target', '#059669', '#047857')}<h3 class="text-sm font-bold text-slate-800">۳. برنامه منتخب (اقدام زودبازده)</h3></div>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${decidedCase.status === 'بسته‌شده' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${esc(decidedCase.status)}</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs">
+                        <p class="md:col-span-2"><b>🎯 عنوان:</b> ${esc(decidedCase.title)}</p>
+                        <p><b>⚡ راهکار:</b> ${esc(decidedCase.action_details || '-')}</p>
+                        <p><b>📈 اثر مورد انتظار:</b> ${esc(decidedCase.expected_result || '-')}</p>
+                        <p><b>👤 مالک:</b> ${esc(decidedCase.plan_responsible || decidedCase.organization)}</p>
+                        <p><b>⏱ زمان اجرا:</b> ${esc(decidedCase.time_estimate || '-')}</p>
+                        <p><b>📊 KPI:</b> ${esc(decidedCase.kpi_name || '-')}</p>
+                        <p><b>🏁 هدف KPI:</b> ${esc(decidedCase.kpi_target_30d || '-')}</p>
+                    </div>
+                </div>` : `
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-5">
+                    <div class="flex items-center gap-2.5 mb-2">${sectionIconBadge('target', '#059669', '#047857')}<h3 class="text-sm font-bold text-slate-800">۳. برنامه منتخب (اقدام زودبازده)</h3></div>
+                    <p class="text-xs text-slate-400 text-center py-2">هنوز اقدام زودبازده‌ای برای این پروژه انتخاب نشده است.</p>
+                </div>`);
+
+            sections.push(`
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                    <div class="flex items-center gap-2.5">${sectionIconBadge('calendar', '#1e3a8a', '#4c1d95')}<h3 class="text-sm font-bold text-slate-800">۴. نقشه راه ۳۰ روزه</h3></div>
+                    ${(analysis && Array.isArray(analysis.action_plan_30_days) && analysis.action_plan_30_days.length) ? `
+                    <div class="overflow-x-auto">
+                        <div class="flex items-start min-w-max">
+                            ${analysis.action_plan_30_days.map((a, i) => `
+                                ${i > 0 ? `<div class="flex-1 h-1 rounded-full mt-6 mx-1 bg-blue-200" style="min-width:24px"></div>` : ''}
+                                <div class="flex flex-col items-center gap-1.5 shrink-0 text-center bg-slate-50 rounded-xl p-3" style="width:160px">
+                                    <span class="h-10 w-10 rounded-full flex items-center justify-center text-sm font-extrabold text-[#ffffff] bg-blue-900">${toPersianDigits(i + 1)}</span>
+                                    <span class="text-[10px] font-extrabold text-blue-900 bg-blue-100 px-2 py-0.5 rounded-lg">${esc(a.week || '-')}</span>
+                                    <p class="text-[11px] text-slate-700 leading-snug">${esc(a.action || '-')}</p>
+                                    <p class="text-[10px] text-slate-400">👤 ${esc(a.owner || '-')}</p>
+                                </div>`).join('')}
+                        </div>
+                    </div>` : execSpAiEmptyStateHtml()}
+                </div>`);
+
+            sections.push(`
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                    <div class="flex items-center gap-2.5">${sectionIconBadge('shield', '#dc2626', '#7f1d1d')}<h3 class="text-sm font-bold text-slate-800">۵. رادار ریسک‌ها</h3></div>
+                    ${sortedRisks.length ? `
+                    ${sortedRisks.length >= 3 ? `<div style="height:220px"><canvas id="execSpRiskRadar"></canvas></div>` : ''}
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-[11px]">
+                            <thead class="bg-slate-100 text-slate-700"><tr><th class="p-2 border">ریسک</th><th class="p-2 border">منبع</th><th class="p-2 border">سطح</th><th class="p-2 border">اقدام کنترلی</th></tr></thead>
+                            <tbody>
+                                ${sortedRisks.map(r => `<tr>
+                                    <td class="p-2 border font-bold bg-slate-50">${esc(r.risk || '-')}</td>
+                                    <td class="p-2 border">${esc(r.source_org || '-')}</td>
+                                    <td class="p-2 border">${aiSevBadge(r.level)}</td>
+                                    <td class="p-2 border text-slate-600">${esc(r.current_action || '-')}</td>
+                                </tr>`).join('')}
+                            </tbody>
+                        </table>
+                    </div>` : execSpAiEmptyStateHtml()}
+                </div>`);
+
+            sections.push(`
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                    <div class="flex items-center gap-2.5">${sectionIconBadge('checkCircle', '#dc2626', '#7f1d1d')}<h3 class="text-sm font-bold text-slate-800">۶. تصمیمات مورد نیاز مدیرعامل</h3></div>
+                    ${(analysis && Array.isArray(analysis.executive_decisions_needed) && analysis.executive_decisions_needed.length) ? `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        ${analysis.executive_decisions_needed.map((d, i) => {
+                            const isObj = d && typeof d === 'object';
+                            return `<div class="bg-red-50 rounded-xl border border-red-100 p-3 space-y-1 text-xs">
+                                <p class="font-bold text-red-800">${toPersianDigits(i + 1)}. ${esc(execDecisionText(d))}</p>
+                                ${isObj && d.why_now ? `<p class="text-slate-600"><b>چرا الان؟</b> ${esc(d.why_now)}</p>` : ''}
+                                ${isObj && d.impact ? `<p class="text-slate-500"><b>اثر:</b> ${esc(d.impact)}</p>` : ''}
+                            </div>`;
+                        }).join('')}
+                    </div>` : execSpAiEmptyStateHtml()}
+                </div>`);
+
+            sections.push((analysis && analysis.final_recommendation) ? `
+                <div class="print-card relative overflow-hidden p-6 rounded-2xl shadow-lg" style="background: linear-gradient(135deg, #1e3a8a 0%, #4c1d95 100%);">
+                    <div class="absolute -top-10 -left-10 h-40 w-40 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(251,191,36,.25), transparent 70%);"></div>
+                    <div class="relative space-y-3">
+                        <h3 class="text-sm font-bold text-[#ffffff] flex items-center gap-2">${iconSvg('trendingUp', 'w-4 h-4')} ۷. جمع‌بندی اجرایی</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                            <div class="bg-white/10 rounded-xl p-3 text-center"><p class="text-[10px]" style="color:rgba(219,234,254,.85)">راهکار منتخب</p><p class="text-xs font-bold text-[#ffffff] mt-1">${esc(decidedCase?.title || '-')}</p></div>
+                            <div class="bg-white/10 rounded-xl p-3 text-center"><p class="text-[10px]" style="color:rgba(219,234,254,.85)">اثر مورد انتظار</p><p class="text-xs font-bold text-[#ffffff] mt-1">${esc(decidedCase?.expected_result || '-')}</p></div>
+                            <div class="bg-white/10 rounded-xl p-3 text-center"><p class="text-[10px]" style="color:rgba(219,234,254,.85)">درخواست از مدیرعامل</p><p class="text-xs font-bold text-[#ffffff] mt-1">${esc(execDecisionText((analysis.executive_decisions_needed || [])[0]) || '-')}</p></div>
+                        </div>
+                        <p class="text-xs leading-relaxed text-[#ffffff] bg-white/10 rounded-xl p-3">${esc(analysis.final_recommendation)}</p>
+                    </div>
+                </div>` : '');
+
+            container.innerHTML = sections.join('');
+            container.querySelectorAll('.exec-sp-go-ai-btn').forEach(btn => btn.addEventListener('click', () => showAiReport(projectName, provider, 'execReport')));
+            if (healthIndex != null) renderExecSpHealthGauge(healthIndex);
+            if (sortedRisks.length >= 3) renderExecSpRiskRadar(sortedRisks);
         }
 
         // --------------------------------------------------
