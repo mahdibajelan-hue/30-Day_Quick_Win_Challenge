@@ -284,15 +284,15 @@ Deno.serve(async (req) => {
 - علت(های) ریشه‌ای شناسایی‌شده (روش تحلیل: ${c.rca_method || "-"}):\n${summarizeConfirmedCauses(c.rca_confirmed_causes)}
 - اقدام اصلاحی: ${summarizeCapaAction(c.capa_corrective)} | اقدام پیشگیرانه: ${summarizeCapaAction(c.capa_preventive)} | اثربخشی: ${c.capa_effectiveness || "-"}
 - نیاز به تصمیم مدیریت ارشد (اولویت ${c.senior_decision_priority || "-"}): ${c.senior_decision_needed || "-"}
-- پیشنهاد Quick Win: ${c.quick_win_title} — اقدام: ${c.action_details} — چرا: ${c.qw_rationale || "-"} — نتیجه ۳۰ روزه: ${c.tangible_result}
+- پیشنهاد اقدام زودبازده: ${c.quick_win_title} — اقدام: ${c.action_details} — چرا: ${c.qw_rationale || "-"} — نتیجه ۳۰ روزه: ${c.tangible_result}
 - برنامه تحقق: مسئول=${c.plan_responsible || "-"}, تاریخ هدف=${c.plan_target_date || "-"}, خروجی=${c.plan_deliverable || "-"}
 - اثر برآوردی: تأخیر=${c.impact_delay_days ?? "-"} روز, پیشرفت=${c.impact_progress_increase ?? "-"}%, هزینه=${c.impact_cost_avoided ?? "-"} ریال
 - حمایت لازم: ${c.support_needed} | برآورد زمان تحقق: ${c.time_estimate || "-"}`)
       .join("\n");
 
     const decisionText = decision
-      ? `\nQuick Win برگزیده فعلی: ${decision.title} (${decision.organization}) — دلیل: ${decision.rationale || "-"} — مهلت: ${decision.execution_target_date || decision.plan_target_date}`
-      : "\nهنوز Quick Win‌ی برای این پروژه انتخاب نشده است.";
+      ? `\nاقدام زودبازده برگزیده فعلی: ${decision.title} (${decision.organization}) — دلیل: ${decision.rationale || "-"} — مهلت: ${decision.execution_target_date || decision.plan_target_date}`
+      : "\nهنوز اقدام زودبازده‌ای برای این پروژه انتخاب نشده است.";
 
     const progressText = progress && progress.length > 0
       // deno-lint-ignore no-explicit-any
@@ -323,7 +323,7 @@ Deno.serve(async (req) => {
 
     const clientReportText = buildClientReportText(clientReport);
 
-    const prompt = `شما یک متخصص ارشد مدیریت پورتفولیوی پروژه‌های خط انتقال گاز هستید. اطلاعات زیر مربوط به پروژه «${project_name}» است: هم اطلاعات رسمی قرارداد و پیشرفت که توسط برنامه‌ریزی و کنترل پروژه کارفرما ثبت شده (فرم اطلاعات پایه)، و هم گزارش‌های دوره‌ای که کارفرما، مشاور و پیمانکار هرکدام به‌طور مستقل از دیدگاه خودشان ثبت کرده‌اند (فرم اطلاعات تکمیلی و پیشنهاد Quick Win):
+    const prompt = `شما یک متخصص ارشد مدیریت پورتفولیوی پروژه‌های خط انتقال گاز هستید. اطلاعات زیر مربوط به پروژه «${project_name}» است: هم اطلاعات رسمی قرارداد و پیشرفت که توسط برنامه‌ریزی و کنترل پروژه کارفرما ثبت شده (فرم اطلاعات پایه)، و هم گزارش‌های دوره‌ای که کارفرما، مشاور و پیمانکار هرکدام به‌طور مستقل از دیدگاه خودشان ثبت کرده‌اند (فرم اطلاعات تکمیلی و پیشنهاد اقدام زودبازده):
 ${clientReportText}
 ${perspectiveText}
 ${decisionText}
@@ -353,9 +353,9 @@ ${progressText}
     { "risk": "شرح ریسک", "source_org": "کارفرما" یا "مشاور" یا "پیمانکار", "level": "بحرانی" یا "زیاد" یا "متوسط" یا "کم", "current_action": "اقدام فعلی یا توصیه‌شده" }
   ],
   "quick_win_comparison": [
-    { "organization": "کارفرما" یا "مشاور" یا "پیمانکار", "title": "عنوان پیشنهاد Quick Win آن رکن", "time_estimate_days": عدد تخمینی روز یا null, "impact_summary": "خلاصه اثر مورد انتظار", "recommended_rank": ۱ یا ۲ یا ۳ (۱ یعنی بیشترین اثر/کمترین زمان) }
+    { "organization": "کارفرما" یا "مشاور" یا "پیمانکار", "title": "عنوان پیشنهاد اقدام زودبازده آن رکن", "time_estimate_days": عدد تخمینی روز یا null, "impact_summary": "خلاصه اثر مورد انتظار", "recommended_rank": ۱ یا ۲ یا ۳ (۱ یعنی بیشترین اثر/کمترین زمان) }
   ],
-  "selected_quick_win_assessment": "ارزیابی کوتاه از اینکه آیا Quick Win فعلاً برگزیده (در صورت وجود) هنوز بهترین انتخاب است؛ اگر هنوز چیزی انتخاب نشده null بگذار",
+  "selected_quick_win_assessment": "ارزیابی کوتاه از اینکه آیا اقدام زودبازده فعلاً برگزیده (در صورت وجود) هنوز بهترین انتخاب است؛ اگر هنوز چیزی انتخاب نشده null بگذار",
   "root_cause_analysis": { "primary_root_cause": "مهم‌ترین علت ریشه‌ای مشترک", "summary": "توضیح کوتاه" },
   "action_plan_30_days": [
     { "week": "هفته اول" یا "هفته دوم" یا "هفته سوم" یا "هفته چهارم", "action": "اقدام مشخص", "owner": "مسئول پیشنهادی" }

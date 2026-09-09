@@ -243,7 +243,7 @@
                     <span class="font-bold text-xs text-slate-800 truncate">طرح خط لوله ششم سراسری</span>
                 </div>
                 <p class="hidden md:block text-xs text-slate-500" id="headerSubtitle">سامانه تحول و پایش ۳۰ روزه پروژه‌ها</p>
-                <p class="hidden md:block text-lg font-extrabold brand-title" style="background: linear-gradient(90deg, #f97316, #db2777); -webkit-background-clip: text; background-clip: text; color: transparent;">30Day Quick Win Challenge</p>
+                <p class="hidden md:block text-lg font-extrabold brand-title" style="background: linear-gradient(90deg, #f97316, #db2777); -webkit-background-clip: text; background-clip: text; color: transparent;">چالش ۳۰ روزه اقدامات زودبازده</p>
                 <div class="flex items-center gap-2 md:gap-3 text-slate-400 text-xs relative min-w-0">
                     <span id="topbarUserEmail" class="hidden font-bold text-slate-700 border-l pl-2 md:pl-3 truncate max-w-[96px] sm:max-w-[160px] md:max-w-none" dir="ltr"></span>
                     <span id="topbarDate" class="hidden sm:inline font-bold text-slate-600"></span>
@@ -461,20 +461,20 @@
                     <div id="rcaCapaModule" class="space-y-4"></div>
 
                     <div class="bg-emerald-50 border border-emerald-200 p-5 rounded-2xl shadow-sm space-y-2.5">
-                        <h3 class="text-sm font-bold border-r-4 border-emerald-600 pr-3">🎯 تبدیل به Quick Win (اختیاری)</h3>
-                        <p class="text-xs text-slate-600">اگر مسئله‌ای که بالا توصیف کردید یک راه‌حل سریع و مشخص دارد، همین‌جا به‌عنوان پیشنهاد Quick Win هم ثبتش کنید — نیازی به رفتن به فرم جداگانه نیست.</p>
+                        <h3 class="text-sm font-bold border-r-4 border-emerald-600 pr-3">🎯 تبدیل به اقدام زودبازده (اختیاری)</h3>
+                        <p class="text-xs text-slate-600">اگر مسئله‌ای که بالا توصیف کردید یک راه‌حل سریع و مشخص دارد، همین‌جا به‌عنوان پیشنهاد اقدام زودبازده هم ثبتش کنید — نیازی به رفتن به فرم جداگانه نیست.</p>
                         <label class="inline-flex items-center gap-2 text-xs font-semibold cursor-pointer">
                             <input type="checkbox" id="ci_convert_to_qw" class="w-4 h-4">
-                            این مسئله را به یک پیشنهاد Quick Win هم تبدیل کن
+                            این مسئله را به یک پیشنهاد اقدام زودبازده هم تبدیل کن
                         </label>
                         <div id="ci_qw_quick_fields" class="hidden space-y-3 pt-2 border-t">
-                            <div><label class="block text-xs font-semibold mb-1">عنوان Quick Win *</label><input type="text" id="ci_qwq_title" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">عنوان اقدام زودبازده *</label><input type="text" id="ci_qwq_title" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
                             <div><label class="block text-xs font-semibold mb-1">راه‌حل پیشنهادی *</label><textarea id="ci_qwq_action" rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></textarea></div>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div><label class="block text-xs font-semibold mb-1">مسئول اجرا *</label><select id="ci_qwq_responsible" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500 bg-white"><option value="">-- ابتدا پروژه را انتخاب کنید --</option></select></div>
                                 <div><label class="block text-xs font-semibold mb-1">سررسید (شمسی) *</label><input type="text" id="ci_qwq_due" readonly dir="ltr" placeholder="۱۴۰۵/۰۶/۳۰" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500 text-center cursor-pointer bg-white"></div>
                             </div>
-                            <p class="text-[11px] text-slate-500">برای ثبت جزئیات کامل‌تر (اثر تخمینی، KPI، حمایت لازم و ...)، بعداً از صفحه «پیشنهاد Quick Win» همین پیشنهاد را تکمیل کنید.</p>
+                            <p class="text-[11px] text-slate-500">برای ثبت جزئیات کامل‌تر (اثر تخمینی، KPI، حمایت لازم و ...)، بعداً از صفحه «پیشنهاد اقدام زودبازده» همین پیشنهاد را تکمیل کنید.</p>
                         </div>
                     </div>
 
@@ -483,11 +483,17 @@
             </div>
 
             <!-- QUICK WIN PROPOSAL FORM (independent menu, all organizations) -->
-            <div id="qwProposalView" class="hidden space-y-6">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-1">
-                    <h2 class="text-xl font-bold text-blue-900">🎯 پیشنهاد Quick Win</h2>
-                    <p class="text-xs text-slate-500">پروژه: <b id="qwpProjectName"></b> — سازمان: <b id="qwpOrganization"></b></p>
-                    <p class="text-[11px] text-amber-700 bg-amber-100 rounded-lg px-3 py-2 mt-1">⚠️ اطلاعات این فرم صرفاً جهت عارضه‌یابی و کمک مدیریتی به پروژه است و هیچ‌گونه استناد حقوقی یا ادعای قراردادی (Claim) بر اساس آن مسموع نخواهد بود.</p>
+            <div id="qwProposalView" class="hidden space-y-4">
+                <div class="relative overflow-hidden p-6 md:p-7 rounded-2xl shadow-lg" style="background: linear-gradient(135deg, #059669 0%, #0f766e 100%);">
+                    <div class="absolute -top-10 -left-10 h-40 w-40 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(251,191,36,.25), transparent 70%);"></div>
+                    <div class="relative flex items-center gap-3 min-w-0">
+                        <div class="shrink-0 h-11 w-11 rounded-2xl flex items-center justify-center text-xl" style="background: rgba(255,255,255,.15); backdrop-filter: blur(4px);">🎯</div>
+                        <div class="min-w-0">
+                            <h2 class="text-lg md:text-xl font-extrabold text-[#ffffff]">پیشنهاد اقدام زودبازده</h2>
+                            <p class="text-xs" style="color: rgba(209,250,229,.9);">پروژه: <b id="qwpProjectName" class="text-[#ffffff]"></b> — سازمان: <b id="qwpOrganization" class="text-[#ffffff]"></b></p>
+                        </div>
+                    </div>
+                    <p class="relative text-[11px] mt-3 rounded-lg px-3 py-2" style="background: rgba(0,0,0,.18); color: #fde68a;">⚠️ اطلاعات این فرم صرفاً جهت عارضه‌یابی و کمک مدیریتی به پروژه است و هیچ‌گونه استناد حقوقی یا ادعای قراردادی (Claim) بر اساس آن مسموع نخواهد بود.</p>
                 </div>
 
                 <div id="qwp_adminPicker" class="hidden bg-white p-4 rounded-2xl shadow-sm border space-y-2">
@@ -509,12 +515,14 @@
                     </div>
                 </div>
 
-                <form id="qwProposalForm" class="space-y-6">
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                        <h3 class="text-sm font-bold border-r-4 border-emerald-600 pr-3">🎯 فرم پیشنهاد Quick Win سی‌روزه</h3>
-                        <p class="text-xs text-slate-500">هدف: یک اقدام محدود، مشخص و قابل‌اجرا که حداکثر طی ۳۰ روز اثر ملموس بر زمان، هزینه، پیشرفت، کیفیت، ریسک یا تصمیم‌گیری پروژه ایجاد کند.</p>
+                <p class="text-xs text-slate-500 px-1">هدف: یک اقدام محدود، مشخص و قابل‌اجرا که حداکثر طی ۳۰ روز اثر ملموس بر زمان، هزینه، پیشرفت، کیفیت، ریسک یا تصمیم‌گیری پروژه ایجاد کند.</p>
 
-                        <h4 class="text-xs font-bold text-slate-600 pt-2 border-t">شناسایی مسئله</h4>
+                <form id="qwProposalForm" class="space-y-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-xs font-extrabold text-[#ffffff]" style="background: linear-gradient(135deg, #1e3a8a, #4c1d95);">۱</span>
+                            <h3 class="text-sm font-bold text-slate-800">شناسایی مسئله</h3>
+                        </div>
                         <div>
                             <label class="block text-xs font-semibold mb-1">این گلوگاه عمدتاً مربوط به کدام حوزه است؟ *</label>
                             <select id="ci_qw_area" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></select>
@@ -526,15 +534,25 @@
                             <input type="text" id="ci_qw_consequence_other" placeholder="توضیح «سایر»" class="hidden mt-2 w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
                         </div>
                         <div><label class="block text-xs font-semibold mb-1">شرح پیامد *</label><textarea id="ci_qw_consequence_desc" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></textarea></div>
+                    </div>
 
-                        <h4 class="text-xs font-bold text-slate-600 pt-2 border-t">پیشنهاد Quick Win</h4>
-                        <div><label class="block text-xs font-semibold mb-1">اگر فقط اجازه داشتید یک مسئله را طی ۳۰ روز حل کنید، کدام مسئله را انتخاب می‌کردید؟ (عنوان Quick Win) *</label><input type="text" id="ci_qw_title" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
-                        <div><label class="block text-xs font-semibold mb-1">پیشنهاد مشخص شما برای تحقق این Quick Win چیست؟ (اقدام مشخص، نه کلی مانند «پیگیری شود») *</label><textarea id="ci_qw_action" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></textarea></div>
-                        <div><label class="block text-xs font-semibold mb-1">چرا این اقدام را به‌عنوان Quick Win پیشنهاد می‌کنید؟ *</label><textarea id="ci_qw_rationale" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></textarea></div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-xs font-extrabold text-[#ffffff]" style="background: linear-gradient(135deg, #059669, #047857);">۲</span>
+                            <h3 class="text-sm font-bold text-slate-800">🎯 پیشنهاد اقدام زودبازده</h3>
+                        </div>
+                        <div><label class="block text-xs font-semibold mb-1">اگر فقط اجازه داشتید یک مسئله را طی ۳۰ روز حل کنید، کدام مسئله را انتخاب می‌کردید؟ (عنوان اقدام زودبازده) *</label><input type="text" id="ci_qw_title" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
+                        <div><label class="block text-xs font-semibold mb-1">پیشنهاد مشخص شما برای تحقق این اقدام زودبازده چیست؟ (اقدام مشخص، نه کلی مانند «پیگیری شود») *</label><textarea id="ci_qw_action" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></textarea></div>
+                        <div><label class="block text-xs font-semibold mb-1">چرا این اقدام را به‌عنوان اقدام زودبازده پیشنهاد می‌کنید؟ *</label><textarea id="ci_qw_rationale" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></textarea></div>
                         <div><label class="block text-xs font-semibold mb-1">نتیجه ملموس مورد انتظار چیست؟ *</label><input type="text" id="ci_qw_result" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
+                    </div>
 
-                        <h4 class="text-xs font-bold text-slate-600 pt-2 border-t">برنامه تحقق Quick Win</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-xs font-extrabold text-[#ffffff]" style="background: linear-gradient(135deg, #f59e0b, #db2777);">۳</span>
+                            <h3 class="text-sm font-bold text-slate-800">برنامه تحقق و برآورد زمان</h3>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div><label class="block text-xs font-semibold mb-1">اقدام اصلی *</label><input type="text" id="ci_plan_action" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
                             <div><label class="block text-xs font-semibold mb-1">مسئول اصلی *</label><select id="ci_plan_responsible" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500 bg-white"><option value="">-- ابتدا پروژه را انتخاب کنید --</option></select></div>
                             <div><label class="block text-xs font-semibold mb-1">واحدهای درگیر</label><input type="text" id="ci_plan_units" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
@@ -544,14 +562,29 @@
                             <div><label class="block text-xs font-semibold mb-1">تصمیم مورد نیاز</label><input type="text" id="ci_plan_decision" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
                             <div><label class="block text-xs font-semibold mb-1">خروجی قابل تحویل</label><input type="text" id="ci_plan_deliverable" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
                         </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">برآورد زمان تحقق *</label>
+                            <select id="ci_time_estimate" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="کمتر از ۷ روز">کمتر از ۷ روز</option>
+                                <option value="۷ تا ۱۴ روز">۷ تا ۱۴ روز</option>
+                                <option value="۱۵ تا ۳۰ روز" selected>۱۵ تا ۳۰ روز</option>
+                                <option value="بیش از ۳۰ روز">بیش از ۳۰ روز</option>
+                            </select>
+                        </div>
+                        <p class="text-[11px] text-amber-700">⚠️ پیشنهادهایی که نتیجه اصلی آن‌ها بیش از ۳۰ روز زمان می‌برد، به‌عنوان اقدام زودبازده ماه اول در اولویت نخواهند بود.</p>
+                    </div>
 
-                        <h4 class="text-xs font-bold text-slate-600 pt-2 border-t">اندازه‌گیری اثر</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-xs font-extrabold text-[#ffffff]" style="background: linear-gradient(135deg, #f59e0b, #db2777);">۴</span>
+                            <h3 class="text-sm font-bold text-slate-800">اندازه‌گیری اثر</h3>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div><label class="block text-xs font-semibold mb-1">KPI</label><input type="text" id="ci_kpi_name" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
                             <div><label class="block text-xs font-semibold mb-1">وضعیت فعلی</label><input type="text" id="ci_kpi_current" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
                             <div><label class="block text-xs font-semibold mb-1">هدف ۳۰ روزه</label><input type="text" id="ci_kpi_target" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
                         </div>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                             <div><label class="block text-xs font-semibold mb-1">کاهش/جلوگیری تأخیر (روز)</label><input type="number" step="any" id="ci_impact_delay" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
                             <div><label class="block text-xs font-semibold mb-1">افزایش پیشرفت (٪)</label><input type="number" step="any" id="ci_impact_progress" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
                             <div><label class="block text-xs font-semibold mb-1">کاهش/جلوگیری هزینه (ریال)</label><input type="number" step="any" id="ci_impact_cost" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
@@ -560,29 +593,31 @@
                             <div class="col-span-2"><label class="block text-xs font-semibold mb-1">جبهه‌های کاری آزادشده</label><input type="text" id="ci_impact_fronts" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
                             <div class="col-span-2"><label class="block text-xs font-semibold mb-1">سایر اثرات</label><input type="text" id="ci_impact_other" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></div>
                         </div>
-
-                        <h4 class="text-xs font-bold text-slate-600 pt-2 border-t">حمایت مورد نیاز</h4>
-                        <div id="ci_support_types" class="flex flex-wrap gap-2"></div>
-                        <input type="text" id="ci_support_other" placeholder="توضیح «سایر»" class="hidden w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
-                        <div><label class="block text-xs font-semibold mb-1">شرح حمایت مورد نیاز *</label><textarea id="ci_qw_support" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></textarea></div>
-
-                        <h4 class="text-xs font-bold text-slate-600 pt-2 border-t">اقدام متقابل شما</h4>
-                        <div><label class="block text-xs font-semibold mb-1">در صورت صدور این مجوز یا تأمین این حمایت از سوی مجری طرح، تعهد مشخص شما برای پیشبرد پروژه در ۳۰ روز چیست؟ *</label><textarea id="ci_qw_counter_commitment" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></textarea></div>
-
-                        <h4 class="text-xs font-bold text-slate-600 pt-2 border-t">برآورد زمان</h4>
-                        <select id="ci_time_estimate" required class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
-                            <option value="کمتر از ۷ روز">کمتر از ۷ روز</option>
-                            <option value="۷ تا ۱۴ روز">۷ تا ۱۴ روز</option>
-                            <option value="۱۵ تا ۳۰ روز" selected>۱۵ تا ۳۰ روز</option>
-                            <option value="بیش از ۳۰ روز">بیش از ۳۰ روز</option>
-                        </select>
-                        <p class="text-xs text-amber-700">⚠️ پیشنهادهایی که نتیجه اصلی آن‌ها بیش از ۳۰ روز زمان می‌برد، به‌عنوان Quick Win ماه اول در اولویت نخواهند بود.</p>
-
-                        <h4 class="text-xs font-bold text-slate-600 pt-2 border-t">نظر نهایی پیشنهاددهنده</h4>
-                        <div><label class="block text-xs font-semibold mb-1">اگر این Quick Win محقق شود، مهم‌ترین تغییری که در پروژه ایجاد خواهد شد چیست؟ *</label><textarea id="ci_final_reflection" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></textarea></div>
                     </div>
 
-                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow">ثبت پیشنهاد Quick Win</button>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-xs font-extrabold text-[#ffffff]" style="background: linear-gradient(135deg, #059669, #047857);">۵</span>
+                            <h3 class="text-sm font-bold text-slate-800">حمایت مورد نیاز و تعهد متقابل</h3>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">نوع حمایت مورد نیاز</label>
+                            <div id="ci_support_types" class="flex flex-wrap gap-2"></div>
+                            <input type="text" id="ci_support_other" placeholder="توضیح «سایر»" class="hidden mt-2 w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div><label class="block text-xs font-semibold mb-1">شرح حمایت مورد نیاز *</label><textarea id="ci_qw_support" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></textarea></div>
+                        <div><label class="block text-xs font-semibold mb-1">در صورت صدور این مجوز یا تأمین این حمایت از سوی مجری طرح، تعهد مشخص شما برای پیشبرد پروژه در ۳۰ روز چیست؟ *</label><textarea id="ci_qw_counter_commitment" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></textarea></div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-xs font-extrabold text-[#ffffff]" style="background: linear-gradient(135deg, #1e3a8a, #4c1d95);">۶</span>
+                            <h3 class="text-sm font-bold text-slate-800">نظر نهایی پیشنهاددهنده</h3>
+                        </div>
+                        <div><label class="block text-xs font-semibold mb-1">اگر این اقدام زودبازده محقق شود، مهم‌ترین تغییری که در پروژه ایجاد خواهد شد چیست؟ *</label><textarea id="ci_final_reflection" required rows="2" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"></textarea></div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow">ثبت پیشنهاد اقدام زودبازده</button>
                 </form>
             </div>
 
@@ -785,7 +820,7 @@
             <div id="aiAnalysisView" class="hidden space-y-6">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                     <h2 class="text-xl font-bold text-purple-700"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:-0.125em"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z"/></svg> تحلیل هوشمند پروژه‌ها</h2>
-                    <p class="text-xs text-slate-500">یک پروژه و ابزار تحلیل را انتخاب کنید تا هوش مصنوعی، با استفاده از تمام گزارش‌های ثبت‌شده (فرم اطلاعات پایه، اطلاعات تکمیلی و پیشنهادهای Quick Win هر سه رکن)، یک گزارش تحلیلی جامع تهیه کند.</p>
+                    <p class="text-xs text-slate-500">یک پروژه و ابزار تحلیل را انتخاب کنید تا هوش مصنوعی، با استفاده از تمام گزارش‌های ثبت‌شده (فرم اطلاعات پایه، اطلاعات تکمیلی و پیشنهادهای اقدامات زودبازده هر سه رکن)، یک گزارش تحلیلی جامع تهیه کند.</p>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
                         <select id="aiaProjectSelect" class="p-2.5 border rounded-xl text-sm md:col-span-2"></select>
                         <select id="aiaProviderSelect" class="p-2.5 border rounded-xl text-sm">
@@ -807,10 +842,10 @@
             <div id="selectionView" class="hidden space-y-6">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-2">
                     <div class="flex justify-between items-center">
-                        <h2 class="text-xl font-bold text-blue-900">🏆 پیشنهادهای Quick Win</h2>
+                        <h2 class="text-xl font-bold text-blue-900">🏆 پیشنهادهای اقدامات زودبازده</h2>
                         <button onclick="loadSelectionData()" class="bg-blue-100 text-blue-900 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200">🔄 بروزرسانی</button>
                     </div>
-                    <p class="text-xs text-slate-500">آخرین پیشنهاد Quick Win هر سازمان برای هر پروژه، برای مقایسه و انتخاب برگزیده.</p>
+                    <p class="text-xs text-slate-500">آخرین پیشنهاد اقدام زودبازده هر سازمان برای هر پروژه، برای مقایسه و انتخاب برگزیده.</p>
                 </div>
 
                 <div class="bg-white p-4 rounded-2xl shadow-sm border space-y-3">
@@ -873,13 +908,13 @@
 
                     <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                         <h3 class="text-sm font-bold">پیشرفت فیزیکی پروژه‌ها</h3>
-                        <p class="text-[11px] text-slate-400 leading-relaxed">میانگین % پیشرفت فیزیکی خود پروژه (نه Quick Win)، گزارش‌شده توسط کارفرما، مشاور و پیمانکار در فرم اطلاعات تکمیلی</p>
+                        <p class="text-[11px] text-slate-400 leading-relaxed">میانگین % پیشرفت فیزیکی خود پروژه (نه اقدامات زودبازده)، گزارش‌شده توسط کارفرما، مشاور و پیمانکار در فرم اطلاعات تکمیلی</p>
                         <div id="ovProjectProgressList" class="space-y-3 max-h-52 overflow-y-auto scroll-thin pl-1"></div>
-                        <button type="button" onclick="switchView('tracking')" class="text-xs text-blue-900 font-bold hover:underline">‹ مشاهده پیگیری اجرای Quick Win ها</button>
+                        <button type="button" onclick="switchView('tracking')" class="text-xs text-blue-900 font-bold hover:underline">‹ مشاهده پیگیری اجرای اقدامات زودبازده</button>
                     </div>
 
                     <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
-                        <h3 class="text-sm font-bold">وضعیت Quick Win ها</h3>
+                        <h3 class="text-sm font-bold">وضعیت اقدامات زودبازده</h3>
                         <div class="relative h-36 mx-auto overflow-hidden" style="max-width:170px">
                             <canvas id="ovQwDonut"></canvas>
                             <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -898,7 +933,7 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
-                        <h3 class="text-sm font-bold">ماتریس اثر Quick Win ها</h3>
+                        <h3 class="text-sm font-bold">ماتریس اثر اقدامات زودبازده</h3>
                         <div style="height:220px"><canvas id="ovBubbleChart"></canvas></div>
                     </div>
 
@@ -1007,13 +1042,13 @@
             <div id="trackingView" class="hidden space-y-6">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-2">
                     <div class="flex justify-between items-center flex-wrap gap-2">
-                        <h2 class="text-xl font-bold text-blue-900">🗓️ پیگیری اجرای Quick Win</h2>
+                        <h2 class="text-xl font-bold text-blue-900">🗓️ پیگیری اجرای اقدامات زودبازده</h2>
                         <div class="flex items-center gap-2 no-print">
                             <button type="button" onclick="window.print()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-lg font-bold">🖨 گزارش پیگیری</button>
                             <button onclick="loadTrackingData()" class="bg-blue-100 text-blue-900 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200">🔄 بروزرسانی</button>
                         </div>
                     </div>
-                    <p class="text-xs text-slate-500">تایم‌لاین، آخرین وضعیت، فرد مسئول و تسک‌های اجرایی Quick Win برگزیده هر پروژه، تا رسیدن به نتیجه نهایی ظرف ۳۰ روز.</p>
+                    <p class="text-xs text-slate-500">تایم‌لاین، آخرین وضعیت، فرد مسئول و تسک‌های اجرایی اقدام زودبازده برگزیده هر پروژه، تا رسیدن به نتیجه نهایی ظرف ۳۰ روز.</p>
                     <div id="trackingOverdueBanner"></div>
                 </div>
                 <div id="trackingTaskReport"></div>
@@ -1053,12 +1088,12 @@
                             </div>
                         </div>
                         <div class="bg-slate-50 rounded-2xl p-6 text-center space-y-2">
-                            <p class="text-sm font-bold text-slate-700">This Month's Impact</p>
+                            <p class="text-sm font-bold text-slate-700">تأثیر این ماه</p>
                             <p class="text-2xl font-extrabold text-blue-900" id="execIdentified">-</p>
-                            <p class="text-xs text-slate-500">Quick Wins Identified</p>
+                            <p class="text-xs text-slate-500">اقدامات زودبازده شناسایی‌شده</p>
                             <div class="flex justify-center gap-4 text-sm font-bold pt-2">
-                                <span class="text-emerald-600" id="execClosed">Closed: -</span>
-                                <span class="text-amber-600" id="execInProgress">In Progress: -</span>
+                                <span class="text-emerald-600" id="execClosed">بسته‌شده: -</span>
+                                <span class="text-amber-600" id="execInProgress">در حال اجرا: -</span>
                             </div>
                         </div>
                     </div>
@@ -1075,7 +1110,7 @@
                             <thead class="bg-slate-100 text-slate-700">
                                 <tr>
                                     <th class="p-2 border">پروژه</th>
-                                    <th class="p-2 border">Quick Win منتخب</th>
+                                    <th class="p-2 border">اقدام زودبازده منتخب</th>
                                     <th class="p-2 border">مسئول</th>
                                     <th class="p-2 border">سازمان</th>
                                     <th class="p-2 border">مهلت</th>
@@ -1172,14 +1207,23 @@
             return toPersianDigits(`${jy}/${String(jm).padStart(2, '0')}/${String(jd).padStart(2, '0')}`);
         }
 
-        // "۱۴۰۵/۰۶/۰۸" (or with Latin digits/dashes) -> "2026-08-30", or null if invalid
-        function jalaliInputToIso(jalaliStr) {
+        // Shared by jalaliInputToIso() and the month-arithmetic in
+        // updateEndDateFromStartAndDuration() below — both need the raw
+        // [jy, jm, jd] before any Gregorian conversion happens.
+        function parseJalaliDateParts(jalaliStr) {
             const normalized = toLatinDigits(jalaliStr || '').trim();
             const parts = normalized.split(/[\/\-]/).map(Number);
             if (parts.length !== 3 || parts.some(n => isNaN(n))) return null;
             const [jy, jm, jd] = parts;
             if (jy < 1300 || jy > 1500 || jm < 1 || jm > 12 || jd < 1 || jd > 31) return null;
-            const [gy, gm, gd] = jalaliToGregorian(jy, jm, jd);
+            return [jy, jm, jd];
+        }
+
+        // "۱۴۰۵/۰۶/۰۸" (or with Latin digits/dashes) -> "2026-08-30", or null if invalid
+        function jalaliInputToIso(jalaliStr) {
+            const parts = parseJalaliDateParts(jalaliStr);
+            if (!parts) return null;
+            const [gy, gm, gd] = jalaliToGregorian(parts[0], parts[1], parts[2]);
             return `${gy}-${String(gm).padStart(2, '0')}-${String(gd).padStart(2, '0')}`;
         }
 
@@ -1197,12 +1241,19 @@
 
         // Reverse of monthsBetween: start date + a duration in months -> the
         // resulting Gregorian ISO date, used to auto-derive "تاریخ پایان
-        // قراردادی" from "تاریخ شروع قرارداد" + "مدت قرارداد".
-        function addMonthsIso(startIso, months) {
-            if (!startIso || months === '' || months == null || isNaN(months)) return null;
-            const d = new Date(startIso);
-            d.setMonth(d.getMonth() + Number(months));
-            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        // قراردادی" from "تاریخ شروع قرارداد" + "مدت قرارداد". The duration is
+        // a count of JALALI months, so the arithmetic has to happen in Jalali
+        // space directly — converting the start date to Gregorian first and
+        // adding Gregorian months there drifts by several days over a
+        // multi-year contract, since Jalali and Gregorian months don't line up.
+        function addJalaliMonthsToIso(jy, jm, jd, months) {
+            if (months === '' || months == null || isNaN(months)) return null;
+            const total = (jy * 12 + (jm - 1)) + Math.trunc(Number(months));
+            const resultYear = Math.floor(total / 12);
+            const resultMonth = (total % 12) + 1;
+            const clampedDay = Math.min(jd, daysInJalaliMonth(resultYear, resultMonth));
+            const [gy, gm, gd] = jalaliToGregorian(resultYear, resultMonth, clampedDay);
+            return `${gy}-${String(gm).padStart(2, '0')}-${String(gd).padStart(2, '0')}`;
         }
 
         function todayJalali() {
@@ -1365,7 +1416,7 @@
             ['score_feasibility', 'قابلیت تحقق در ۳۰ روز', 0.20],
             ['score_leverage', 'اهرم مدیریتی / اثرگذاری بین‌واحدی', 0.15]
         ];
-        const QW_DECISION_OPTIONS = ['Quick Win منتخب', 'نیازمند بررسی بیشتر', 'ادغام با پیشنهاد دیگر', 'تبدیل به اقدام میان‌مدت', 'رد پیشنهاد'];
+        const QW_DECISION_OPTIONS = ['اقدام زودبازده منتخب', 'نیازمند بررسی بیشتر', 'ادغام با پیشنهاد دیگر', 'تبدیل به اقدام میان‌مدت', 'رد پیشنهاد'];
 
         // --------------------------------------------------
         // AUTH STATE
@@ -1553,10 +1604,10 @@
             mobileNav.innerHTML = '';
 
             const buttons = currentProfile.role === 'admin'
-                ? [['overview', 'نمای کلی'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب Quick Win'], ['tracking', 'پیگیری اجرای Quick Win'], ['execReport', 'گزارش تحلیلی مدیریتی'], ['admin', 'مدیریت کاربران']]
+                ? [['overview', 'نمای کلی'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب اقدام زودبازده'], ['tracking', 'پیگیری اجرای اقدامات زودبازده'], ['execReport', 'گزارش تحلیلی مدیریتی'], ['admin', 'مدیریت کاربران']]
                 : hasOrganization('کارفرما')
-                    ? [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win'], ['selection', 'پیشنهادها'], ['tracking', 'پیگیری اجرای Quick Win']]
-                    : [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد Quick Win'], ['tracking', 'پیگیری اجرای Quick Win']];
+                    ? [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['selection', 'پیشنهادها'], ['tracking', 'پیگیری اجرای اقدامات زودبازده']]
+                    : [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['tracking', 'پیگیری اجرای اقدامات زودبازده']];
 
             buttons.forEach(([view, label], i) => {
                 const iconName = NAV_ICON[view] || 'grid';
@@ -2900,9 +2951,9 @@
         // typed by hand even though it's fully derivable from the start date
         // + duration already on the same form.
         function updateEndDateFromStartAndDuration() {
-            const startIso = jalaliInputToIso(document.getElementById('cr_start_date').value);
+            const startParts = parseJalaliDateParts(document.getElementById('cr_start_date').value);
             const duration = document.getElementById('cr_duration').value;
-            const endIso = (startIso && duration !== '') ? addMonthsIso(startIso, duration) : null;
+            const endIso = (startParts && duration !== '') ? addJalaliMonthsToIso(startParts[0], startParts[1], startParts[2], duration) : null;
             document.getElementById('cr_end_date').value = endIso ? formatJalali(endIso) : '';
         }
         document.getElementById('cr_start_date').addEventListener('input', updateEndDateFromStartAndDuration);
@@ -3081,7 +3132,7 @@
                 const qwResponsible = document.getElementById('ci_qwq_responsible').value;
                 qwDueIso = jalaliInputToIso(document.getElementById('ci_qwq_due').value);
                 if (!qwTitle || !qwAction || !qwResponsible || !qwDueIso) {
-                    alert('برای تبدیل به Quick Win، عنوان، راه‌حل، مسئول و سررسید همگی الزامی‌اند.');
+                    alert('برای تبدیل به اقدام زودبازده، عنوان، راه‌حل، مسئول و سررسید همگی الزامی‌اند.');
                     return;
                 }
             }
@@ -3135,9 +3186,9 @@
 
             alert(
                 qwError
-                    ? 'اطلاعات تکمیلی ثبت شد، اما خطا در ثبت پیشنهاد Quick Win: ' + qwError.message
+                    ? 'اطلاعات تکمیلی ثبت شد، اما خطا در ثبت پیشنهاد اقدام زودبازده: ' + qwError.message
                     : convertToQw
-                        ? 'اطلاعات تکمیلی و پیشنهاد Quick Win هر دو با موفقیت ثبت شدند!'
+                        ? 'اطلاعات تکمیلی و پیشنهاد اقدام زودبازده هر دو با موفقیت ثبت شدند!'
                         : 'اطلاعات تکمیلی با موفقیت ثبت شد!'
             );
             e.target.reset();
@@ -3155,7 +3206,7 @@
             if (!effectiveProfile()) { alert('ابتدا از بالای صفحه پروژه و سازمان را انتخاب و «بارگذاری فرم» را بزنید.'); return; }
             const planStartIso = jalaliInputToIso(document.getElementById('ci_plan_start_date').value);
             const planTargetIso = jalaliInputToIso(document.getElementById('ci_plan_target_date').value);
-            if (!planStartIso || !planTargetIso) { alert('تاریخ شروع/هدف برنامه Quick Win معتبر نیست. لطفاً به‌صورت ۱۴۰۵/۰۶/۰۱ وارد کنید.'); return; }
+            if (!planStartIso || !planTargetIso) { alert('تاریخ شروع/هدف برنامه اقدام زودبازده معتبر نیست. لطفاً به‌صورت ۱۴۰۵/۰۶/۰۱ وارد کنید.'); return; }
 
             const qwArea = document.getElementById('ci_qw_area').value;
             if (qwArea === 'سایر' && !document.getElementById('ci_qw_area_other').value.trim()) { alert('لطفاً توضیح «سایر» برای حوزه گلوگاه را وارد کنید.'); return; }
@@ -3209,7 +3260,7 @@
 
             const { error } = await _supabase.from('cases').insert([row]);
             if (error) { alert('خطا در ثبت: ' + error.message); return; }
-            alert('پیشنهاد Quick Win با موفقیت ثبت شد!');
+            alert('پیشنهاد اقدام زودبازده با موفقیت ثبت شد!');
             e.target.reset();
             document.getElementById('ci_qw_area_other').classList.add('hidden');
             document.getElementById('ci_qw_consequence_other').classList.add('hidden');
@@ -3622,7 +3673,7 @@
         }
 
         async function deleteProject(name) {
-            if (!confirm(`آیا از حذف کامل و همیشگی پروژه «${name}» مطمئنید؟ این کار غیرقابل بازگشت است: دسترسی همه کاربران به آن لغو می‌شود و تمام گزارش‌های ثبت‌شده‌اش (اطلاعات پایه، اطلاعات تکمیلی، پیشنهادهای Quick Win، تصمیمات و پیگیری اجرا) برای همیشه پاک خواهد شد.`)) return;
+            if (!confirm(`آیا از حذف کامل و همیشگی پروژه «${name}» مطمئنید؟ این کار غیرقابل بازگشت است: دسترسی همه کاربران به آن لغو می‌شود و تمام گزارش‌های ثبت‌شده‌اش (اطلاعات پایه، اطلاعات تکمیلی، پیشنهادهای اقدامات زودبازده، تصمیمات و پیگیری اجرا) برای همیشه پاک خواهد شد.`)) return;
             await _supabase.from('user_project_access').delete().eq('project_name', name);
             await _supabase.from('pending_invites').delete().eq('project_name', name);
             for (const table of PROJECT_DATA_TABLES) {
@@ -3828,7 +3879,7 @@
                     <select class="eval-decision w-full border rounded-lg p-1.5 text-xs mt-1">
                         ${QW_DECISION_OPTIONS.map(o => `<option value="${esc(o)}" ${existingEval && existingEval.decision === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
                     </select>
-                    <button type="button" class="eval-save-btn w-full bg-blue-900 hover:bg-blue-800 text-white rounded-lg py-1.5 font-bold mt-1 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-blue-900" ${hasDecision && !isSelected ? 'disabled title="یک Quick Win دیگر برای این پروژه قبلاً انتخاب شده است"' : ''}>ثبت ارزیابی</button>
+                    <button type="button" class="eval-save-btn w-full bg-blue-900 hover:bg-blue-800 text-white rounded-lg py-1.5 font-bold mt-1 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-blue-900" ${hasDecision && !isSelected ? 'disabled title="یک اقدام زودبازده دیگر برای این پروژه قبلاً انتخاب شده است"' : ''}>ثبت ارزیابی</button>
                 </div>` : ''}
             </div>`;
         }
@@ -4082,7 +4133,7 @@
                 reportRow('علت ریشه‌ای گلوگاه', latestByOrg, 'bottleneck_root_cause'),
                 reportRow('نیاز به تصمیم مدیریت ارشد', latestByOrg, 'senior_decision_needed'),
                 reportRow('اولویت تصمیم', latestByOrg, 'senior_decision_priority'),
-                reportRow('عنوان Quick Win پیشنهادی', latestByOrg, 'quick_win_title'),
+                reportRow('عنوان اقدام زودبازده پیشنهادی', latestByOrg, 'quick_win_title'),
                 reportRow('زمان تحقق برآوردی', latestByOrg, 'time_estimate'),
             ].join('');
         }
@@ -4322,7 +4373,7 @@
                 const medal = ['🥇', '🥈', '🥉'];
                 sections.push(`
                     <div class="rounded-xl border-r-4 border-emerald-600 bg-emerald-50 p-4 space-y-3">
-                        <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('target', 'w-4 h-4 shrink-0')}مقایسه پیشنهادهای Quick Win</h4>
+                        <h4 class="text-sm font-bold flex items-center gap-2">${iconSvg('target', 'w-4 h-4 shrink-0')}مقایسه پیشنهادهای اقدامات زودبازده</h4>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                             ${ranked.map((q, i) => `
                                 <div class="bg-white rounded-lg p-3 border border-emerald-100 space-y-1">
@@ -4332,7 +4383,7 @@
                                     ${q.time_estimate_days != null ? `<p class="text-[10px] text-slate-400">برآورد زمان: ${toPersianDigits(q.time_estimate_days)} روز</p>` : ''}
                                 </div>`).join('')}
                         </div>
-                        ${analysis.selected_quick_win_assessment ? `<p class="text-[11px] text-slate-600 bg-white rounded-lg p-2.5 border border-emerald-100">🎯 ارزیابی Quick Win برگزیده فعلی: ${esc(analysis.selected_quick_win_assessment)}</p>` : ''}
+                        ${analysis.selected_quick_win_assessment ? `<p class="text-[11px] text-slate-600 bg-white rounded-lg p-2.5 border border-emerald-100">🎯 ارزیابی اقدام زودبازده برگزیده فعلی: ${esc(analysis.selected_quick_win_assessment)}</p>` : ''}
                     </div>`);
             }
 
@@ -4551,7 +4602,7 @@
                 evaluated_by: currentUser.email,
                 evaluated_at: new Date().toISOString(),
             };
-            const isNewlySelected = decision === 'Quick Win منتخب';
+            const isNewlySelected = decision === 'اقدام زودبازده منتخب';
             // Re-saving the already-decided proposal's evaluation (still
             // allowed, e.g. to update its score/rationale) must not reset its
             // execution status backwards if it has since moved further along.
@@ -4834,7 +4885,7 @@
             if (!decisions || decisions.length === 0) {
                 document.getElementById('trackingOverdueBanner').innerHTML = '';
                 document.getElementById('trackingTaskReport').innerHTML = '';
-                container.innerHTML = '<p class="text-center text-slate-400 p-4">هنوز هیچ Quick Win‌ی انتخاب نشده.</p>';
+                container.innerHTML = '<p class="text-center text-slate-400 p-4">هنوز هیچ اقدام زودبازده‌ای انتخاب نشده.</p>';
                 return;
             }
 
@@ -4912,7 +4963,7 @@
                 projectTasks.forEach(t => { tasksById[t.id] = t; });
                 const tasksHtml = projectTasks.length
                     ? projectTasks.map(t => quickWinTaskItemHtml(t, isAdmin)).join('')
-                    : '<p class="text-xs text-slate-400">هنوز تسکی برای این Quick Win ثبت نشده.</p>';
+                    : '<p class="text-xs text-slate-400">هنوز تسکی برای این اقدام زودبازده ثبت نشده.</p>';
 
                 const wrap = document.createElement('div');
                 wrap.innerHTML = `<div class="print-card bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-3">
@@ -4951,7 +5002,7 @@
                     ${isAdmin && isDone ? `
                     <div class="no-print pt-3 border-t space-y-2 bg-emerald-50 -mx-5 -mb-5 px-5 pb-5 rounded-b-2xl">
                         <p class="text-xs font-bold text-emerald-800">🏁 نتیجه نهایی و ارزش محقق‌شده</p>
-                        <textarea class="actual-result-input w-full border rounded-lg p-2 text-xs" rows="2" placeholder="نتیجه واقعی این Quick Win چه بود؟">${esc(dec.actual_result || '')}</textarea>
+                        <textarea class="actual-result-input w-full border rounded-lg p-2 text-xs" rows="2" placeholder="نتیجه واقعی این اقدام زودبازده چه بود؟">${esc(dec.actual_result || '')}</textarea>
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="block text-[10px] text-slate-500 mb-0.5">صرفه‌جویی زمانی واقعی (روز)</label>
@@ -5104,8 +5155,8 @@
                 if (percent >= 100) closed++; else inProgress++;
             });
             document.getElementById('execIdentified').textContent = toPersianDigits(identified);
-            document.getElementById('execClosed').textContent = `Closed: ${toPersianDigits(closed)}`;
-            document.getElementById('execInProgress').textContent = `In Progress: ${toPersianDigits(inProgress)}`;
+            document.getElementById('execClosed').textContent = `بسته‌شده: ${toPersianDigits(closed)}`;
+            document.getElementById('execInProgress').textContent = `در حال اجرا: ${toPersianDigits(inProgress)}`;
 
             // Prefer the actual, confirmed-at-close value over the original
             // estimate once a Case has one (redesign backlog: "ارزش محقق‌شده").
@@ -5124,7 +5175,7 @@
             const cardsContainer = document.getElementById('execCardsContainer');
             cardsContainer.innerHTML = '';
             if (decisions.length === 0) {
-                cardsContainer.innerHTML = '<p class="text-center text-slate-400 p-4">هنوز هیچ Quick Win‌ی انتخاب نشده است.</p>';
+                cardsContainer.innerHTML = '<p class="text-center text-slate-400 p-4">هنوز هیچ اقدام زودبازده‌ای انتخاب نشده است.</p>';
             } else {
                 decisions.forEach((dec, idx) => {
                     const periodicRec = byProject[dec.project_name]?.[dec.organization] || {};
@@ -5146,7 +5197,7 @@
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                             <p>🔴 <b>Problem:</b> ${esc(periodicRec.main_bottleneck || '-')}</p>
-                            <p>🎯 <b>Quick Win:</b> ${esc(dec.title)}</p>
+                            <p>🎯 <b>اقدام زودبازده:</b> ${esc(dec.title)}</p>
                             <p>👤 <b>Owner:</b> ${esc(dec.plan_responsible || dec.organization)}</p>
                             <p>📅 <b>Deadline:</b> ${formatJalali(dec.plan_target_date || dec.execution_target_date)}</p>
                             <p>📊 <b>KPI:</b> ${esc(dec.kpi_name || '-')}</p>
@@ -5298,15 +5349,15 @@
                 statCard('calendar', 'bg-amber-100 text-amber-700', (avgDeviation > 0 ? '+' : '') + toPersianDigits(avgDeviation) + ' روز', 'میانگین انحراف زمان‌بندی',
                     'میانگین تفاوت (روز) بین «تاریخ پیش‌بینی فعلی تکمیل» و «تاریخ پایان قراردادی» رسمی، هر دو از فرم اطلاعات پایه و پیشرفت پروژه؛ عدد مثبت یعنی تأخیر نسبت به قرارداد.'),
                 statCard('fileText', 'bg-slate-100 text-slate-700', toPersianDigits((checkins || []).length), 'گزارش‌های دریافتی',
-                    'مجموع تعداد فرم‌های اطلاعات تکمیلی و پیشنهاد Quick Win ثبت‌شده توسط همه سازمان‌ها.'),
-                statCard('zap', 'bg-purple-100 text-purple-700', toPersianDigits(qwDefined), 'پیشنهادهای Quick Win ثبت‌شده',
-                    'تعداد کل پیشنهادهای Quick Win ثبت‌شده توسط همه سازمان‌ها، پیش از هرگونه انتخاب برگزیده.'),
-                statCard('checkCircle', 'bg-blue-900/15 text-blue-900', toPersianDigits(qwInProgress), 'Quick Win های برگزیده در حال اجرا',
-                    'تعداد Quick Win هایی که به‌عنوان برگزیده انتخاب شده‌اند و هنوز به ۱۰۰٪ پیشرفت اجرا نرسیده‌اند.'),
-                statCard('target', 'bg-emerald-100 text-emerald-700', toPersianDigits(qwAchieved), 'Quick Win های محقق‌شده',
-                    'تعداد Quick Win های برگزیده‌ای که اجرای آن‌ها به ۱۰۰٪ پیشرفت رسیده است.'),
-                statCard('alertTriangle', 'bg-red-100 text-red-700', toPersianDigits(overdueCount), 'Quick Win های دارای تأخیر',
-                    'تعداد Quick Win های برگزیده‌ای که از مهلت تعیین‌شده گذشته‌اند و هنوز به ۱۰۰٪ نرسیده‌اند.'),
+                    'مجموع تعداد فرم‌های اطلاعات تکمیلی و پیشنهاد اقدام زودبازده ثبت‌شده توسط همه سازمان‌ها.'),
+                statCard('zap', 'bg-purple-100 text-purple-700', toPersianDigits(qwDefined), 'پیشنهادهای اقدامات زودبازده ثبت‌شده',
+                    'تعداد کل پیشنهادهای اقدامات زودبازده ثبت‌شده توسط همه سازمان‌ها، پیش از هرگونه انتخاب برگزیده.'),
+                statCard('checkCircle', 'bg-blue-900/15 text-blue-900', toPersianDigits(qwInProgress), 'اقدامات زودبازده برگزیده در حال اجرا',
+                    'تعداد اقدامات زودبازده‌ای که به‌عنوان برگزیده انتخاب شده‌اند و هنوز به ۱۰۰٪ پیشرفت اجرا نرسیده‌اند.'),
+                statCard('target', 'bg-emerald-100 text-emerald-700', toPersianDigits(qwAchieved), 'اقدامات زودبازده محقق‌شده',
+                    'تعداد اقدامات زودبازده برگزیده که اجرای آن‌ها به ۱۰۰٪ پیشرفت رسیده است.'),
+                statCard('alertTriangle', 'bg-red-100 text-red-700', toPersianDigits(overdueCount), 'اقدامات زودبازده دارای تأخیر',
+                    'تعداد اقدامات زودبازده برگزیده که از مهلت تعیین‌شده گذشته‌اند و هنوز به ۱۰۰٪ نرسیده‌اند.'),
             ].join('');
 
             // ---- Project schedule status donut ----
@@ -5404,10 +5455,10 @@
             }));
             allCases.slice(-8).forEach(c => activity.push({
                 ts: c.proposed_at, color: '#3b82f6',
-                text: `ثبت پیشنهاد Quick Win جدید — ${c.project_name} (${c.organization})`
+                text: `ثبت پیشنهاد اقدام زودبازده جدید — ${c.project_name} (${c.organization})`
             }));
-            updates.slice(-8).forEach(u => activity.push({ ts: u.created_at, color: '#f59e0b', text: `بروزرسانی پیشرفت Quick Win — ${projectNameByCaseId[u.case_id] || ''}: ${u.status} (${u.progress_percent}٪)` }));
-            decisions.forEach(d => activity.push({ ts: d.decided_at || d.proposed_at, color: '#22c55e', text: `Quick Win «${d.title}» برای ${d.project_name} انتخاب شد` }));
+            updates.slice(-8).forEach(u => activity.push({ ts: u.created_at, color: '#f59e0b', text: `بروزرسانی پیشرفت اقدام زودبازده — ${projectNameByCaseId[u.case_id] || ''}: ${u.status} (${u.progress_percent}٪)` }));
+            decisions.forEach(d => activity.push({ ts: d.decided_at || d.proposed_at, color: '#22c55e', text: `اقدام زودبازده «${d.title}» برای ${d.project_name} انتخاب شد` }));
             activity.sort((a, b) => new Date(b.ts) - new Date(a.ts));
             document.getElementById('ovActivityFeed').innerHTML = activity.length ? activity.slice(0, 8).map(a => `
                 <div class="flex items-start gap-2 text-xs">
