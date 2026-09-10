@@ -1136,64 +1136,7 @@
                 <div id="execSingleProjectContent" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-4 items-start"></div>
 
                 <div id="execPortfolioContent" class="space-y-6">
-                <div class="print-card bg-white rounded-2xl shadow-sm border p-8 space-y-6">
-                    <div class="flex flex-col md:flex-row justify-between items-center gap-4 border-b pb-4">
-                        <div class="text-center md:text-right">
-                            <h2 class="text-2xl font-extrabold text-blue-900 brand-title">30Day Project Transformation Program</h2>
-                            <p class="text-sm text-slate-500 mt-1">وضعیت کل طرح‌های خطوط انتقال — <span id="execGeneratedAt"></span></p>
-                            <p class="text-xs text-slate-400 italic mt-1">«هر پروژه، یک مسئله؛ هر مسئله، یک اقدام؛ هر اقدام، یک نتیجه.»</p>
-                        </div>
-                        <div class="flex flex-col items-center text-center gap-1">
-                            <img src="logo.png" alt="لوگوی شرکت" class="h-10 w-10 object-contain" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
-                            <p class="font-bold text-xs text-slate-800">شرکت مهندسی و توسعه گاز ایران</p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-slate-50 rounded-2xl p-6 text-center space-y-2">
-                            <p class="text-4xl font-extrabold text-blue-900" id="execTotalProjects">-</p>
-                            <p class="text-sm text-slate-500">Projects</p>
-                            <div class="flex justify-center gap-4 text-sm font-bold pt-2">
-                                <span class="text-emerald-600" id="execGreenCount">🟢 -</span>
-                                <span class="text-amber-600" id="execYellowCount">🟡 -</span>
-                                <span class="text-red-600" id="execRedCount">🔴 -</span>
-                            </div>
-                        </div>
-                        <div class="bg-slate-50 rounded-2xl p-6 text-center space-y-2">
-                            <p class="text-sm font-bold text-slate-700">تأثیر این ماه</p>
-                            <p class="text-2xl font-extrabold text-blue-900" id="execIdentified">-</p>
-                            <p class="text-xs text-slate-500">اقدامات زودبازده شناسایی‌شده</p>
-                            <div class="flex justify-center gap-4 text-sm font-bold pt-2">
-                                <span class="text-emerald-600" id="execClosed">بسته‌شده: -</span>
-                                <span class="text-amber-600" id="execInProgress">در حال اجرا: -</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3" id="execKpiRow"></div>
-                </div>
-
-                <div id="execCardsContainer" class="space-y-4"></div>
-
-                <div class="print-card bg-white rounded-2xl shadow-sm border p-6 space-y-4">
-                    <h3 class="text-sm font-bold text-slate-800 border-r-4 border-blue-900 pr-3">جدول خلاصه پورتفولیو</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-right text-xs">
-                            <thead class="bg-slate-100 text-slate-700">
-                                <tr>
-                                    <th class="p-2 border">پروژه</th>
-                                    <th class="p-2 border">اقدام زودبازده منتخب</th>
-                                    <th class="p-2 border">مسئول</th>
-                                    <th class="p-2 border">سازمان</th>
-                                    <th class="p-2 border">مهلت</th>
-                                    <th class="p-2 border">پیشرفت</th>
-                                    <th class="p-2 border">وضعیت</th>
-                                </tr>
-                            </thead>
-                            <tbody id="execSummaryTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
+                    <div id="execPortfolioSummary"></div>
                 </div>
             </div>
 
@@ -5373,8 +5316,6 @@
         }
 
         async function loadExecReport() {
-            document.getElementById('execGeneratedAt').textContent = todayJalali();
-
             // Always land on the portfolio view on a fresh visit to this
             // page — never leave a stale single-project report showing from
             // a previous visit. (The select's own value resets naturally
@@ -5403,97 +5344,63 @@
                 if (h === '🟢') green++; else if (h === '🟡') yellow++; else red++;
             });
 
-            document.getElementById('execTotalProjects').textContent = toPersianDigits(projectNames.length);
-            document.getElementById('execGreenCount').textContent = `🟢 ${toPersianDigits(green)}`;
-            document.getElementById('execYellowCount').textContent = `🟡 ${toPersianDigits(yellow)}`;
-            document.getElementById('execRedCount').textContent = `🔴 ${toPersianDigits(red)}`;
-
             const progressByCase = {};
             (updates || []).forEach(u => { (progressByCase[u.case_id] ??= []).push(u); });
             const latestProgress = (caseId) => { const list = progressByCase[caseId] || []; return list[list.length - 1] || null; };
 
             const identified = decisions.length;
-            let closed = 0, inProgress = 0;
-            decisions.forEach(dec => {
-                const percent = latestProgress(dec.id)?.progress_percent || 0;
-                if (percent >= 100) closed++; else inProgress++;
-            });
-            document.getElementById('execIdentified').textContent = toPersianDigits(identified);
-            document.getElementById('execClosed').textContent = `بسته‌شده: ${toPersianDigits(closed)}`;
-            document.getElementById('execInProgress').textContent = `در حال اجرا: ${toPersianDigits(inProgress)}`;
+            let closed = 0;
+            decisions.forEach(dec => { if ((latestProgress(dec.id)?.progress_percent || 0) >= 100) closed++; });
 
             // Prefer the actual, confirmed-at-close value over the original
-            // estimate once a Case has one (redesign backlog: "ارزش محقق‌شده").
+            // estimate once a Case has one ("ارزش محقق‌شده").
             const sum = (field, actualKey) => decisions.reduce((a, r) => {
                 const actual = actualKey ? r.actual_value_json?.[actualKey] : null;
                 return a + (Number(actual ?? r[field]) || 0);
             }, 0);
 
-            document.getElementById('execKpiRow').innerHTML =
-                kpiCard('Time Saved', `${toPersianDigits(sum('impact_delay_days', 'days_saved'))} روز`, 'text-blue-900') +
-                kpiCard('Cost Avoided', fmtRial(sum('impact_cost_avoided', 'cost_avoided_rial')), 'text-emerald-700') +
-                kpiCard('Risks Reduced', toPersianDigits(identified), 'text-amber-700') +
-                kpiCard('Issues Closed', toPersianDigits(sum('impact_issues_closed')), 'text-blue-900') +
-                kpiCard('Decisions Made', toPersianDigits(identified), 'text-slate-700');
+            document.getElementById('execPortfolioSummary').innerHTML = execPortfolioSummaryHtml({
+                totalProjects: projectNames.length, green, yellow, red,
+                identified, closed,
+                timeSaved: sum('impact_delay_days', 'days_saved'),
+                costAvoided: sum('impact_cost_avoided', 'cost_avoided_rial'),
+            });
+        }
 
-            const cardsContainer = document.getElementById('execCardsContainer');
-            cardsContainer.innerHTML = '';
-            if (decisions.length === 0) {
-                cardsContainer.innerHTML = '<p class="text-center text-slate-400 p-4">هنوز هیچ اقدام زودبازده‌ای انتخاب نشده است.</p>';
-            } else {
-                decisions.forEach((dec, idx) => {
-                    const periodicRec = byProject[dec.project_name]?.[dec.organization] || {};
-                    const percent = latestProgress(dec.id)?.progress_percent || 0;
-                    const health = computeProjectHealth(byProject[dec.project_name] || {});
-                    const daysVal = dec.actual_value_json?.days_saved ?? dec.impact_delay_days;
-                    const costVal = dec.actual_value_json?.cost_avoided_rial ?? dec.impact_cost_avoided;
-                    const impactParts = [];
-                    if (daysVal) impactParts.push(`${toPersianDigits(daysVal)} روز`);
-                    if (dec.impact_progress_increase) impactParts.push(`${toPersianDigits(dec.impact_progress_increase)}٪`);
-                    if (costVal) impactParts.push(fmtRial(costVal));
-                    if (dec.actual_result) impactParts.push(`نتیجه: ${dec.actual_result}`);
+        // Deliberately just a handful of portfolio-wide aggregates in one
+        // compact card — no per-project breakdown here anymore (that now
+        // lives in the single-project poster report and Task Control Tower).
+        function execPortfolioSummaryHtml({ totalProjects, green, yellow, red, identified, closed, timeSaved, costAvoided }) {
+            const tile = (iconName, accent, value, label) => `
+                <div class="bg-white/10 rounded-xl p-3 flex items-center gap-2.5">
+                    <span class="shrink-0 h-9 w-9 rounded-lg flex items-center justify-center" style="background:rgba(255,255,255,.15); color:${accent};">${iconSvg(iconName, 'w-4 h-4')}</span>
+                    <div class="min-w-0">
+                        <p class="text-lg font-extrabold text-[#ffffff] leading-tight">${value}</p>
+                        <p class="text-[10px] leading-snug" style="color:rgba(219,234,254,.8)">${label}</p>
+                    </div>
+                </div>`;
 
-                    const wrap = document.createElement('div');
-                    wrap.innerHTML = `<div class="print-card bg-white rounded-2xl shadow-sm border p-6 space-y-3">
-                        <div class="flex justify-between items-center border-b pb-2">
-                            <h3 class="font-bold text-blue-900">PROJECT #${toPersianDigits(String(idx + 1).padStart(2, '0'))} — ${esc(dec.project_name)}</h3>
-                            <span class="text-lg">${health}</span>
+            return `
+                <div class="print-card relative overflow-hidden p-6 rounded-2xl shadow-lg" style="background: linear-gradient(160deg, #0f2557 0%, #1e3a8a 45%, #4c1d95 100%);">
+                    <div class="absolute -top-14 -left-14 h-52 w-52 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(251,191,36,.22), transparent 70%);"></div>
+                    <div class="absolute inset-0 pointer-events-none opacity-20" style="background-image: repeating-linear-gradient(115deg, transparent 0 18px, rgba(255,255,255,.5) 18px 19px);"></div>
+                    <div class="relative flex flex-col md:flex-row justify-between items-center gap-3 border-b pb-4 mb-4" style="border-color: rgba(255,255,255,.15);">
+                        <div class="text-center md:text-right">
+                            <h2 class="text-lg md:text-xl font-extrabold text-[#ffffff] brand-title">30Day Project Transformation Program</h2>
+                            <p class="text-xs mt-1" style="color: rgba(219,234,254,.85);">وضعیت کلی پورتفولیو طرح‌های خطوط انتقال — ${todayJalali()}</p>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                            <p>🔴 <b>Problem:</b> ${esc(periodicRec.main_bottleneck || '-')}</p>
-                            <p>🎯 <b>اقدام زودبازده:</b> ${esc(dec.title)}</p>
-                            <p>👤 <b>Owner:</b> ${esc(dec.plan_responsible || dec.organization)}</p>
-                            <p>📅 <b>Deadline:</b> ${formatJalali(dec.plan_target_date || dec.execution_target_date)}</p>
-                            <p>📊 <b>KPI:</b> ${esc(dec.kpi_name || '-')}</p>
-                            <p>📈 <b>Progress:</b> ${toPersianDigits(percent)}٪</p>
-                            <p><b>BEFORE:</b> ${esc(dec.kpi_current || '-')}</p>
-                            <p><b>AFTER:</b> ${esc(dec.kpi_target_30d || '-')}</p>
-                            <p class="md:col-span-2 text-emerald-700"><b>IMPACT:</b> ${impactParts.length ? esc(impactParts.join(' / ')) : '-'}</p>
+                        <div class="flex flex-col items-center text-center gap-1 bg-white/95 rounded-xl px-3 py-1.5 shrink-0">
+                            <img src="logo.png" alt="لوگوی شرکت" class="h-8 w-8 object-contain" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
                         </div>
-                        <button type="button" class="ai-link-btn no-print text-xs text-purple-700 underline"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:-0.125em"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z"/></svg> مشاهده تحلیل هوش مصنوعی این پروژه</button>
-                    </div>`;
-                    const cardEl = wrap.firstElementChild;
-                    cardEl.querySelector('.ai-link-btn').addEventListener('click', () => showAiReport(dec.project_name, 'gemini', 'execReport'));
-                    cardsContainer.appendChild(cardEl);
-                });
-            }
-
-            document.getElementById('execSummaryTableBody').innerHTML = decisions.length === 0
-                ? '<tr><td colspan="7" class="p-3 text-center text-slate-400">داده‌ای موجود نیست.</td></tr>'
-                : decisions.map(dec => {
-                    const latest = latestProgress(dec.id);
-                    const percent = latest ? latest.progress_percent : 0;
-                    const status = percent >= 100 ? 'تکمیل شده' : (latest ? latest.status : 'شروع نشده');
-                    return `<tr>
-                        <td class="p-2 border font-bold">${esc(dec.project_name)}</td>
-                        <td class="p-2 border">${esc(dec.title)}</td>
-                        <td class="p-2 border">${esc(dec.plan_responsible || '-')}</td>
-                        <td class="p-2 border">${esc(dec.organization)}</td>
-                        <td class="p-2 border">${formatJalali(dec.plan_target_date || dec.execution_target_date)}</td>
-                        <td class="p-2 border">${toPersianDigits(percent)}٪</td>
-                        <td class="p-2 border">${esc(status)}</td>
-                    </tr>`;
-                }).join('');
+                    </div>
+                    <div class="relative grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+                        ${tile('grid', '#fbbf24', toPersianDigits(totalProjects), 'پروژه فعال')}
+                        ${tile('shield', '#34d399', toPersianDigits(green), `سالم — ${toPersianDigits(yellow)} زرد، ${toPersianDigits(red)} قرمز`)}
+                        ${tile('checkCircle', '#22d3ee', toPersianDigits(closed), `اقدام زودبازده تکمیل‌شده از ${toPersianDigits(identified)}`)}
+                        ${tile('clock', '#c4b5fd', `${toPersianDigits(timeSaved)} روز`, 'صرفه‌جویی زمانی')}
+                        ${tile('trendingUp', '#fcd34d', fmtRial(costAvoided), 'صرفه‌جویی مالی')}
+                    </div>
+                </div>`;
         }
 
         document.getElementById('execSpGenerateBtn').addEventListener('click', () => {
