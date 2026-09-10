@@ -1260,25 +1260,15 @@
                 </div>
 
                 <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
-                    <div>
-                        <h3 class="text-sm font-bold text-slate-800">آمار وضعیت تسک‌ها</h3>
-                        <p class="text-[11px] text-slate-500 mt-0.5">شمار و سهم تسک‌های مطابق فیلترهای بالا، به تفکیک وضعیت.</p>
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800">آمار تسک‌ها</h3>
+                            <p class="text-[11px] text-slate-500 mt-0.5">شمار تسک‌های مطابق فیلترهای بالا؛ کلیک روی هر ردیف مثل فیلتر عمل می‌کند — کلیک دوباره برای برداشتن آن.</p>
+                        </div>
+                        <div class="no-print flex gap-1 text-[10px]" id="taskStatsTabBtns"></div>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-right text-xs">
-                            <thead class="bg-slate-100 text-slate-600">
-                                <tr><th class="p-2.5">وضعیت</th><th class="p-2.5">تعداد</th><th class="p-2.5">درصد</th><th class="p-2.5">معوق</th></tr>
-                            </thead>
-                            <tbody id="taskStatusStatsBody"></tbody>
-                            <tfoot>
-                                <tr class="bg-slate-50 font-bold border-t">
-                                    <td class="p-2.5">جمع کل</td>
-                                    <td class="p-2.5" id="taskStatusStatsTotal"></td>
-                                    <td class="p-2.5">۱۰۰٪</td>
-                                    <td class="p-2.5" id="taskStatusStatsTotalOverdue"></td>
-                                </tr>
-                            </tfoot>
-                        </table>
+                        <table class="w-full text-right text-xs" id="taskStatsTable"></table>
                     </div>
                 </div>
 
@@ -1322,22 +1312,6 @@
                     <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                         <h3 class="text-sm font-bold text-slate-800">Tasks by Responsible Person</h3>
                         <div style="height:200px"><canvas id="taskByPersonChart"></canvas></div>
-                    </div>
-                </div>
-
-                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3 hidden" id="taskProjectComparisonCard">
-                    <div class="flex justify-between items-center flex-wrap gap-2">
-                        <h3 class="text-sm font-bold text-slate-800">مقایسه پروژه‌ها</h3>
-                        <div class="no-print flex gap-1 text-[10px] flex-wrap" id="taskProjectSortBtns"></div>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-right text-xs">
-                            <thead class="bg-slate-100 text-slate-700"><tr>
-                                <th class="p-2 border">پروژه</th><th class="p-2 border">کل</th><th class="p-2 border">باز</th>
-                                <th class="p-2 border">معوق</th><th class="p-2 border">بحرانی</th><th class="p-2 border">نرخ بسته‌شدن</th>
-                            </tr></thead>
-                            <tbody id="taskProjectComparisonBody"></tbody>
-                        </table>
                     </div>
                 </div>
 
@@ -6149,7 +6123,7 @@
         let taskFilters = { projects: [], units: [], severities: [], statuses: [], people: [], overdueOnly: false, dueSoonOnly: false, dateFrom: null, dateTo: null, search: '' };
         let taskActionTab = 'overdue';
         let taskTrendGranularity = 'monthly';
-        let taskProjectSort = 'total';
+        let taskStatsTab = 'status';
         let currentDrawerTaskId = null;
         let taskStaticControlsWired = false;
         let pendingTaskFilterCaseId = null;
@@ -6435,8 +6409,12 @@
                 return;
             }
 
-            const sorted = filtered.slice().sort((a, b) => (a.due_date || '9999') < (b.due_date || '9999') ? -1 : 1);
-            container.innerHTML = sorted.map(t => {
+            const sorted = filtered.slice().sort((a, b) => {
+                const pa = a.project_name || '', pb = b.project_name || '';
+                if (pa !== pb) return pa < pb ? -1 : 1;
+                return (a.due_date || '9999') < (b.due_date || '9999') ? -1 : 1;
+            });
+            container.innerHTML = sorted.map((t, idx) => {
                 const isDone = t.task_status === 'انجام‌شده';
                 const overdue = isTaskOverdue(t);
                 const statusCls = isDone ? 'bg-emerald-100 text-emerald-800' : overdue ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-700';
@@ -6447,7 +6425,8 @@
                     t.responsible_name ? `👤 ${esc(t.responsible_name)}` : '',
                     t.responsible_unit ? `🏷 ${esc(t.responsible_unit)}` : '',
                 ].filter(Boolean).join('  ·  ');
-                return `<tr class="task-table-row cursor-pointer hover:bg-slate-50 border-b border-slate-100" data-task-id="${t.id}">
+                const newGroup = idx > 0 && sorted[idx - 1].project_name !== t.project_name;
+                return `<tr class="task-table-row cursor-pointer hover:bg-slate-50 border-b border-slate-100 ${newGroup ? 'border-t-2 border-t-slate-300' : ''}" data-task-id="${t.id}">
                     <td class="p-2.5">
                         <p class="font-bold text-slate-800 ${isDone ? 'line-through text-slate-400' : ''}">${esc(t.title)}</p>
                         ${metaParts ? `<p class="text-[10px] text-slate-400 mt-0.5">${metaParts}</p>` : ''}
@@ -6490,27 +6469,84 @@
             row.querySelectorAll('.task-kpi-card').forEach((btn, idx) => btn.addEventListener('click', cards[idx].onClick));
         }
 
-        function renderTaskStatusStatsTable(filtered) {
+        // Every click-to-filter row/bar on this page (status, project, person,
+        // severity, unit) should toggle: click once to add the filter, click
+        // the same one again to remove it. A single shared helper keeps that
+        // behavior consistent instead of each chart re-implementing its own
+        // (previously inconsistent — some push-only, one outright replaced
+        // the whole array) add logic.
+        function toggleTaskFilter(dim, value) {
+            const arr = taskFilters[dim];
+            const idx = arr.indexOf(value);
+            if (idx >= 0) arr.splice(idx, 1); else arr.push(value);
+            syncTaskFilterSelectsFromState();
+            renderAllTaskSections();
+        }
+
+        function renderTaskStatsPanel(filtered) {
+            const tabs = [['status', 'وضعیت'], ['project', 'پروژه'], ['person', 'نفر']];
+            const tabBtnsEl = document.getElementById('taskStatsTabBtns');
+            tabBtnsEl.innerHTML = tabs.map(([key, label]) => `<button type="button" data-tab="${key}" class="px-2.5 py-1 rounded-lg border ${taskStatsTab === key ? 'bg-slate-800 text-white' : 'text-slate-500'}">${label}</button>`).join('');
+            tabBtnsEl.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { taskStatsTab = b.dataset.tab; renderTaskStatsPanel(computeFilteredTasks()); }));
+
+            const table = document.getElementById('taskStatsTable');
             const total = filtered.length;
-            const body = document.getElementById('taskStatusStatsBody');
-            body.innerHTML = TASK_STATUSES.map(s => {
-                const rows = filtered.filter(t => t.task_status === s);
-                const count = rows.length;
-                const pct = total ? Math.round(count / total * 100) : 0;
-                const overdue = rows.filter(isTaskOverdue).length;
-                return `<tr class="border-b last:border-0 hover:bg-slate-50 cursor-pointer task-status-stats-row" data-status="${esc(s)}">
-                    <td class="p-2.5"><span class="inline-block w-2 h-2 rounded-full ml-1.5" style="background:${TASK_STATUS_COLOR[s]}"></span>${esc(s)}</td>
-                    <td class="p-2.5 font-bold">${toPersianDigits(count)}</td>
-                    <td class="p-2.5">${toPersianDigits(pct)}٪</td>
-                    <td class="p-2.5 ${overdue ? 'text-red-600 font-bold' : 'text-slate-400'}">${toPersianDigits(overdue)}</td>
-                </tr>`;
-            }).join('');
-            document.getElementById('taskStatusStatsTotal').textContent = toPersianDigits(total);
-            document.getElementById('taskStatusStatsTotalOverdue').textContent = toPersianDigits(filtered.filter(isTaskOverdue).length);
-            body.querySelectorAll('.task-status-stats-row').forEach(row => row.addEventListener('click', () => {
-                const s = row.dataset.status;
-                if (!taskFilters.statuses.includes(s)) { taskFilters.statuses.push(s); syncTaskFilterSelectsFromState(); renderAllTaskSections(); }
-            }));
+
+            if (taskStatsTab === 'status') {
+                const totalOverdue = filtered.filter(isTaskOverdue).length;
+                const rows = TASK_STATUSES.map(s => {
+                    const rows = filtered.filter(t => t.task_status === s);
+                    const pct = total ? Math.round(rows.length / total * 100) : 0;
+                    const overdue = rows.filter(isTaskOverdue).length;
+                    const active = taskFilters.statuses.includes(s);
+                    return `<tr class="border-b last:border-0 hover:bg-slate-50 cursor-pointer task-stats-row ${active ? 'bg-blue-50' : ''}" data-dim="statuses" data-value="${esc(s)}">
+                        <td class="p-2.5"><span class="inline-block w-2 h-2 rounded-full ml-1.5" style="background:${TASK_STATUS_COLOR[s]}"></span>${esc(s)}${active ? ' ✓' : ''}</td>
+                        <td class="p-2.5 font-bold">${toPersianDigits(rows.length)}</td>
+                        <td class="p-2.5">${toPersianDigits(pct)}٪</td>
+                        <td class="p-2.5 ${overdue ? 'text-red-600 font-bold' : 'text-slate-400'}">${toPersianDigits(overdue)}</td>
+                    </tr>`;
+                }).join('');
+                table.innerHTML = `
+                    <thead class="bg-slate-100 text-slate-600"><tr><th class="p-2.5">وضعیت</th><th class="p-2.5">تعداد</th><th class="p-2.5">درصد</th><th class="p-2.5">معوق</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                    <tfoot><tr class="bg-slate-50 font-bold border-t"><td class="p-2.5">جمع کل</td><td class="p-2.5">${toPersianDigits(total)}</td><td class="p-2.5">۱۰۰٪</td><td class="p-2.5">${toPersianDigits(totalOverdue)}</td></tr></tfoot>`;
+            } else {
+                const isProject = taskStatsTab === 'project';
+                const field = isProject ? 'project_name' : 'responsible_name';
+                const filterDim = isProject ? 'projects' : 'people';
+                const label = isProject ? 'پروژه' : 'مسئول';
+                const groups = {};
+                filtered.forEach(t => { const k = t[field] || (isProject ? '-' : 'تخصیص‌نشده'); (groups[k] = groups[k] || []).push(t); });
+                const groupRows = Object.entries(groups).map(([name, rows]) => {
+                    const open = rows.filter(t => t.task_status !== 'انجام‌شده').length;
+                    const overdue = rows.filter(isTaskOverdue).length;
+                    const critical = rows.filter(t => t.severity === 'بحرانی' && t.task_status !== 'انجام‌شده').length;
+                    const done = rows.filter(t => t.task_status === 'انجام‌شده').length;
+                    const closureRate = rows.length ? Math.round(done / rows.length * 100) : 0;
+                    return { name, total: rows.length, open, overdue, critical, closureRate };
+                }).sort((a, b) => b.total - a.total);
+                const totOpen = filtered.filter(t => t.task_status !== 'انجام‌شده').length;
+                const totOverdue = filtered.filter(isTaskOverdue).length;
+                const totCritical = filtered.filter(t => t.severity === 'بحرانی' && t.task_status !== 'انجام‌شده').length;
+                const totDone = filtered.filter(t => t.task_status === 'انجام‌شده').length;
+                const totClosure = total ? Math.round(totDone / total * 100) : 0;
+                const rows = groupRows.map(r => {
+                    const active = taskFilters[filterDim].includes(r.name);
+                    return `<tr class="border-b last:border-0 hover:bg-slate-50 cursor-pointer task-stats-row ${active ? 'bg-blue-50' : ''}" data-dim="${filterDim}" data-value="${esc(r.name)}">
+                        <td class="p-2.5 font-bold">${esc(r.name)}${active ? ' ✓' : ''}</td>
+                        <td class="p-2.5">${toPersianDigits(r.total)}</td>
+                        <td class="p-2.5">${toPersianDigits(r.open)}</td>
+                        <td class="p-2.5 ${r.overdue ? 'text-red-600 font-bold' : 'text-slate-400'}">${toPersianDigits(r.overdue)}</td>
+                        <td class="p-2.5 ${r.critical ? 'text-red-600 font-bold' : 'text-slate-400'}">${toPersianDigits(r.critical)}</td>
+                        <td class="p-2.5">${toPersianDigits(r.closureRate)}٪</td>
+                    </tr>`;
+                }).join('');
+                table.innerHTML = `
+                    <thead class="bg-slate-100 text-slate-600"><tr><th class="p-2.5">${label}</th><th class="p-2.5">کل</th><th class="p-2.5">باز</th><th class="p-2.5">معوق</th><th class="p-2.5">بحرانی</th><th class="p-2.5">نرخ بسته‌شدن</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                    <tfoot><tr class="bg-slate-50 font-bold border-t"><td class="p-2.5">جمع کل</td><td class="p-2.5">${toPersianDigits(total)}</td><td class="p-2.5">${toPersianDigits(totOpen)}</td><td class="p-2.5">${toPersianDigits(totOverdue)}</td><td class="p-2.5">${toPersianDigits(totCritical)}</td><td class="p-2.5">${toPersianDigits(totClosure)}٪</td></tr></tfoot>`;
+            }
+            table.querySelectorAll('.task-stats-row').forEach(row => row.addEventListener('click', () => toggleTaskFilter(row.dataset.dim, row.dataset.value)));
         }
 
         function renderTaskSeverityChart(filtered) {
@@ -6521,7 +6557,7 @@
                 data: { labels: TASK_SEVERITIES, datasets: [{ data: counts, backgroundColor: TASK_SEVERITIES.map(s => AI_SEVERITY_STYLE[s].hex) }] },
                 options: {
                     indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                    onClick: (evt, els) => { if (els.length) { const sev = TASK_SEVERITIES[els[0].index]; if (!taskFilters.severities.includes(sev)) { taskFilters.severities.push(sev); syncTaskFilterSelectsFromState(); renderAllTaskSections(); } } },
+                    onClick: (evt, els) => { if (els.length) toggleTaskFilter('severities', TASK_SEVERITIES[els[0].index]); },
                     scales: { x: { min: 0, ticks: { stepSize: 1, precision: 0, callback: v => toPersianDigits(v) }, grid: { color: '#f1f5f9' } }, y: { grid: { display: false } } },
                     plugins: { legend: { display: false } },
                 },
@@ -6575,7 +6611,7 @@
                 data: { labels: unitEntries.map(e => e[0]), datasets: [{ data: unitEntries.map(e => e[1]), backgroundColor: '#1e3a8a' }] },
                 options: {
                     indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                    onClick: (evt, els) => { if (els.length) { const unit = unitEntries[els[0].index][0]; if (!taskFilters.units.includes(unit)) { taskFilters.units.push(unit); syncTaskFilterSelectsFromState(); renderAllTaskSections(); } } },
+                    onClick: (evt, els) => { if (els.length) toggleTaskFilter('units', unitEntries[els[0].index][0]); },
                     scales: { x: { min: 0, ticks: { stepSize: 1, precision: 0, callback: v => toPersianDigits(v) }, grid: { color: '#f1f5f9' } }, y: { grid: { display: false } } },
                     plugins: { legend: { display: false } },
                 },
@@ -6594,43 +6630,6 @@
                     plugins: { legend: { display: false } },
                 },
             });
-        }
-
-        function renderTaskProjectComparison(filtered) {
-            const card = document.getElementById('taskProjectComparisonCard');
-            const distinctProjects = [...new Set(filtered.map(t => t.project_name))];
-            if (distinctProjects.length < 2) { card.classList.add('hidden'); return; }
-            card.classList.remove('hidden');
-            let rows = distinctProjects.map(pn => {
-                const projRows = filtered.filter(t => t.project_name === pn);
-                const open = projRows.filter(t => t.task_status !== 'انجام‌شده').length;
-                const overdue = projRows.filter(isTaskOverdue).length;
-                const critical = projRows.filter(t => t.severity === 'بحرانی' && t.task_status !== 'انجام‌شده').length;
-                const done = projRows.filter(t => t.task_status === 'انجام‌شده').length;
-                const closureRate = projRows.length ? Math.round((done / projRows.length) * 100) : 0;
-                return { project: pn, total: projRows.length, open, overdue, critical, closureRate };
-            });
-            const sorters = { total: (a, b) => b.total - a.total, overdue: (a, b) => b.overdue - a.overdue, critical: (a, b) => b.critical - a.critical, closureRate: (a, b) => a.closureRate - b.closureRate };
-            rows = rows.sort(sorters[taskProjectSort] || sorters.total);
-            document.getElementById('taskProjectComparisonBody').innerHTML = rows.map(r => `
-                <tr class="hover:bg-slate-50 cursor-pointer task-proj-row" data-project="${esc(r.project)}">
-                    <td class="p-2 border font-bold">${esc(r.project)}</td>
-                    <td class="p-2 border">${toPersianDigits(r.total)}</td>
-                    <td class="p-2 border">${toPersianDigits(r.open)}</td>
-                    <td class="p-2 border ${r.overdue ? 'text-red-700 font-bold' : ''}">${toPersianDigits(r.overdue)}</td>
-                    <td class="p-2 border ${r.critical ? 'text-red-700 font-bold' : ''}">${toPersianDigits(r.critical)}</td>
-                    <td class="p-2 border">${toPersianDigits(r.closureRate)}٪</td>
-                </tr>`).join('');
-            document.querySelectorAll('.task-proj-row').forEach(row => row.addEventListener('click', () => {
-                taskFilters.projects = [row.dataset.project];
-                syncTaskFilterSelectsFromState();
-                renderAllTaskSections();
-            }));
-
-            const sortBtnsEl = document.getElementById('taskProjectSortBtns');
-            const sortOptions = [['total', 'بیشترین تسک'], ['overdue', 'بیشترین معوق'], ['critical', 'بیشترین بحرانی'], ['closureRate', 'کمترین نرخ بسته‌شدن']];
-            sortBtnsEl.innerHTML = sortOptions.map(([key, label]) => `<button type="button" data-sort="${key}" class="px-2 py-1 rounded-lg border ${taskProjectSort === key ? 'bg-slate-800 text-white' : 'text-slate-500'}">${label}</button>`).join('');
-            sortBtnsEl.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { taskProjectSort = b.dataset.sort; renderTaskProjectComparison(computeFilteredTasks()); }));
         }
 
         function taskTrendBucketKey(iso, granularity) {
@@ -6753,13 +6752,12 @@
             renderTaskActionCenter(filtered);
             renderAllTasksTable(filtered);
             renderCaseProgressCards();
-            renderTaskStatusStatsTable(filtered);
+            renderTaskStatsPanel(filtered);
             renderStatusDonut('taskStatusDonut', 'taskStatusDonutCenter', 'taskStatusLegend', TASK_STATUSES.map(s => ({ label: s, value: filtered.filter(t => t.task_status === s).length, color: TASK_STATUS_COLOR[s] })));
             renderTaskSeverityChart(filtered);
             renderTaskAgingChart(filtered);
             renderTaskOverdueRadar(filtered);
             renderTaskResponsibilityCharts(filtered);
-            renderTaskProjectComparison(filtered);
             renderTaskTrend(filtered);
             renderTaskAiInsight(filtered);
         }
