@@ -1124,7 +1124,7 @@
                     </div>
                 </div>
 
-                <div id="execSingleProjectContent" class="hidden space-y-4"></div>
+                <div id="execSingleProjectContent" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-4"></div>
 
                 <div id="execPortfolioContent" class="space-y-6">
                 <div class="print-card bg-white rounded-2xl shadow-sm border p-8 space-y-6">
@@ -5505,15 +5505,44 @@
             </div>`;
         }
 
+        // Fixed red/amber/emerald zone bands (a real dial, not a value-colored
+        // arc) with a needle drawn by a small Chart.js plugin — matches the
+        // reference infographic's speedometer-style gauge instead of the
+        // simpler two-tone arc this used to be.
         function renderExecSpHealthGauge(healthIndex) {
             const el = document.getElementById('execSpHealthGauge');
             if (!el) return;
             const value = Math.max(0, Math.min(100, Number(healthIndex) || 0));
-            const color = value >= 66 ? '#22c55e' : value >= 33 ? '#f59e0b' : '#ef4444';
+            const needlePlugin = {
+                id: 'execSpGaugeNeedle',
+                afterDatasetsDraw(chart) {
+                    const { ctx, chartArea } = chart;
+                    const cx = chartArea.left + chartArea.width / 2;
+                    const cy = chartArea.top + chartArea.height / 2;
+                    const radius = Math.min(chartArea.width / 2, chartArea.height) * 0.72;
+                    const angle = Math.PI + (value / 100) * Math.PI;
+                    ctx.save();
+                    ctx.translate(cx, cy);
+                    ctx.rotate(angle);
+                    ctx.beginPath();
+                    ctx.moveTo(-8, 0);
+                    ctx.lineTo(radius, 0);
+                    ctx.lineWidth = 3;
+                    ctx.lineCap = 'round';
+                    ctx.strokeStyle = '#1e293b';
+                    ctx.stroke();
+                    ctx.restore();
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 4.5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#1e293b';
+                    ctx.fill();
+                },
+            };
             new Chart(el.getContext('2d'), {
                 type: 'doughnut',
-                data: { datasets: [{ data: [value, 100 - value], backgroundColor: [color, '#e2e8f0'], borderWidth: 0 }] },
-                options: { circumference: 180, rotation: 270, cutout: '75%', plugins: { legend: { display: false }, tooltip: { enabled: false } } },
+                data: { datasets: [{ data: [34, 33, 33], backgroundColor: ['#ef4444', '#f59e0b', '#22c55e'], borderWidth: 0 }] },
+                options: { circumference: 180, rotation: 270, cutout: '68%', plugins: { legend: { display: false }, tooltip: { enabled: false } } },
+                plugins: [needlePlugin],
             });
         }
 
@@ -5524,19 +5553,28 @@
             new Chart(el.getContext('2d'), {
                 type: 'radar',
                 data: {
-                    labels: riskRegister.map(r => ((r.risk || '-').length > 22 ? r.risk.slice(0, 20) + '…' : (r.risk || '-'))),
+                    labels: riskRegister.map(r => ((r.risk || '-').length > 18 ? r.risk.slice(0, 16) + '…' : (r.risk || '-'))),
                     datasets: [{
                         label: 'شدت ریسک',
                         data: riskRegister.map(r => sevValue[r.level] || 0),
-                        backgroundColor: 'rgba(220,38,38,.15)',
-                        borderColor: '#dc2626',
+                        backgroundColor: 'rgba(8,145,178,.18)',
+                        borderColor: '#0891b2',
+                        borderWidth: 2,
+                        pointRadius: 4,
                         pointBackgroundColor: riskRegister.map(r => (AI_SEVERITY_STYLE[r.level] || {}).hex || '#94a3b8'),
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 1.5,
                     }],
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: { r: { min: 0, max: 4, ticks: { stepSize: 1, display: false }, pointLabels: { font: { size: 10 } }, grid: { color: '#e2e8f0' } } },
+                    scales: {
+                        r: {
+                            min: 0, max: 4, ticks: { stepSize: 1, display: true, backdropColor: 'transparent', font: { size: 8 }, color: '#94a3b8', callback: v => toPersianDigits(v * 25) + '٪' },
+                            pointLabels: { font: { size: 10 } }, grid: { color: '#e2e8f0' }, angleLines: { color: '#e2e8f0' },
+                        },
+                    },
                     plugins: { legend: { display: false } },
                 },
             });
@@ -5590,137 +5628,144 @@
             const sections = [];
 
             sections.push(`
-                <div class="print-card relative overflow-hidden p-6 md:p-8 rounded-2xl shadow-lg" style="background: linear-gradient(135deg, #1e3a8a 0%, #4c1d95 100%);">
-                    <div class="absolute -top-10 -left-10 h-40 w-40 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(251,191,36,.25), transparent 70%);"></div>
-                    <div class="relative flex flex-col md:flex-row justify-between items-center gap-4">
-                        <div class="flex items-center gap-3 min-w-0 text-center md:text-right">
-                            <div class="shrink-0 h-12 w-12 rounded-2xl hidden md:flex items-center justify-center text-2xl" style="background: rgba(255,255,255,.15);">📄</div>
-                            <div class="min-w-0">
-                                <h2 class="text-xl md:text-2xl font-extrabold text-[#ffffff]">گزارش اجرایی پروژه</h2>
-                                <p class="text-base font-bold text-[#ffffff] mt-0.5">${esc(projectName)}</p>
-                                <p class="text-xs mt-1" style="color: rgba(219,234,254,.9);">تاریخ تولید: ${todayJalali()} — ابزار تحلیل: ${provider === 'openai' ? 'ChatGPT' : 'Gemini'}${cachedAi ? ` — آخرین تحلیل: ${formatJalali(cachedAi.created_at)}` : ''}</p>
-                            </div>
-                        </div>
-                        <div class="relative flex flex-col items-center text-center gap-1 shrink-0 bg-white/95 rounded-xl px-3 py-2">
-                            <img src="logo.png" alt="لوگوی شرکت" class="h-10 w-10 object-contain" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
-                            <p class="font-bold text-xs text-slate-800">شرکت مهندسی و توسعه گاز ایران</p>
+                <div class="print-card lg:col-span-1 relative overflow-hidden p-6 rounded-2xl shadow-lg flex flex-col justify-between" style="background: linear-gradient(160deg, #0f2557 0%, #1e3a8a 45%, #4c1d95 100%); min-height:200px;">
+                    <div class="absolute -top-12 -left-12 h-44 w-44 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(251,191,36,.22), transparent 70%);"></div>
+                    <div class="absolute inset-0 pointer-events-none opacity-20" style="background-image: repeating-linear-gradient(115deg, transparent 0 18px, rgba(255,255,255,.5) 18px 19px);"></div>
+                    <div class="relative flex items-center justify-between gap-2">
+                        <span class="text-[10px] font-bold px-2 py-1 rounded-full" style="background:rgba(255,255,255,.15); color:#f1f5f9;">${todayJalali()}</span>
+                        <div class="flex flex-col items-center text-center gap-1 bg-white/95 rounded-xl px-2.5 py-1.5">
+                            <img src="logo.png" alt="لوگوی شرکت" class="h-8 w-8 object-contain" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
                         </div>
                     </div>
+                    <div class="relative mt-6">
+                        <h2 class="text-lg font-extrabold text-[#ffffff] leading-snug">گزارش اجرایی پروژه</h2>
+                        <p class="text-xl font-extrabold mt-1" style="color:#fbbf24;">${esc(projectName)}</p>
+                        <p class="text-[11px] mt-2 leading-relaxed" style="color: rgba(219,234,254,.85);">ابزار تحلیل: ${provider === 'openai' ? 'ChatGPT' : 'Gemini'}${cachedAi ? ` — آخرین تحلیل: ${formatJalali(cachedAi.created_at)}` : ''}</p>
+                    </div>
+                    <p class="relative text-[10px] mt-4 pt-3 border-t" style="border-color: rgba(255,255,255,.15); color: rgba(219,234,254,.7);">شرکت مهندسی و توسعه گاز ایران</p>
                 </div>`);
 
             const achievementConcernHtml = (achievement || concern) ? `
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    ${achievement ? `<div class="bg-emerald-50 border border-emerald-100 rounded-lg p-3 text-xs"><p class="font-bold text-emerald-800 mb-1">🏆 مهم‌ترین دستاورد</p><p class="text-slate-700">${esc(achievement)}</p></div>` : ''}
-                    ${concern ? `<div class="bg-amber-50 border border-amber-100 rounded-lg p-3 text-xs"><p class="font-bold text-amber-800 mb-1">⚠️ مهم‌ترین نگرانی</p><p class="text-slate-700">${esc(concern)}</p></div>` : ''}
+                <div class="grid grid-cols-1 gap-2.5">
+                    ${achievement ? `<div class="bg-emerald-50 border border-emerald-100 rounded-lg p-2.5 text-[11px]"><p class="font-bold text-emerald-800 mb-0.5">🏆 مهم‌ترین دستاورد</p><p class="text-slate-700">${esc(achievement)}</p></div>` : ''}
+                    ${concern ? `<div class="bg-amber-50 border border-amber-100 rounded-lg p-2.5 text-[11px]"><p class="font-bold text-amber-800 mb-0.5">⚠️ مهم‌ترین نگرانی</p><p class="text-slate-700">${esc(concern)}</p></div>` : ''}
                 </div>` : '';
 
             sections.push(`
-                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                <div class="print-card lg:col-span-1 bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                     <div class="flex items-center gap-2.5">${sectionIconBadge('fileText', '#1e3a8a', '#4c1d95')}<h3 class="text-sm font-bold text-slate-800">۱. نمای کلی اجرایی</h3></div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="grid grid-cols-2 gap-2.5">
                         ${statCard('trendingUp', 'bg-blue-900/10 text-blue-900', cr && cr.progress_physical != null ? toPersianDigits(cr.progress_physical) + '٪' : '-', 'پیشرفت فیزیکی', 'از فرم اطلاعات پایه و پیشرفت پروژه')}
-                        ${statCard('gauge', variance != null ? (variance < -5 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700') : 'bg-slate-100 text-slate-500', variance != null ? `${variance > 0 ? '+' : ''}${toPersianDigits(variance)}٪` : '-', 'انحراف پیشرفت از برنامه')}
-                        ${statCard('alertTriangle', criticalRiskCount ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700', criticalRiskCount != null ? toPersianDigits(criticalRiskCount) : '-', 'ریسک‌های بحرانی')}
+                        ${statCard('gauge', variance != null ? (variance < -5 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700') : 'bg-slate-100 text-slate-500', variance != null ? `${variance > 0 ? '+' : ''}${toPersianDigits(variance)}٪` : '-', 'انحراف از برنامه')}
+                        ${statCard('alertTriangle', criticalRiskCount ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700', criticalRiskCount != null ? toPersianDigits(criticalRiskCount) : '-', 'ریسک بحرانی')}
+                        ${statCard('shield', healthIndex != null ? (healthIndex >= 66 ? 'bg-emerald-100 text-emerald-700' : healthIndex >= 33 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700') : 'bg-slate-100 text-slate-500', healthIndex != null ? toPersianDigits(Math.round(healthIndex)) + '٪' : '-', 'شاخص سلامت پروژه')}
                     </div>
                     ${healthIndex != null ? `
-                    <div class="flex flex-col sm:flex-row items-center gap-4 bg-slate-50 rounded-xl p-3">
-                        <div class="text-center shrink-0">
-                            <div class="relative h-16 mx-auto" style="max-width:130px"><canvas id="execSpHealthGauge"></canvas></div>
-                            <p class="text-base font-extrabold -mt-6">${toPersianDigits(Math.round(healthIndex))}<span class="text-[10px] font-normal text-slate-500">/۱۰۰</span></p>
-                        </div>
-                        <p class="text-[11px] text-slate-500 leading-relaxed">شاخص همسویی دیدگاه‌ها — بر اساس میزان تطابق گزارش‌های کارفرما، مشاور و پیمانکار در آخرین تحلیل هوشمند (عدد بالاتر یعنی دیدگاه‌ها همسوتر و تناقض کمتر).</p>
+                    <div class="text-center bg-slate-50 rounded-xl p-3">
+                        <p class="text-[10px] font-bold text-slate-500 mb-1">شاخص سلامت کلی پروژه — Overall Health</p>
+                        <div class="relative h-20 mx-auto" style="max-width:170px"><canvas id="execSpHealthGauge"></canvas></div>
+                        <p class="text-lg font-extrabold -mt-1">${toPersianDigits(Math.round(healthIndex))}<span class="text-[10px] font-normal text-slate-500">٪</span></p>
                     </div>` : ''}
                     ${achievementConcernHtml}
-                    ${urgentDecisionItem ? `<div class="bg-red-50 border border-red-100 rounded-lg p-3 text-xs"><b>🚨 تصمیم فوری مورد نیاز مدیرعامل:</b> ${esc(execDecisionText(urgentDecisionItem))}</div>` : ''}
+                    ${urgentDecisionItem ? `<div class="bg-red-50 border border-red-100 rounded-lg p-2.5 text-[11px]"><b>🚨 تصمیم مورد نیاز مدیرعامل:</b> ${esc(execDecisionText(urgentDecisionItem))}</div>` : ''}
                 </div>`);
 
+            const vennSvg = `<svg viewBox="0 0 200 158" class="mx-auto" style="height:118px">
+                <circle cx="100" cy="52" r="52" fill="#1e3a8a" fill-opacity="0.62"/>
+                <circle cx="68" cy="102" r="52" fill="#059669" fill-opacity="0.62"/>
+                <circle cx="132" cy="102" r="52" fill="#d97706" fill-opacity="0.62"/>
+                <text x="100" y="30" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">کارفرما</text>
+                <text x="50" y="128" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">مشاور</text>
+                <text x="150" y="128" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">پیمانکار</text>
+                <text x="100" y="93" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold">هم‌افزایی</text>
+            </svg>`;
             sections.push(`
-                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                <div class="print-card lg:col-span-1 bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                     <div class="flex items-center gap-2.5">${sectionIconBadge('activity', '#7c3aed', '#4c1d95')}<h3 class="text-sm font-bold text-slate-800">۲. سه رکن اصلی و پیشنهادات</h3></div>
-                    <div class="flex justify-center">
-                        <span class="bg-purple-100 text-purple-800 text-[11px] font-bold px-3 py-1.5 rounded-full">🤝 هم‌افزایی برای موفقیت پروژه</span>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    ${vennSvg}
+                    <div class="grid grid-cols-1 gap-2">
                         ${ORG_ORDER.map(org => {
                             const c = latestByOrg[org];
                             const style = ORG_STYLE[org];
-                            return `<div class="bg-slate-50 rounded-xl border-r-4 ${style.border} p-3 space-y-1.5 text-xs">
-                                <span class="${style.badge} px-2 py-1 rounded-lg font-bold inline-block">${esc(org)}</span>
-                                ${c ? `<p class="font-bold text-slate-700">${esc(c.title)}</p><p class="text-slate-500">${esc(c.action_details || '-')}</p>` : `<p class="text-slate-400">هنوز پیشنهادی ثبت نشده.</p>`}
+                            return `<div class="bg-slate-50 rounded-lg border-r-4 ${style.border} p-2 text-[11px]">
+                                <span class="${style.badge} px-1.5 py-0.5 rounded-md font-bold inline-block mb-1">پیشنهاد ${esc(org)}</span>
+                                ${c ? `<p class="font-bold text-slate-700 truncate">${esc(c.title)}</p>` : `<p class="text-slate-400">هنوز پیشنهادی ثبت نشده.</p>`}
                             </div>`;
                         }).join('')}
                     </div>
-                    ${analysis?.root_cause_analysis?.primary_root_cause ? `<div class="bg-amber-50 border border-amber-100 rounded-lg p-3 text-xs"><b>⚠️ مسئله مشترک:</b> ${esc(analysis.root_cause_analysis.primary_root_cause)}</div>` : ''}
+                    ${analysis?.root_cause_analysis?.primary_root_cause ? `<div class="bg-amber-50 border border-amber-100 rounded-lg p-2.5 text-[11px]"><b>⚠️ مسئله مشترک:</b> ${esc(analysis.root_cause_analysis.primary_root_cause)}</div>` : ''}
                 </div>`);
 
             sections.push(decidedCase ? `
-                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                <div class="print-card lg:col-span-1 bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                     <div class="flex items-center justify-between gap-2 flex-wrap">
                         <div class="flex items-center gap-2.5">${sectionIconBadge('target', '#059669', '#047857')}<h3 class="text-sm font-bold text-slate-800">۳. برنامه منتخب (اقدام زودبازده)</h3></div>
                         <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${decidedCase.status === 'بسته‌شده' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${esc(decidedCase.status)}</span>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs">
-                        <p class="md:col-span-2"><b>🎯 عنوان:</b> ${esc(decidedCase.title)}</p>
+                    <div class="grid grid-cols-1 gap-2 text-[11px]">
+                        <p><b>🎯 مسئله:</b> ${esc(decidedCase.title)}</p>
                         <p><b>⚡ راهکار:</b> ${esc(decidedCase.action_details || '-')}</p>
                         <p><b>📈 اثر مورد انتظار:</b> ${esc(decidedCase.expected_result || '-')}</p>
                         <p><b>👤 مالک:</b> ${esc(decidedCase.plan_responsible || decidedCase.organization)}</p>
                         <p><b>⏱ زمان اجرا:</b> ${esc(decidedCase.time_estimate || '-')}</p>
-                        <p><b>📊 KPI:</b> ${esc(decidedCase.kpi_name || '-')}</p>
-                        <p><b>🏁 هدف KPI:</b> ${esc(decidedCase.kpi_target_30d || '-')}</p>
+                        <p><b>📊 KPI:</b> ${esc(decidedCase.kpi_name || '-')} — هدف: ${esc(decidedCase.kpi_target_30d || '-')}</p>
                     </div>
                 </div>` : `
-                <div class="print-card bg-white rounded-2xl shadow-sm border p-5">
+                <div class="print-card lg:col-span-1 bg-white rounded-2xl shadow-sm border p-5">
                     <div class="flex items-center gap-2.5 mb-2">${sectionIconBadge('target', '#059669', '#047857')}<h3 class="text-sm font-bold text-slate-800">۳. برنامه منتخب (اقدام زودبازده)</h3></div>
                     <p class="text-xs text-slate-400 text-center py-2">هنوز اقدام زودبازده‌ای برای این پروژه انتخاب نشده است.</p>
                 </div>`);
 
+            const ROADMAP_COLORS = [['#1e3a8a', 'bg-blue-900', 'bg-blue-100 text-blue-900'], ['#0891b2', 'bg-cyan-600', 'bg-cyan-100 text-cyan-800'], ['#d97706', 'bg-amber-600', 'bg-amber-100 text-amber-800'], ['#7c3aed', 'bg-violet-600', 'bg-violet-100 text-violet-800'], ['#dc2626', 'bg-red-600', 'bg-red-100 text-red-800']];
             sections.push(`
-                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                <div class="print-card lg:col-span-1 bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                     <div class="flex items-center gap-2.5">${sectionIconBadge('calendar', '#1e3a8a', '#4c1d95')}<h3 class="text-sm font-bold text-slate-800">۴. نقشه راه ۳۰ روزه</h3></div>
                     ${(analysis && Array.isArray(analysis.action_plan_30_days) && analysis.action_plan_30_days.length) ? `
-                    <div class="overflow-x-auto">
-                        <div class="flex items-start min-w-max">
-                            ${analysis.action_plan_30_days.map((a, i) => `
-                                ${i > 0 ? `<div class="flex-1 h-1 rounded-full mt-6 mx-1 bg-blue-200" style="min-width:24px"></div>` : ''}
-                                <div class="flex flex-col items-center gap-1.5 shrink-0 text-center bg-slate-50 rounded-xl p-3" style="width:160px">
-                                    <span class="h-10 w-10 rounded-full flex items-center justify-center text-sm font-extrabold text-[#ffffff] bg-blue-900">${toPersianDigits(i + 1)}</span>
-                                    <span class="text-[10px] font-extrabold text-blue-900 bg-blue-100 px-2 py-0.5 rounded-lg">${esc(a.week || '-')}</span>
-                                    <p class="text-[11px] text-slate-700 leading-snug">${esc(a.action || '-')}</p>
-                                    <p class="text-[10px] text-slate-400">👤 ${esc(a.owner || '-')}</p>
-                                </div>`).join('')}
-                        </div>
+                    <div class="grid grid-cols-1 gap-2">
+                        ${analysis.action_plan_30_days.map((a, i) => {
+                            const [, circleBg, badgeBg] = ROADMAP_COLORS[i % ROADMAP_COLORS.length];
+                            return `<div class="flex items-start gap-2.5 bg-slate-50 rounded-xl p-2.5">
+                                <span class="shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-xs font-extrabold text-[#ffffff] ${circleBg}">${toPersianDigits(i + 1)}</span>
+                                <div class="min-w-0 text-[11px]">
+                                    <span class="font-extrabold px-1.5 py-0.5 rounded-md ${badgeBg}">${esc(a.week || '-')}</span>
+                                    <p class="text-slate-700 leading-snug mt-1">${esc(a.action || '-')}</p>
+                                    <p class="text-slate-400 mt-0.5">👤 ${esc(a.owner || '-')}</p>
+                                </div>
+                            </div>`;
+                        }).join('')}
                     </div>` : execSpAiEmptyStateHtml()}
                 </div>`);
 
             sections.push(`
-                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                <div class="print-card lg:col-span-1 bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                     <div class="flex items-center gap-2.5">${sectionIconBadge('shield', '#dc2626', '#7f1d1d')}<h3 class="text-sm font-bold text-slate-800">۵. رادار ریسک‌ها</h3></div>
                     ${sortedRisks.length ? `
-                    ${sortedRisks.length >= 3 ? `<div style="height:220px"><canvas id="execSpRiskRadar"></canvas></div>` : ''}
+                    ${sortedRisks.length >= 3 ? `<div style="height:190px"><canvas id="execSpRiskRadar"></canvas></div>` : ''}
                     <div class="overflow-x-auto">
-                        <table class="w-full text-right text-[11px]">
-                            <thead class="bg-slate-100 text-slate-700"><tr><th class="p-2 border">ریسک</th><th class="p-2 border">منبع</th><th class="p-2 border">سطح</th><th class="p-2 border">اقدام کنترلی</th></tr></thead>
+                        <table class="w-full text-right text-[10px]">
+                            <thead class="bg-slate-100 text-slate-700"><tr><th class="p-1.5 border">ریسک</th><th class="p-1.5 border">منبع</th><th class="p-1.5 border">سطح</th></tr></thead>
                             <tbody>
                                 ${sortedRisks.map(r => `<tr>
-                                    <td class="p-2 border font-bold bg-slate-50">${esc(r.risk || '-')}</td>
-                                    <td class="p-2 border">${esc(r.source_org || '-')}</td>
-                                    <td class="p-2 border">${aiSevBadge(r.level)}</td>
-                                    <td class="p-2 border text-slate-600">${esc(r.current_action || '-')}</td>
+                                    <td class="p-1.5 border font-bold bg-slate-50">${esc(r.risk || '-')}</td>
+                                    <td class="p-1.5 border">${esc(r.source_org || '-')}</td>
+                                    <td class="p-1.5 border">${aiSevBadge(r.level)}</td>
                                 </tr>`).join('')}
                             </tbody>
                         </table>
                     </div>` : execSpAiEmptyStateHtml()}
                 </div>`);
 
+            const DECISION_COLORS = [['bg-blue-50 border-blue-100', 'text-blue-800', '#1e3a8a', '#4c1d95'], ['bg-emerald-50 border-emerald-100', 'text-emerald-800', '#059669', '#047857'], ['bg-violet-50 border-violet-100', 'text-violet-800', '#7c3aed', '#4c1d95'], ['bg-amber-50 border-amber-100', 'text-amber-800', '#d97706', '#92400e']];
             sections.push(`
-                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                <div class="print-card lg:col-span-2 bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                     <div class="flex items-center gap-2.5">${sectionIconBadge('checkCircle', '#dc2626', '#7f1d1d')}<h3 class="text-sm font-bold text-slate-800">۶. تصمیمات مورد نیاز مدیرعامل</h3></div>
                     ${(analysis && Array.isArray(analysis.executive_decisions_needed) && analysis.executive_decisions_needed.length) ? `
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         ${analysis.executive_decisions_needed.map((d, i) => {
                             const isObj = d && typeof d === 'object';
-                            return `<div class="bg-red-50 rounded-xl border border-red-100 p-3 space-y-1 text-xs">
-                                <p class="font-bold text-red-800">${toPersianDigits(i + 1)}. ${esc(execDecisionText(d))}</p>
+                            const [cardBg, textCls, from, to] = DECISION_COLORS[i % DECISION_COLORS.length];
+                            return `<div class="${cardBg} rounded-xl border p-3 space-y-1.5 text-xs">
+                                <div class="flex items-center gap-2">${sectionIconBadge('checkCircle', from, to)}<p class="font-bold ${textCls}">${esc(execDecisionText(d))}</p></div>
                                 ${isObj && d.why_now ? `<p class="text-slate-600"><b>چرا الان؟</b> ${esc(d.why_now)}</p>` : ''}
                                 ${isObj && d.impact ? `<p class="text-slate-500"><b>اثر:</b> ${esc(d.impact)}</p>` : ''}
                             </div>`;
@@ -5729,16 +5774,16 @@
                 </div>`);
 
             sections.push((analysis && analysis.final_recommendation) ? `
-                <div class="print-card relative overflow-hidden p-6 rounded-2xl shadow-lg" style="background: linear-gradient(135deg, #1e3a8a 0%, #4c1d95 100%);">
-                    <div class="absolute -top-10 -left-10 h-40 w-40 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(251,191,36,.25), transparent 70%);"></div>
+                <div class="print-card lg:col-span-1 relative overflow-hidden p-6 rounded-2xl shadow-lg flex flex-col justify-center" style="background: linear-gradient(160deg, #0f2557 0%, #1e3a8a 45%, #4c1d95 100%);">
+                    <div class="absolute -bottom-12 -left-12 h-44 w-44 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(251,191,36,.22), transparent 70%);"></div>
                     <div class="relative space-y-3">
                         <h3 class="text-sm font-bold text-[#ffffff] flex items-center gap-2">${iconSvg('trendingUp', 'w-4 h-4')} ۷. جمع‌بندی اجرایی</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-                            <div class="bg-white/10 rounded-xl p-3 text-center"><p class="text-[10px]" style="color:rgba(219,234,254,.85)">راهکار منتخب</p><p class="text-xs font-bold text-[#ffffff] mt-1">${esc(decidedCase?.title || '-')}</p></div>
-                            <div class="bg-white/10 rounded-xl p-3 text-center"><p class="text-[10px]" style="color:rgba(219,234,254,.85)">اثر مورد انتظار</p><p class="text-xs font-bold text-[#ffffff] mt-1">${esc(decidedCase?.expected_result || '-')}</p></div>
-                            <div class="bg-white/10 rounded-xl p-3 text-center"><p class="text-[10px]" style="color:rgba(219,234,254,.85)">درخواست از مدیرعامل</p><p class="text-xs font-bold text-[#ffffff] mt-1">${esc(execDecisionText((analysis.executive_decisions_needed || [])[0]) || '-')}</p></div>
+                        <div class="grid grid-cols-1 gap-2">
+                            <div class="bg-white/10 rounded-xl p-2.5 flex items-center gap-2"><span class="shrink-0">${iconSvg('target', 'w-4 h-4 text-[#fbbf24]')}</span><div><p class="text-[9px]" style="color:rgba(219,234,254,.85)">راهکار منتخب</p><p class="text-[11px] font-bold text-[#ffffff]">${esc(decidedCase?.title || '-')}</p></div></div>
+                            <div class="bg-white/10 rounded-xl p-2.5 flex items-center gap-2"><span class="shrink-0">${iconSvg('trendingUp', 'w-4 h-4 text-[#fbbf24]')}</span><div><p class="text-[9px]" style="color:rgba(219,234,254,.85)">اثر مورد انتظار</p><p class="text-[11px] font-bold text-[#ffffff]">${esc(decidedCase?.expected_result || '-')}</p></div></div>
+                            <div class="bg-white/10 rounded-xl p-2.5 flex items-center gap-2"><span class="shrink-0">${iconSvg('checkCircle', 'w-4 h-4 text-[#fbbf24]')}</span><div><p class="text-[9px]" style="color:rgba(219,234,254,.85)">درخواست از مدیرعامل</p><p class="text-[11px] font-bold text-[#ffffff]">${esc(execDecisionText((analysis.executive_decisions_needed || [])[0]) || '-')}</p></div></div>
                         </div>
-                        <p class="text-xs leading-relaxed text-[#ffffff] bg-white/10 rounded-xl p-3">${esc(analysis.final_recommendation)}</p>
+                        <p class="text-[11px] leading-relaxed text-[#ffffff] bg-white/10 rounded-xl p-3">${esc(analysis.final_recommendation)}</p>
                     </div>
                 </div>` : '');
 
