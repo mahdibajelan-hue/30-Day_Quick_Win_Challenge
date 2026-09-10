@@ -944,7 +944,7 @@
                         <h3 class="text-sm font-bold">پیشرفت فیزیکی پروژه‌ها</h3>
                         <p class="text-[11px] text-slate-400 leading-relaxed">میانگین % پیشرفت فیزیکی خود پروژه (نه اقدامات زودبازده)، گزارش‌شده توسط کارفرما، مشاور و پیمانکار در فرم اطلاعات تکمیلی</p>
                         <div id="ovProjectProgressList" class="space-y-3 max-h-52 overflow-y-auto scroll-thin pl-1"></div>
-                        <button type="button" onclick="switchView('tasks')" class="text-xs text-blue-900 font-bold hover:underline">‹ مشاهده پایش تسک‌ها</button>
+                        <button type="button" onclick="switchView('tasks')" class="text-xs text-blue-900 font-bold hover:underline">‹ مشاهده پایش اقدامات</button>
                     </div>
 
                     <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
@@ -1129,7 +1129,7 @@
                                 <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
                             </span>
                             <div>
-                                <h2 class="text-lg font-extrabold text-slate-800">Task Control Tower</h2>
+                                <h2 class="text-lg font-extrabold text-slate-800">پایش اقدامات</h2>
                                 <p class="text-xs text-slate-500 mt-0.5">مرکز پایش، تحلیل و پیگیری تسک‌های اجرایی پروژه</p>
                             </div>
                         </div>
@@ -1143,12 +1143,26 @@
                 </div>
 
                 <div class="no-print bg-white rounded-2xl shadow-sm border p-4 space-y-3">
-                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 text-xs">
-                        <div><label class="block text-[10px] font-bold text-slate-500 mb-1">پروژه</label><select id="taskFilterProject" multiple class="w-full border rounded-lg p-1 h-20 bg-white"></select></div>
-                        <div><label class="block text-[10px] font-bold text-slate-500 mb-1">واحد مسئول</label><select id="taskFilterUnit" multiple class="w-full border rounded-lg p-1 h-20 bg-white"></select></div>
-                        <div><label class="block text-[10px] font-bold text-slate-500 mb-1">شدت (Priority/Severity)</label><select id="taskFilterSeverity" multiple class="w-full border rounded-lg p-1 h-20 bg-white"></select></div>
-                        <div><label class="block text-[10px] font-bold text-slate-500 mb-1">وضعیت</label><select id="taskFilterStatus" multiple class="w-full border rounded-lg p-1 h-20 bg-white"></select></div>
-                        <div><label class="block text-[10px] font-bold text-slate-500 mb-1">مسئول پیگیری</label><select id="taskFilterPerson" multiple class="w-full border rounded-lg p-1 h-20 bg-white"></select></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 mb-1">پروژه</label>
+                            <select id="taskFilterProject" multiple class="w-full border rounded-lg p-1.5 h-32 bg-white text-xs"></select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 mb-1">جستجو در تسک‌ها (عنوان، پروژه، اقدام مرتبط، مسئول)</label>
+                            <div class="relative">
+                                <input id="taskFilterSearch" type="text" placeholder="برای جستجوی سریع تایپ کنید..." class="w-full border rounded-lg p-2.5 pr-8 text-xs">
+                                <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">🔍</span>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1">جستجو بلافاصله اعمال می‌شود و مستقل از فیلترهای زیر، همه تسک‌های مطابق را پیدا می‌کند.</p>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-slate-400 border-t pt-2">برای انتخاب هم‌زمان چند مورد در فیلترهای زیر، کلید Ctrl (یا ⌘ در مک) را هنگام کلیک نگه دارید.</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                        <div><label class="block text-[10px] font-bold text-slate-500 mb-1">واحد مسئول</label><select id="taskFilterUnit" multiple class="w-full border rounded-lg p-1 h-24 bg-white"></select></div>
+                        <div><label class="block text-[10px] font-bold text-slate-500 mb-1">شدت (Priority/Severity)</label><select id="taskFilterSeverity" multiple class="w-full border rounded-lg p-1 h-24 bg-white"></select></div>
+                        <div><label class="block text-[10px] font-bold text-slate-500 mb-1">وضعیت</label><select id="taskFilterStatus" multiple class="w-full border rounded-lg p-1 h-24 bg-white"></select></div>
+                        <div><label class="block text-[10px] font-bold text-slate-500 mb-1">مسئول پیگیری</label><select id="taskFilterPerson" multiple class="w-full border rounded-lg p-1 h-24 bg-white"></select></div>
                     </div>
                     <div class="flex flex-wrap items-end gap-3 pt-2 border-t text-xs">
                         <label class="flex items-center gap-1.5 font-bold text-red-700"><input type="checkbox" id="taskFilterOverdueOnly"> فقط معوق‌ها</label>
@@ -1163,10 +1177,47 @@
 
                 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5" id="taskKpiRow"></div>
 
+                <div class="print-card rounded-2xl shadow-lg overflow-hidden">
+                    <div class="p-4 relative overflow-hidden" style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);">
+                        <div class="absolute -top-10 -left-10 h-36 w-36 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(255,255,255,.18), transparent 70%);"></div>
+                        <div class="relative flex items-center justify-between flex-wrap gap-2.5">
+                            <div class="flex items-center gap-2.5">
+                                <span class="shrink-0 h-10 w-10 rounded-xl bg-white/15 flex items-center justify-center text-white">
+                                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                </span>
+                                <div>
+                                    <h3 class="text-sm font-extrabold text-white">مرکز اقدام فوری</h3>
+                                    <p class="text-[11px] text-red-100">موارد نیازمند پیگیری فوری — معوق، نزدیک به سررسید، یا شروع‌نشده</p>
+                                </div>
+                            </div>
+                            <div class="no-print flex gap-1 text-[11px]" id="taskActionTabs"></div>
+                        </div>
+                    </div>
+                    <div id="taskActionCenterBody" class="p-4 space-y-1.5"></div>
+                </div>
+
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800">کل تسک‌ها</h3>
+                            <p class="text-[11px] text-slate-500 mt-0.5">همه تسک‌های مطابق فیلترهای بالا در یک جدول — تسک‌های انجام‌شده با خط ظریف مشخص شده‌اند.</p>
+                        </div>
+                        <span id="allTasksTableCount" class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-full shrink-0"></span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs">
+                            <thead class="bg-slate-100 text-slate-600">
+                                <tr><th class="p-2.5">عنوان تسک</th><th class="p-2.5">شدت</th><th class="p-2.5">مهلت</th><th class="p-2.5">وضعیت</th></tr>
+                            </thead>
+                            <tbody id="allTasksTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                     <div>
-                        <h3 class="text-sm font-bold text-slate-800">تسک‌های هر پروژه</h3>
-                        <p class="text-[11px] text-slate-500 mt-0.5">وضعیت اقدام زودبازده/میان‌مدت هر پروژه به‌همراه جدول کامل تسک‌های آن — تسک‌های انجام‌شده با خط ظریف مشخص شده‌اند.</p>
+                        <h3 class="text-sm font-bold text-slate-800">وضعیت اقدامات زودبازده و میان‌مدت</h3>
+                        <p class="text-[11px] text-slate-500 mt-0.5">پیشرفت هر اقدام، امکان بروزرسانی وضعیت، و ثبت نتیجه نهایی پس از تکمیل.</p>
                     </div>
                     <div id="taskProjectCardsBody" class="space-y-4"></div>
                 </div>
@@ -1236,12 +1287,6 @@
                         <div class="no-print flex gap-1 text-[10px]" id="taskTrendGranularityBtns"></div>
                     </div>
                     <div style="height:220px"><canvas id="taskTrendChart"></canvas></div>
-                </div>
-
-                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
-                    <h3 class="text-sm font-bold text-slate-800">Action Center</h3>
-                    <div class="no-print flex gap-1 border-b text-xs" id="taskActionTabs"></div>
-                    <div id="taskActionCenterBody" class="space-y-1.5 pt-1"></div>
                 </div>
 
                 <div class="print-card rounded-2xl shadow-sm p-5 space-y-2.5" style="background: linear-gradient(135deg, #1e3a8a 0%, #4c1d95 100%);">
@@ -1776,10 +1821,10 @@
             mobileNav.innerHTML = '';
 
             const buttons = currentProfile.role === 'admin'
-                ? [['overview', 'نمای کلی'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب اقدام زودبازده'], ['tasks', 'پایش تسک‌ها'], ['execReport', 'گزارش تحلیلی مدیریتی'], ['admin', 'مدیریت کاربران']]
+                ? [['overview', 'نمای کلی'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب اقدام زودبازده'], ['tasks', 'پایش اقدامات'], ['execReport', 'گزارش تحلیلی مدیریتی'], ['admin', 'مدیریت کاربران']]
                 : hasOrganization('کارفرما')
-                    ? [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['selection', 'پیشنهادها'], ['tasks', 'پایش تسک‌ها']]
-                    : [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['tasks', 'پایش تسک‌ها']];
+                    ? [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['selection', 'پیشنهادها'], ['tasks', 'پایش اقدامات']]
+                    : [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['tasks', 'پایش اقدامات']];
 
             buttons.forEach(([view, label], i) => {
                 const iconName = NAV_ICON[view] || 'grid';
@@ -4855,12 +4900,12 @@
             }
 
             // Selected/میان‌مدت proposals are exactly the ones that can now
-            // have execution tasks defined on them (پایش تسک‌ها) — offer a
+            // have execution tasks defined on them (پایش اقدامات) — offer a
             // direct jump there instead of just a plain "saved" alert, so
             // defining the first task doesn't need a separate manual detour
             // through the sidebar.
             if (isNewlySelected || isNewlyMediumTerm) {
-                if (confirm('ارزیابی با موفقیت ثبت شد.\n\nبرای تعریف تسک‌های اجرایی این اقدام به صفحه «پایش تسک‌ها» بروید؟')) {
+                if (confirm('ارزیابی با موفقیت ثبت شد.\n\nبرای تعریف تسک‌های اجرایی این اقدام به صفحه «پایش اقدامات» بروید؟')) {
                     jumpToTaskTower(prop.id);
                     return;
                 }
@@ -5191,7 +5236,7 @@
 
         // Deliberately just a handful of portfolio-wide aggregates in one
         // compact card — no per-project breakdown here anymore (that now
-        // lives in the single-project poster report and Task Control Tower).
+        // lives in the single-project poster report and پایش اقدامات).
         function execPortfolioSummaryHtml({ totalProjects, green, yellow, red, identified, closed, timeSaved, costAvoided }) {
             const tile = (iconName, accent, value, label) => `
                 <div class="bg-white/10 rounded-xl p-3 flex items-center gap-2.5">
@@ -5871,7 +5916,7 @@
             .forEach(id => attachJalaliDatePicker(document.getElementById(id)));
 
         // ============================================================
-        // TASK CONTROL TOWER (پایش تسک‌ها)
+        // پایش اقدامات (TASK CONTROL TOWER)
         // ============================================================
         // Points at the EXISTING execution-task model (case_updates where
         // kind='task') rather than a separate entity — this dashboard used
@@ -5911,7 +5956,7 @@
         let taskCasesCache = [];
         let taskProgressByCase = {};
         let taskUsersByProject = {};
-        let taskFilters = { projects: [], units: [], severities: [], statuses: [], people: [], overdueOnly: false, dueSoonOnly: false, dateFrom: null, dateTo: null };
+        let taskFilters = { projects: [], units: [], severities: [], statuses: [], people: [], overdueOnly: false, dueSoonOnly: false, dateFrom: null, dateTo: null, search: '' };
         let taskActionTab = 'overdue';
         let taskTrendGranularity = 'monthly';
         let taskProjectSort = 'total';
@@ -5985,6 +6030,19 @@
             renderAllTaskSections();
         }
 
+        // Free-text fallback alongside the structured dropdown filters — a
+        // native <select multiple> is easy to misuse (a plain click on a
+        // second option silently replaces the first instead of adding to
+        // it, unless the user holds Ctrl/Cmd), so this gives a reliable way
+        // to find a task by typing regardless of whether a dropdown ended
+        // up in a state the user didn't intend. Matches across every field
+        // a person might search by, with Persian/Latin digits normalized.
+        function taskMatchesSearch(t, query) {
+            if (!query) return true;
+            const haystack = [t.title, t.project_name, t.case_title, t.responsible_name, t.responsible_unit, t.severity, t.task_status].filter(Boolean).join(' ');
+            return toLatinDigits(haystack).toLowerCase().includes(toLatinDigits(query).toLowerCase());
+        }
+
         function computeFilteredTasks() {
             return allTasksRaw.filter(t => {
                 if (taskFilters.projects.length && !taskFilters.projects.includes(t.project_name)) return false;
@@ -5996,6 +6054,7 @@
                 if (taskFilters.dueSoonOnly && !isTaskDueSoon(t)) return false;
                 if (taskFilters.dateFrom && t.created_at < taskFilters.dateFrom) return false;
                 if (taskFilters.dateTo && t.created_at > taskFilters.dateTo + 'T23:59:59') return false;
+                if (!taskMatchesSearch(t, taskFilters.search.trim())) return false;
                 return true;
             });
         }
@@ -6019,6 +6078,7 @@
             sync('taskFilterPerson', taskFilters.people);
             document.getElementById('taskFilterOverdueOnly').checked = taskFilters.overdueOnly;
             document.getElementById('taskFilterDueSoonOnly').checked = taskFilters.dueSoonOnly;
+            document.getElementById('taskFilterSearch').value = taskFilters.search;
         }
 
         function readTaskFiltersFromForm() {
@@ -6032,10 +6092,11 @@
             taskFilters.dueSoonOnly = document.getElementById('taskFilterDueSoonOnly').checked;
             taskFilters.dateFrom = jalaliInputToIso(document.getElementById('taskFilterDateFrom').value) || null;
             taskFilters.dateTo = jalaliInputToIso(document.getElementById('taskFilterDateTo').value) || null;
+            taskFilters.search = document.getElementById('taskFilterSearch').value;
         }
 
         function clearAllTaskFilters() {
-            taskFilters = { projects: [], units: [], severities: [], statuses: [], people: [], overdueOnly: false, dueSoonOnly: false, dateFrom: null, dateTo: null };
+            taskFilters = { projects: [], units: [], severities: [], statuses: [], people: [], overdueOnly: false, dueSoonOnly: false, dateFrom: null, dateTo: null, search: '' };
             document.getElementById('taskFilterDateFrom').value = '';
             document.getElementById('taskFilterDateTo').value = '';
             syncTaskFilterSelectsFromState();
@@ -6054,22 +6115,23 @@
             if (taskFilters.dueSoonOnly) chips.push({ text: 'فقط نزدیک سررسید', remove: () => { taskFilters.dueSoonOnly = false; } });
             if (taskFilters.dateFrom) chips.push({ text: 'از ' + formatJalali(taskFilters.dateFrom), remove: () => { taskFilters.dateFrom = null; document.getElementById('taskFilterDateFrom').value = ''; } });
             if (taskFilters.dateTo) chips.push({ text: 'تا ' + formatJalali(taskFilters.dateTo), remove: () => { taskFilters.dateTo = null; document.getElementById('taskFilterDateTo').value = ''; } });
+            if (taskFilters.search.trim()) chips.push({ text: '🔍 ' + taskFilters.search.trim(), remove: () => { taskFilters.search = ''; document.getElementById('taskFilterSearch').value = ''; } });
 
             if (!chips.length) { el.innerHTML = '<span class="text-slate-400">فیلتری فعال نیست.</span>'; return; }
             el.innerHTML = chips.map((c, idx) => `<span class="bg-slate-100 text-slate-700 px-2 py-1 rounded-full flex items-center gap-1">${esc(c.text)}<button type="button" data-idx="${idx}" class="task-chip-remove font-bold text-slate-400 hover:text-red-600">×</button></span>`).join('');
             el.querySelectorAll('.task-chip-remove').forEach((btn, idx) => btn.addEventListener('click', () => { chips[idx].remove(); syncTaskFilterSelectsFromState(); renderAllTaskSections(); }));
         }
 
-        // Per-project/case operational view — a Quick Win or اقدام میان‌مدت's
-        // own status/progress (previously the whole point of پیگیری اجرای
-        // اقدامات زودبازده, now retired) plus, new, a full table of every
-        // task under it with a strikethrough on completed ones. `filtered`
-        // only narrows which TASKS show in each table (so severity/unit/
-        // status/person/date filters stay meaningful here); the set of
-        // cases itself only responds to the project filter, since a case's
-        // own progress tracking isn't something a task-attribute filter
-        // should hide.
-        function renderTaskProjectCards(filtered) {
+        // Per-case Quick Win / اقدام میان‌مدت progress tracking — ported from
+        // the now-retired پیگیری اجرای اقدامات زودبازده page. Drives
+        // cases.status (انتخاب‌شده → در حال اجرا → بسته‌شده, read
+        // throughout the app) and is the only place a case's actual
+        // realized value gets recorded once closed. Scoped to the project
+        // filter only — a case's own progress tracking isn't something a
+        // task-attribute filter should hide. The task list itself now
+        // lives in the single flat table below (renderAllTasksTable)
+        // instead of a nested table per case.
+        function renderCaseProgressCards() {
             const container = document.getElementById('taskProjectCardsBody');
             const isAdmin = currentProfile.role === 'admin';
 
@@ -6114,31 +6176,6 @@
                         <span class="text-slate-400">- ${esc(l.reported_by || '')}</span>
                     </div>`).join('')}</div>` : '';
 
-                const caseTasks = filtered.filter(t => t.case_id === dec.id).sort((a, b) => (a.due_date || '') < (b.due_date || '') ? -1 : 1);
-                const doneTaskCount = caseTasks.filter(t => t.task_status === 'انجام‌شده').length;
-                const taskTableHtml = caseTasks.length ? `
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-right text-[11px]">
-                            <thead class="bg-slate-100 text-slate-600">
-                                <tr><th class="p-2 border">عنوان تسک</th><th class="p-2 border">مسئول</th><th class="p-2 border">مهلت</th><th class="p-2 border">وضعیت</th></tr>
-                            </thead>
-                            <tbody>
-                                ${caseTasks.map(t => {
-                                    const tDone = t.task_status === 'انجام‌شده';
-                                    const tOverdue = isTaskOverdue(t);
-                                    const statusCls = tDone ? 'bg-emerald-100 text-emerald-800' : tOverdue ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-700';
-                                    const statusText = tDone ? '✅ انجام‌شده' : tOverdue ? `⏰ ${toPersianDigits(taskOverdueDays(t))} روز تأخیر` : esc(t.task_status);
-                                    return `<tr class="task-table-row cursor-pointer hover:bg-slate-50" data-task-id="${t.id}">
-                                        <td class="p-2 border font-bold ${tDone ? 'line-through text-slate-400' : ''}">${esc(t.title)}</td>
-                                        <td class="p-2 border">${esc(t.responsible_name || '-')}</td>
-                                        <td class="p-2 border">${t.due_date ? formatJalali(t.due_date) : '-'}</td>
-                                        <td class="p-2 border"><span class="px-1.5 py-0.5 rounded-md font-bold ${statusCls}">${statusText}</span></td>
-                                    </tr>`;
-                                }).join('')}
-                            </tbody>
-                        </table>
-                    </div>` : '<p class="text-[11px] text-slate-400 text-center py-2">تسکی مطابق فیلتر فعلی برای این اقدام ثبت نشده.</p>';
-
                 return `<div class="border rounded-2xl border-slate-200 p-4 space-y-3" data-case-id="${dec.id}">
                     <div class="flex justify-between items-center flex-wrap gap-2">
                         <div>
@@ -6179,11 +6216,6 @@
                         </div>
                         <button type="button" class="save-actual-value-btn w-full bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg py-1.5 font-bold text-xs">ثبت نتیجه نهایی</button>
                     </div>` : ''}
-
-                    <div class="pt-3 border-t">
-                        <p class="text-xs font-bold text-slate-700 mb-2">🗂 تسک‌های این اقدام (${toPersianDigits(doneTaskCount)} از ${toPersianDigits(caseTasks.length)} انجام‌شده)</p>
-                        ${taskTableHtml}
-                    </div>
                 </div>`;
             }).join('');
 
@@ -6208,8 +6240,49 @@
                         });
                     }
                 }
-                cardEl.querySelectorAll('.task-table-row').forEach(tr => tr.addEventListener('click', () => openTaskDrawer(Number(tr.dataset.taskId))));
             });
+        }
+
+        // One flat, searchable table of every filtered task — replaces the
+        // old nested per-case tables so "find a task" doesn't depend on
+        // first finding the right project's card. The title (struck
+        // through once done) is the primary line; everything else that
+        // used to need its own column — project, related Quick Win,
+        // responsible person, unit — sits as a single muted line under it,
+        // since only status and due date need to be independently
+        // scannable at a glance.
+        function renderAllTasksTable(filtered) {
+            const container = document.getElementById('allTasksTableBody');
+            document.getElementById('allTasksTableCount').textContent = `${toPersianDigits(filtered.length)} تسک`;
+
+            if (!filtered.length) {
+                container.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400 text-xs">هیچ تسکی مطابق فیلتر فعلی یافت نشد.</td></tr>';
+                return;
+            }
+
+            const sorted = filtered.slice().sort((a, b) => (a.due_date || '9999') < (b.due_date || '9999') ? -1 : 1);
+            container.innerHTML = sorted.map(t => {
+                const isDone = t.task_status === 'انجام‌شده';
+                const overdue = isTaskOverdue(t);
+                const statusCls = isDone ? 'bg-emerald-100 text-emerald-800' : overdue ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-700';
+                const statusText = isDone ? '✅ انجام‌شده' : overdue ? `⏰ ${toPersianDigits(taskOverdueDays(t))} روز تأخیر` : esc(t.task_status);
+                const metaParts = [
+                    t.project_name ? `📁 ${esc(t.project_name)}` : '',
+                    t.case_title ? `🎯 ${esc(t.case_title)}` : '',
+                    t.responsible_name ? `👤 ${esc(t.responsible_name)}` : '',
+                    t.responsible_unit ? `🏷 ${esc(t.responsible_unit)}` : '',
+                ].filter(Boolean).join('  ·  ');
+                return `<tr class="task-table-row cursor-pointer hover:bg-slate-50 border-b border-slate-100" data-task-id="${t.id}">
+                    <td class="p-2.5">
+                        <p class="font-bold text-slate-800 ${isDone ? 'line-through text-slate-400' : ''}">${esc(t.title)}</p>
+                        ${metaParts ? `<p class="text-[10px] text-slate-400 mt-0.5">${metaParts}</p>` : ''}
+                    </td>
+                    <td class="p-2.5 whitespace-nowrap">${aiSevBadge(t.severity)}</td>
+                    <td class="p-2.5 text-xs text-slate-600 whitespace-nowrap">${t.due_date ? formatJalali(t.due_date) : '-'}</td>
+                    <td class="p-2.5 whitespace-nowrap"><span class="px-1.5 py-0.5 rounded-md font-bold text-[11px] ${statusCls}">${statusText}</span></td>
+                </tr>`;
+            }).join('');
+            container.querySelectorAll('.task-table-row').forEach(tr => tr.addEventListener('click', () => openTaskDrawer(Number(tr.dataset.taskId))));
         }
 
         function renderTaskKpis(filtered) {
@@ -6409,8 +6482,8 @@
 
         function renderTaskActionCenter(filtered) {
             const tabsEl = document.getElementById('taskActionTabs');
-            const tabs = [['overdue', 'Overdue'], ['dueSoon', 'Due Soon'], ['notStarted', 'Not Started']];
-            tabsEl.innerHTML = tabs.map(([key, label]) => `<button type="button" data-tab="${key}" class="px-3 py-1.5 font-bold ${taskActionTab === key ? 'text-red-700 border-b-2 border-red-600' : 'text-slate-400'}">${label}</button>`).join('');
+            const tabs = [['overdue', 'معوق'], ['dueSoon', 'نزدیک سررسید'], ['notStarted', 'شروع‌نشده']];
+            tabsEl.innerHTML = tabs.map(([key, label]) => `<button type="button" data-tab="${key}" class="px-3 py-1.5 rounded-lg font-bold transition ${taskActionTab === key ? 'bg-white text-red-700' : 'text-red-100 hover:bg-white/10'}">${label}</button>`).join('');
             tabsEl.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { taskActionTab = b.dataset.tab; renderTaskActionCenter(computeFilteredTasks()); }));
 
             let rows;
@@ -6473,8 +6546,10 @@
         function renderAllTaskSections() {
             const filtered = computeFilteredTasks();
             renderActiveTaskFilterChips();
-            renderTaskProjectCards(filtered);
             renderTaskKpis(filtered);
+            renderTaskActionCenter(filtered);
+            renderAllTasksTable(filtered);
+            renderCaseProgressCards();
             renderStatusDonut('taskStatusDonut', 'taskStatusDonutCenter', 'taskStatusLegend', TASK_STATUSES.map(s => ({ label: s, value: filtered.filter(t => t.task_status === s).length, color: TASK_STATUS_COLOR[s] })));
             renderTaskSeverityChart(filtered);
             renderTaskAgingChart(filtered);
@@ -6482,7 +6557,6 @@
             renderTaskResponsibilityCharts(filtered);
             renderTaskProjectComparison(filtered);
             renderTaskTrend(filtered);
-            renderTaskActionCenter(filtered);
             renderTaskAiInsight(filtered);
         }
 
@@ -6500,6 +6574,12 @@
             document.getElementById('newTaskSubmitBtn').addEventListener('click', submitNewTask);
             document.getElementById('newTaskProject').addEventListener('change', onNewTaskProjectChange);
             document.getElementById('taskDrawerOverlay').addEventListener('click', closeTaskDrawer);
+            // Search applies live as the user types — unlike the dropdown
+            // filters, which need an explicit "اعمال فیلتر" click.
+            document.getElementById('taskFilterSearch').addEventListener('input', (e) => {
+                taskFilters.search = e.target.value;
+                renderAllTaskSections();
+            });
 
             const granBtnsEl = document.getElementById('taskTrendGranularityBtns');
             const granOptions = [['daily', 'روزانه'], ['weekly', 'هفتگی'], ['monthly', 'ماهانه'], ['quarterly', 'فصلی']];
