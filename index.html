@@ -189,6 +189,17 @@
             #projectsReportModal h1, #projectsReportModal h2, #projectsReportModal h3, #projectsReportModal p, #projectsReportModal span, #projectsReportModal td, #projectsReportModal th, #projectsReportModal b { color: #111 !important; }
             #taskDrawerOverlay, #taskDrawerOverlay *, #newTaskModal, #newTaskModal * { display: none !important; }
             .print-card { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: avoid; }
+            /* The single-project poster report uses Tailwind's lg: breakpoint
+               (min-width:1024px) for its 3-column card grid — printers/PDF
+               export resolve that media query against the paper's CSS width
+               (~750-820px for A4/Letter), which is narrower than 1024px, so
+               lg:grid-cols-3/lg:col-span-2 silently stop applying on paper
+               and the cards fall back to a single stacked column. Force a
+               fixed, breakpoint-independent 2-column print grid instead so
+               the layout stays dense and predictable on paper regardless of
+               how a given browser sizes its print viewport. */
+            #execSingleProjectContent { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; align-items: start !important; gap: 10px !important; }
+            #execSingleProjectContent .exec-sp-print-full { grid-column: 1 / -1 !important; }
             /* The modal's own flex-centering and 90vh scroll box only make
                sense on screen — on paper they'd clip the table to one
                screen-height instead of flowing it across pages. */
@@ -1109,14 +1120,10 @@
 
                 <div class="no-print bg-white rounded-2xl shadow-sm border p-4 space-y-2">
                     <p class="text-xs font-bold text-slate-700">🖼 گزارش مصور یک پروژه</p>
-                    <p class="text-[11px] text-slate-500">یک پروژه را انتخاب کنید تا به‌جای جدول پورتفولیو، یک گزارش مصور یک‌صفحه‌ای (نمای کلی، سه رکن اصلی، اقدام زودبازده منتخب، نقشه راه، رادار ریسک، تصمیمات مدیرعامل و جمع‌بندی) مخصوص همان پروژه ساخته شود — بر اساس آخرین تحلیل هوشمند ذخیره‌شده‌ی آن.</p>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+                    <p class="text-[11px] text-slate-500">یک پروژه را انتخاب کنید تا به‌جای جدول پورتفولیو، یک گزارش مصور یک‌صفحه‌ای (نمای کلی، سه رکن اصلی، اقدام زودبازده منتخب، نقشه راه، رادار ریسک، تصمیمات مدیرعامل و جمع‌بندی) مخصوص همان پروژه ساخته شود — بر اساس آخرین «تحلیل هوشمند» ذخیره‌شده‌ی آن، بدون فراخوانی دوباره‌ی AI (فقط جایگذاری اطلاعات همان تحلیل).</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
                         <select id="execSpProjectSelect" class="p-2.5 border rounded-xl text-sm md:col-span-2">
                             <option value="">-- بازگشت به گزارش پورتفولیو --</option>
-                        </select>
-                        <select id="execSpProviderSelect" class="p-2.5 border rounded-xl text-sm">
-                            <option value="gemini">Gemini (رایگان)</option>
-                            <option value="openai">ChatGPT</option>
                         </select>
                         <button type="button" id="execSpGenerateBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 rounded-xl transition shadow flex items-center justify-center gap-2">
                             <svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z"/></svg> تولید گزارش مصور
@@ -1124,7 +1131,9 @@
                     </div>
                 </div>
 
-                <div id="execSingleProjectContent" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-4"></div>
+                <div id="execSpMeta" class="hidden no-print bg-purple-50 border border-purple-100 rounded-xl px-3 py-2 text-[11px] text-purple-900 flex items-center justify-between flex-wrap gap-2"></div>
+
+                <div id="execSingleProjectContent" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-4 items-start"></div>
 
                 <div id="execPortfolioContent" class="space-y-6">
                 <div class="print-card bg-white rounded-2xl shadow-sm border p-8 space-y-6">
@@ -5372,6 +5381,7 @@
             // below when its options get rebuilt.)
             document.getElementById('execSingleProjectContent').classList.add('hidden');
             document.getElementById('execSingleProjectContent').innerHTML = '';
+            document.getElementById('execSpMeta').classList.add('hidden');
             document.getElementById('execPortfolioContent').classList.remove('hidden');
 
             const { data: projects } = await _supabase.from('projects').select('*').order('name');
@@ -5488,14 +5498,14 @@
 
         document.getElementById('execSpGenerateBtn').addEventListener('click', () => {
             const projectName = document.getElementById('execSpProjectSelect').value;
-            const provider = document.getElementById('execSpProviderSelect').value;
             if (!projectName) {
                 document.getElementById('execSingleProjectContent').classList.add('hidden');
                 document.getElementById('execSingleProjectContent').innerHTML = '';
+                document.getElementById('execSpMeta').classList.add('hidden');
                 document.getElementById('execPortfolioContent').classList.remove('hidden');
                 return;
             }
-            loadSingleProjectExecReport(projectName, provider);
+            loadSingleProjectExecReport(projectName);
         });
 
         function execSpAiEmptyStateHtml() {
@@ -5585,16 +5595,22 @@
         // (cache-only here: never forces a fresh AI call), plus client_reports
         // and cases, to build the 7 sections of the reference layout without
         // fabricating anything a project doesn't actually have yet.
-        async function loadSingleProjectExecReport(projectName, provider) {
+        async function loadSingleProjectExecReport(projectName) {
             const container = document.getElementById('execSingleProjectContent');
             document.getElementById('execPortfolioContent').classList.add('hidden');
             container.classList.remove('hidden');
             container.innerHTML = '<p class="text-center text-slate-400 p-6">در حال ساخت گزارش مصور...</p>';
+            document.getElementById('execSpMeta').classList.add('hidden');
 
+            // This report never calls the AI edge function itself — it only
+            // reads back whatever «تحلیل هوشمند» already saved to ai_analyses
+            // (any provider, whichever is freshest) and lays it out. Getting
+            // a fresh AI read happens exclusively on the aiReportView page,
+            // via its own explicit «تولید مجدد بدون کش» button.
             const [{ data: clientReports }, { data: allCases }, { data: cachedAi }] = await Promise.all([
                 _supabase.from('client_reports').select('*').eq('project_name', projectName).order('created_at', { ascending: false }).limit(1),
                 _supabase.from('cases').select('*').eq('project_name', projectName).order('proposed_at', { ascending: false }),
-                _supabase.from('ai_analyses').select('analysis_json, created_at').eq('project_name', projectName).eq('provider', provider).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+                _supabase.from('ai_analyses').select('analysis_json, created_at, provider').eq('project_name', projectName).order('created_at', { ascending: false }).limit(1).maybeSingle(),
             ]);
 
             const cr = (clientReports && clientReports[0]) || null;
@@ -5602,6 +5618,17 @@
             if (cachedAi && cachedAi.analysis_json) {
                 analysis = cachedAi.analysis_json;
                 if (typeof analysis === 'string') { try { analysis = JSON.parse(analysis); } catch (e) { analysis = null; } }
+            }
+            const provider = (cachedAi && cachedAi.provider) || 'gemini';
+
+            const metaEl = document.getElementById('execSpMeta');
+            if (cachedAi) {
+                metaEl.classList.remove('hidden');
+                metaEl.innerHTML = `<span>🕓 بر اساس تحلیل هوشمند ذخیره‌شده در ${formatJalali(cachedAi.created_at)} (${provider === 'openai' ? 'ChatGPT' : 'Gemini'}) — بدون فراخوانی دوباره‌ی AI</span><button type="button" class="font-bold text-purple-700 underline">🔄 بروزرسانی تحلیل در صورت تغییر اطلاعات ورودی</button>`;
+                metaEl.querySelector('button').addEventListener('click', () => showAiReport(projectName, provider, 'execReport'));
+            } else {
+                metaEl.classList.add('hidden');
+                metaEl.innerHTML = '';
             }
 
             const latestByOrg = {};
@@ -5628,7 +5655,7 @@
             const sections = [];
 
             sections.push(`
-                <div class="print-card lg:col-span-1 relative overflow-hidden p-6 rounded-2xl shadow-lg flex flex-col justify-between" style="background: linear-gradient(160deg, #0f2557 0%, #1e3a8a 45%, #4c1d95 100%); min-height:200px;">
+                <div class="print-card exec-sp-print-full lg:col-span-1 relative overflow-hidden p-6 rounded-2xl shadow-lg flex flex-col justify-between" style="background: linear-gradient(160deg, #0f2557 0%, #1e3a8a 45%, #4c1d95 100%); min-height:200px;">
                     <div class="absolute -top-12 -left-12 h-44 w-44 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(251,191,36,.22), transparent 70%);"></div>
                     <div class="absolute inset-0 pointer-events-none opacity-20" style="background-image: repeating-linear-gradient(115deg, transparent 0 18px, rgba(255,255,255,.5) 18px 19px);"></div>
                     <div class="relative flex items-center justify-between gap-2">
@@ -5773,19 +5800,21 @@
                     </div>` : execSpAiEmptyStateHtml()}
                 </div>`);
 
-            sections.push((analysis && analysis.final_recommendation) ? `
-                <div class="print-card lg:col-span-1 relative overflow-hidden p-6 rounded-2xl shadow-lg flex flex-col justify-center" style="background: linear-gradient(160deg, #0f2557 0%, #1e3a8a 45%, #4c1d95 100%);">
+            sections.push(`
+                <div class="print-card exec-sp-print-full lg:col-span-1 relative overflow-hidden p-6 rounded-2xl shadow-lg flex flex-col justify-center" style="background: linear-gradient(160deg, #0f2557 0%, #1e3a8a 45%, #4c1d95 100%);">
                     <div class="absolute -bottom-12 -left-12 h-44 w-44 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(251,191,36,.22), transparent 70%);"></div>
                     <div class="relative space-y-3">
                         <h3 class="text-sm font-bold text-[#ffffff] flex items-center gap-2">${iconSvg('trendingUp', 'w-4 h-4')} ۷. جمع‌بندی اجرایی</h3>
+                        ${(analysis && analysis.final_recommendation) ? `
                         <div class="grid grid-cols-1 gap-2">
                             <div class="bg-white/10 rounded-xl p-2.5 flex items-center gap-2"><span class="shrink-0">${iconSvg('target', 'w-4 h-4 text-[#fbbf24]')}</span><div><p class="text-[9px]" style="color:rgba(219,234,254,.85)">راهکار منتخب</p><p class="text-[11px] font-bold text-[#ffffff]">${esc(decidedCase?.title || '-')}</p></div></div>
                             <div class="bg-white/10 rounded-xl p-2.5 flex items-center gap-2"><span class="shrink-0">${iconSvg('trendingUp', 'w-4 h-4 text-[#fbbf24]')}</span><div><p class="text-[9px]" style="color:rgba(219,234,254,.85)">اثر مورد انتظار</p><p class="text-[11px] font-bold text-[#ffffff]">${esc(decidedCase?.expected_result || '-')}</p></div></div>
                             <div class="bg-white/10 rounded-xl p-2.5 flex items-center gap-2"><span class="shrink-0">${iconSvg('checkCircle', 'w-4 h-4 text-[#fbbf24]')}</span><div><p class="text-[9px]" style="color:rgba(219,234,254,.85)">درخواست از مدیرعامل</p><p class="text-[11px] font-bold text-[#ffffff]">${esc(execDecisionText((analysis.executive_decisions_needed || [])[0]) || '-')}</p></div></div>
                         </div>
                         <p class="text-[11px] leading-relaxed text-[#ffffff] bg-white/10 rounded-xl p-3">${esc(analysis.final_recommendation)}</p>
+                        ` : `<p class="text-[11px] leading-relaxed text-[#ffffff] bg-white/10 rounded-xl p-3">جمع‌بندی نهایی این پروژه پس از تولید «تحلیل هوشمند» در این‌جا نمایش داده می‌شود.</p>`}
                     </div>
-                </div>` : '');
+                </div>`);
 
             container.innerHTML = sections.join('');
             container.querySelectorAll('.exec-sp-go-ai-btn').forEach(btn => btn.addEventListener('click', () => showAiReport(projectName, provider, 'execReport')));
