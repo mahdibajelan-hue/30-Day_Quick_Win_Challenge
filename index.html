@@ -178,13 +178,12 @@
             }
             body { background: #fff !important; }
             body * { visibility: hidden; }
-            #aiReportView, #aiReportView *, #execReportView, #execReportView *, #trackingView, #trackingView *, #tasksView, #tasksView *, #projectsReportModal, #projectsReportModal * { visibility: visible; }
-            #aiReportView, #execReportView, #trackingView, #tasksView, #projectsReportModal { position: absolute; inset: 0; padding: 0; margin: 0; background: #fff; }
+            #aiReportView, #aiReportView *, #execReportView, #execReportView *, #tasksView, #tasksView *, #projectsReportModal, #projectsReportModal * { visibility: visible; }
+            #aiReportView, #execReportView, #tasksView, #projectsReportModal { position: absolute; inset: 0; padding: 0; margin: 0; background: #fff; }
             .no-print { display: none !important; }
-            #aiReportView, #execReportView, #trackingView, #tasksView, #projectsReportModal, .print-card { background: #fff !important; color: #111 !important; border-color: #ccc !important; }
+            #aiReportView, #execReportView, #tasksView, #projectsReportModal, .print-card { background: #fff !important; color: #111 !important; border-color: #ccc !important; }
             #aiReportView h1, #aiReportView h2, #aiReportView h3, #aiReportView p, #aiReportView span, #aiReportView td, #aiReportView th, #aiReportView b,
             #execReportView h1, #execReportView h2, #execReportView h3, #execReportView p, #execReportView span, #execReportView td, #execReportView th, #execReportView b,
-            #trackingView h1, #trackingView h2, #trackingView h3, #trackingView p, #trackingView span, #trackingView td, #trackingView th, #trackingView b,
             #tasksView h1, #tasksView h2, #tasksView h3, #tasksView p, #tasksView span, #tasksView td, #tasksView th, #tasksView b,
             #projectsReportModal h1, #projectsReportModal h2, #projectsReportModal h3, #projectsReportModal p, #projectsReportModal span, #projectsReportModal td, #projectsReportModal th, #projectsReportModal b { color: #111 !important; }
             #taskDrawerOverlay, #taskDrawerOverlay *, #newTaskModal, #newTaskModal * { display: none !important; }
@@ -945,7 +944,7 @@
                         <h3 class="text-sm font-bold">پیشرفت فیزیکی پروژه‌ها</h3>
                         <p class="text-[11px] text-slate-400 leading-relaxed">میانگین % پیشرفت فیزیکی خود پروژه (نه اقدامات زودبازده)، گزارش‌شده توسط کارفرما، مشاور و پیمانکار در فرم اطلاعات تکمیلی</p>
                         <div id="ovProjectProgressList" class="space-y-3 max-h-52 overflow-y-auto scroll-thin pl-1"></div>
-                        <button type="button" onclick="switchView('tracking')" class="text-xs text-blue-900 font-bold hover:underline">‹ مشاهده پیگیری اجرای اقدامات زودبازده</button>
+                        <button type="button" onclick="switchView('tasks')" class="text-xs text-blue-900 font-bold hover:underline">‹ مشاهده پایش تسک‌ها</button>
                     </div>
 
                     <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
@@ -1093,24 +1092,6 @@
                 </div>
             </div>
 
-            <!-- QUICK WIN EXECUTION TRACKING (تایم‌لاین، آخرین وضعیت، فرد مسئول و تسک‌های اجرایی هر Quick Win برگزیده) -->
-            <div id="trackingView" class="hidden space-y-6">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-2">
-                    <div class="flex justify-between items-center flex-wrap gap-2">
-                        <h2 class="text-xl font-bold text-blue-900">🗓️ پیگیری اجرای اقدامات زودبازده</h2>
-                        <div class="flex items-center gap-2 no-print">
-                            <button type="button" onclick="window.print()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-lg font-bold">🖨 گزارش پیگیری</button>
-                            <button onclick="loadTrackingData()" class="bg-blue-100 text-blue-900 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200">🔄 بروزرسانی</button>
-                        </div>
-                    </div>
-                    <p class="text-xs text-slate-500">تایم‌لاین، آخرین وضعیت و فرد مسئول اقدام زودبازده برگزیده هر پروژه، تا رسیدن به نتیجه نهایی ظرف ۳۰ روز. تسک‌های اجرایی این اقدامات در «پایش تسک‌ها» پیگیری می‌شوند.</p>
-                    <div id="trackingOverdueBanner"></div>
-                </div>
-                <div id="trackingContainer" class="space-y-6">
-                    <p class="text-center text-slate-400 p-4">در حال بارگذاری...</p>
-                </div>
-            </div>
-
             <!-- EXECUTIVE PORTFOLIO REPORT (admin-only, printable, 5-7 pages) -->
             <div id="execReportView" class="hidden space-y-6">
                 <div class="no-print flex justify-between items-center flex-wrap gap-2">
@@ -1181,6 +1162,14 @@
                 </div>
 
                 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5" id="taskKpiRow"></div>
+
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800">تسک‌های هر پروژه</h3>
+                        <p class="text-[11px] text-slate-500 mt-0.5">وضعیت اقدام زودبازده/میان‌مدت هر پروژه به‌همراه جدول کامل تسک‌های آن — تسک‌های انجام‌شده با خط ظریف مشخص شده‌اند.</p>
+                    </div>
+                    <div id="taskProjectCardsBody" class="space-y-4"></div>
+                </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
@@ -1655,7 +1644,7 @@
             return `<svg class="${cls || 'w-5 h-5'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name] || ''}</svg>`;
         }
 
-        const NAV_ICON = { overview: 'grid', aiAnalysis: 'activity', admin: 'tool', selection: 'zap', tracking: 'calendar', execReport: 'fileText', checkin: 'edit', clientReport: 'clipboard', qwProposal: 'target', tasks: 'checklist' };
+        const NAV_ICON = { overview: 'grid', aiAnalysis: 'activity', admin: 'tool', selection: 'zap', execReport: 'fileText', checkin: 'edit', clientReport: 'clipboard', qwProposal: 'target', tasks: 'checklist' };
         const SIDEBAR_ACTIVE_CLASS = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold bg-blue-900/10 text-blue-900 transition';
         const SIDEBAR_INACTIVE_CLASS = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition';
         const MOBILE_ACTIVE_CLASS = 'flex flex-col items-center gap-0.5 px-3 py-2 shrink-0 text-blue-900';
@@ -1787,10 +1776,10 @@
             mobileNav.innerHTML = '';
 
             const buttons = currentProfile.role === 'admin'
-                ? [['overview', 'نمای کلی'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب اقدام زودبازده'], ['tracking', 'پیگیری اجرای اقدامات زودبازده'], ['tasks', 'پایش تسک‌ها'], ['execReport', 'گزارش تحلیلی مدیریتی'], ['admin', 'مدیریت کاربران']]
+                ? [['overview', 'نمای کلی'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب اقدام زودبازده'], ['tasks', 'پایش تسک‌ها'], ['execReport', 'گزارش تحلیلی مدیریتی'], ['admin', 'مدیریت کاربران']]
                 : hasOrganization('کارفرما')
-                    ? [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['selection', 'پیشنهادها'], ['tracking', 'پیگیری اجرای اقدامات زودبازده'], ['tasks', 'پایش تسک‌ها']]
-                    : [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['tracking', 'پیگیری اجرای اقدامات زودبازده'], ['tasks', 'پایش تسک‌ها']];
+                    ? [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['selection', 'پیشنهادها'], ['tasks', 'پایش تسک‌ها']]
+                    : [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['tasks', 'پایش تسک‌ها']];
 
             buttons.forEach(([view, label], i) => {
                 const iconName = NAV_ICON[view] || 'grid';
@@ -1812,7 +1801,7 @@
             switchView(buttons[0][0]);
         }
 
-        const ALL_VIEWS = ['overview', 'checkin', 'clientReport', 'qwProposal', 'admin', 'selection', 'aiAnalysis', 'tracking', 'execReport', 'tasks'];
+        const ALL_VIEWS = ['overview', 'checkin', 'clientReport', 'qwProposal', 'admin', 'selection', 'aiAnalysis', 'execReport', 'tasks'];
 
         function switchView(view) {
             ALL_VIEWS.forEach(v => {
@@ -1833,7 +1822,6 @@
             if (view === 'admin') loadAdminData();
             if (view === 'selection') loadSelectionData();
             if (view === 'aiAnalysis') loadAiAnalysisView();
-            if (view === 'tracking') loadTrackingData();
             if (view === 'execReport') loadExecReport();
             if (view === 'tasks') loadTasksView();
         }
@@ -3575,7 +3563,7 @@
         // A dozen columns never fits A4 portrait (or even the browser's
         // default page settings), and this app has no global @page rule to
         // change since the other print views (aiReportView, execReportView,
-        // trackingView) are fine as-is — so the landscape page size is
+        // tasksView) are fine as-is — so the landscape page size is
         // injected only for the moment of THIS print call, then removed,
         // instead of being set globally for every print in the app.
         function printProjectsReport() {
@@ -5010,13 +4998,8 @@
             });
         }
 
-        // Both پیگیری اجرای اقدامات زودبازده (case-level progress) and پایش
-        // تسک‌ها (this same task data, dashboarded) can be the active view
-        // when one of these mutations runs — refresh whichever is actually
-        // showing rather than always the older of the two.
-        function refreshTaskOrTrackingView() {
-            if (!document.getElementById('tasksView').classList.contains('hidden')) loadTasksView();
-            else loadTrackingData();
+        function refreshTasksView() {
+            loadTasksView();
         }
 
         async function completeQuickWinTask(taskId) {
@@ -5024,7 +5007,7 @@
                 .update({ task_status: 'انجام‌شده', completed_at: new Date().toISOString() })
                 .eq('id', taskId);
             if (error) { alert('خطا در ثبت اتمام تسک: ' + error.message); return; }
-            refreshTaskOrTrackingView();
+            refreshTasksView();
         }
 
         // The task's responsible person reports their work is done; this
@@ -5037,7 +5020,7 @@
                 .update({ task_status: 'در انتظار تایید', submitted_at: new Date().toISOString(), submitted_note: note || null })
                 .eq('id', taskId);
             if (error) { alert('خطا در ثبت اقدام: ' + error.message); return; }
-            refreshTaskOrTrackingView();
+            refreshTasksView();
         }
 
         // Admin sends a submitted task back for rework instead of approving it.
@@ -5047,13 +5030,13 @@
                 .update({ task_status: 'در حال انجام', submitted_at: null, submitted_note: null })
                 .eq('id', taskId);
             if (error) { alert('خطا در بازگشت تسک: ' + error.message); return; }
-            refreshTaskOrTrackingView();
+            refreshTasksView();
         }
 
         async function deleteQuickWinTask(taskId) {
             const { error } = await _supabase.from('case_updates').delete().eq('id', taskId);
             if (error) { alert('خطا در حذف تسک: ' + error.message); return; }
-            refreshTaskOrTrackingView();
+            refreshTasksView();
         }
 
         async function updateQuickWinTask(taskId, title, responsibleName, responsibleEmail, startDateJalali, dueDateJalali) {
@@ -5069,7 +5052,7 @@
                 start_date: startDateIso, due_date: dueDateIso, overdue_notified_at: null,
             }).eq('id', taskId);
             if (error) { alert('خطا در ذخیره ویرایش: ' + error.message); return; }
-            refreshTaskOrTrackingView();
+            refreshTasksView();
         }
 
         async function addQuickWinTask(caseId, title, responsibleName, responsibleEmail, startDateJalali, dueDateJalali, extra) {
@@ -5086,170 +5069,9 @@
                 severity: (extra && extra.severity) || 'متوسط', responsible_unit: (extra && extra.responsibleUnit) || null,
             }]);
             if (error) { alert('خطا در ثبت تسک: ' + error.message); return; }
-            refreshTaskOrTrackingView();
+            refreshTasksView();
         }
 
-
-        async function loadTrackingData() {
-            const container = document.getElementById('trackingContainer');
-            container.innerHTML = '<p class="text-center text-slate-400 p-4">در حال دریافت اطلاعات پایش...</p>';
-
-            // اقدام میان‌مدت cases get execution tasks too, alongside the
-            // project's selected Quick Win (DECIDED_STATUSES) — kept separate
-            // from that constant since only the selected Quick Win competes
-            // for the "one per project" exclusivity in saveEvaluation.
-            const { data: decisions, error: e1 } = await _supabase.from('cases').select('*').in('status', [...DECIDED_STATUSES, 'اقدام میان‌مدت']).order('execution_target_date', { ascending: true });
-            const { data: allUpdates, error: e2 } = await _supabase.from('case_updates').select('*').order('created_at', { ascending: true });
-            const { data: checkins, error: e3 } = await _supabase.from('check_ins').select('*').order('created_at', { ascending: true });
-            if (e1 || e2 || e3) { container.innerHTML = '<p class="text-red-600 p-4">خطا در دریافت داده‌ها.</p>'; return; }
-
-            if (!decisions || decisions.length === 0) {
-                document.getElementById('trackingOverdueBanner').innerHTML = '';
-                container.innerHTML = '<p class="text-center text-slate-400 p-4">هنوز هیچ اقدام زودبازده یا اقدام میان‌مدتی ثبت نشده.</p>';
-                return;
-            }
-
-            const projectNameByCaseId = {};
-            decisions.forEach(d => { projectNameByCaseId[d.id] = d.project_name; });
-
-            const logs = (allUpdates || []).filter(u => u.kind === 'progress');
-            // Tasks don't carry project_name directly (they're scoped by
-            // case_id) — attach it here so the report table below (and
-            // anything printing a task row) can still show it.
-            const tasks = (allUpdates || []).filter(u => u.kind === 'task').map(t => ({ ...t, project_name: projectNameByCaseId[t.case_id] }));
-
-            const logsByCase = {};
-            logs.forEach(l => { (logsByCase[l.case_id] ??= []).push(l); });
-            const tasksByCase = {};
-            tasks.forEach(t => { (tasksByCase[t.case_id] ??= []).push(t); });
-            const byProjectOrg = buildMergedByProjectOrg(checkins, decisions);
-
-            const isAdmin = currentProfile.role === 'admin';
-            const overdueCount = tasks.filter(isTaskOverdue).length;
-            const pendingApprovalCount = isAdmin ? tasks.filter(t => t.task_status === 'در انتظار تایید').length : 0;
-            const bannerParts = [];
-            if (overdueCount) bannerParts.push(`<div class="bg-red-100 text-red-800 text-xs font-bold px-3 py-2 rounded-lg flex items-center justify-between gap-2 flex-wrap"><span>⚠️ ${toPersianDigits(overdueCount)} تسک معوق نیاز به پیگیری فوری دارد.</span><button type="button" class="tracking-banner-tasks-link no-print underline">مشاهده در پایش تسک‌ها →</button></div>`);
-            if (pendingApprovalCount) bannerParts.push(`<div class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-2 rounded-lg flex items-center justify-between gap-2 flex-wrap"><span>🕓 ${toPersianDigits(pendingApprovalCount)} تسک در انتظار تایید نهایی شماست.</span><button type="button" class="tracking-banner-tasks-link no-print underline">مشاهده در پایش تسک‌ها →</button></div>`);
-            document.getElementById('trackingOverdueBanner').innerHTML = bannerParts.length ? `<div class="space-y-2">${bannerParts.join('')}</div>` : '';
-            document.querySelectorAll('.tracking-banner-tasks-link').forEach(b => b.addEventListener('click', () => switchView('tasks')));
-
-            container.innerHTML = '';
-            const today = new Date(); today.setHours(0, 0, 0, 0);
-
-            decisions.forEach(dec => {
-                const projectLogs = logsByCase[dec.id] || [];
-                const latest = projectLogs[projectLogs.length - 1];
-                const percent = latest ? latest.progress_percent : 0;
-                const status = latest ? latest.status : 'شروع نشده';
-                const rec = byProjectOrg[dec.project_name]?.[dec.organization] || {};
-                const responsible = dec.plan_responsible || rec.plan_responsible || dec.organization;
-
-                const target = new Date(dec.execution_target_date || dec.plan_target_date);
-                const daysLeft = Math.round((target - today) / 86400000);
-                const isDone = percent >= 100;
-                const isOverdue = !isDone && daysLeft < 0;
-
-                const badge = isDone
-                    ? '<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded-lg text-xs font-bold">✅ تکمیل شده</span>'
-                    : isOverdue
-                        ? `<span class="bg-red-100 text-red-800 px-2 py-1 rounded-lg text-xs font-bold">⏰ ${Math.abs(daysLeft)} روز تأخیر</span>`
-                        : `<span class="bg-amber-100 text-amber-800 px-2 py-1 rounded-lg text-xs font-bold">${daysLeft} روز باقی‌مانده</span>`;
-                const barColor = isDone ? 'bg-emerald-500' : isOverdue ? 'bg-red-500' : 'bg-blue-900';
-
-                const timelineHtml = projectLogs.slice().reverse().map(l => `
-                    <div class="flex gap-2 text-xs border-r-2 border-slate-200 pr-3 py-1 flex-wrap">
-                        <span class="text-slate-400 whitespace-nowrap">${formatJalali(l.created_at)}</span>
-                        <span class="font-bold">${esc(l.status)}</span>
-                        <span class="text-slate-500">${l.progress_percent}%</span>
-                        <span class="text-slate-600">${esc(l.note || '')}</span>
-                        <span class="text-slate-400">- ${esc(l.reported_by || '')}</span>
-                    </div>`).join('') || '<p class="text-xs text-slate-400">هنوز بروزرسانی‌ای ثبت نشده.</p>';
-
-                const projectTasks = tasksByCase[dec.id] || [];
-                const openTaskCount = projectTasks.filter(t => t.task_status !== 'انجام‌شده').length;
-                const overdueTaskCount = projectTasks.filter(isTaskOverdue).length;
-                const taskSummaryText = projectTasks.length
-                    ? `${toPersianDigits(openTaskCount)} تسک باز از ${toPersianDigits(projectTasks.length)}${overdueTaskCount ? ` — ${toPersianDigits(overdueTaskCount)} معوق` : ''}`
-                    : 'هنوز تسکی برای این اقدام زودبازده ثبت نشده';
-
-                const wrap = document.createElement('div');
-                const kindTag = dec.status === 'اقدام میان‌مدت'
-                    ? '<span class="bg-blue-100 text-blue-900 text-[10px] font-bold px-2 py-0.5 rounded-full">🕒 اقدام میان‌مدت</span>'
-                    : '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">🏆 اقدام زودبازده منتخب</span>';
-                wrap.innerHTML = `<div class="print-card bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-3" data-case-id="${dec.id}">
-                    <div class="flex justify-between items-center flex-wrap gap-2">
-                        <div>
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <h3 class="font-bold text-blue-900">${esc(dec.project_name)}</h3>
-                                ${kindTag}
-                            </div>
-                            <p class="text-xs text-slate-500">${esc(dec.title)} (${esc(dec.organization)})</p>
-                        </div>
-                        <div class="flex items-center gap-2 flex-wrap">
-                            ${badge}
-                        </div>
-                    </div>
-                    <div class="w-full bg-slate-100 rounded-full h-2.5">
-                        <div class="${barColor} h-2.5 rounded-full" style="width:${Math.min(percent, 100)}%"></div>
-                    </div>
-                    <p class="text-xs text-slate-500">وضعیت فعلی: <b>${esc(status)}</b> — 👤 مسئول: <b>${esc(responsible)}</b> — مهلت: ${formatJalali(dec.execution_target_date || dec.plan_target_date)}</p>
-                    <div class="space-y-1 max-h-40 overflow-y-auto">${timelineHtml}</div>
-
-                    <div class="pt-3 border-t flex items-center justify-between gap-2 flex-wrap">
-                        <p class="text-xs text-slate-600">✅ ${esc(taskSummaryText)}</p>
-                        <button type="button" class="task-jump-btn no-print text-xs font-bold text-blue-900 hover:underline" data-case-id="${dec.id}">مشاهده در پایش تسک‌ها →</button>
-                    </div>
-
-                    ${isAdmin ? `
-                    <div class="no-print grid grid-cols-1 md:grid-cols-4 gap-2 pt-3 border-t text-xs">
-                        <select class="status-select border rounded-lg p-2">${STATUS_OPTIONS.map(s => `<option ${s === status ? 'selected' : ''}>${s}</option>`).join('')}</select>
-                        <input class="percent-input border rounded-lg p-2" type="number" step="any" min="0" max="100" value="${percent}" placeholder="درصد پیشرفت">
-                        <input class="note-input border rounded-lg p-2 md:col-span-2" type="text" placeholder="توضیح بروزرسانی">
-                    </div>
-                    <button type="button" class="update-btn no-print w-full bg-amber-600 hover:bg-amber-500 text-white rounded-lg py-2 font-bold text-xs">ثبت بروزرسانی پیشرفت</button>` : ''}
-                    ${isAdmin && isDone ? `
-                    <div class="no-print pt-3 border-t space-y-2 bg-emerald-50 -mx-5 -mb-5 px-5 pb-5 rounded-b-2xl">
-                        <p class="text-xs font-bold text-emerald-800">🏁 نتیجه نهایی و ارزش محقق‌شده</p>
-                        <textarea class="actual-result-input w-full border rounded-lg p-2 text-xs" rows="2" placeholder="نتیجه واقعی این اقدام زودبازده چه بود؟">${esc(dec.actual_result || '')}</textarea>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="block text-[10px] text-slate-500 mb-0.5">صرفه‌جویی زمانی واقعی (روز)</label>
-                                <input class="actual-days-input w-full border rounded-lg p-2 text-xs" type="number" step="any" value="${dec.actual_value_json?.days_saved ?? dec.impact_delay_days ?? ''}">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] text-slate-500 mb-0.5">صرفه‌جویی مالی واقعی (ریال)</label>
-                                <input class="actual-cost-input w-full border rounded-lg p-2 text-xs" type="number" step="any" value="${dec.actual_value_json?.cost_avoided_rial ?? dec.impact_cost_avoided ?? ''}">
-                            </div>
-                        </div>
-                        <p class="text-[10px] text-slate-500">اعداد بالا با اثر تخمینی ثبت‌شده هنگام پیشنهاد پر شده‌اند — در صورت نیاز اصلاح کنید.</p>
-                        <button type="button" class="save-actual-value-btn w-full bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg py-1.5 font-bold text-xs">ثبت نتیجه نهایی</button>
-                    </div>` : ''}
-                </div>`;
-
-                const cardEl = wrap.firstElementChild;
-                cardEl.querySelector('.task-jump-btn').addEventListener('click', () => jumpToTaskTower(dec.id));
-                if (isAdmin) {
-                    const statusSel = cardEl.querySelector('.status-select');
-                    const percentInput = cardEl.querySelector('.percent-input');
-                    const noteInput = cardEl.querySelector('.note-input');
-                    cardEl.querySelector('.update-btn').addEventListener('click', () => {
-                        addProgressUpdate(dec.id, statusSel.value, percentInput.value, noteInput.value);
-                    });
-                    const saveActualBtn = cardEl.querySelector('.save-actual-value-btn');
-                    if (saveActualBtn) {
-                        saveActualBtn.addEventListener('click', () => {
-                            saveActualValue(
-                                dec.id,
-                                cardEl.querySelector('.actual-result-input').value.trim(),
-                                cardEl.querySelector('.actual-days-input').value,
-                                cardEl.querySelector('.actual-cost-input').value,
-                            );
-                        });
-                    }
-                }
-                container.appendChild(cardEl);
-            });
-        }
 
         async function addProgressUpdate(caseId, status, rawPercent, note) {
             let percent = Math.max(0, Math.min(100, Number(rawPercent) || 0));
@@ -5268,7 +5090,7 @@
                 ? { status: 'بسته‌شده', closed_at: new Date().toISOString() }
                 : { status: 'در حال اجرا', closed_at: null };
             await _supabase.from('cases').update(casePatch).eq('id', caseId).in('status', ['انتخاب‌شده', 'در حال اجرا', 'بسته‌شده']);
-            loadTrackingData();
+            refreshTasksView();
         }
 
         // Redesign backlog (P1): the report's flagged gap — the system
@@ -5286,7 +5108,7 @@
             }).eq('id', caseId);
             if (error) { alert('خطا در ثبت نتیجه نهایی: ' + error.message); return; }
             alert('نتیجه نهایی ثبت شد.');
-            loadTrackingData();
+            refreshTasksView();
         }
 
         function kpiCard(label, value, colorClass) {
@@ -6087,6 +5909,7 @@
         let allTasksRaw = [];
         let taskProjectsCache = [];
         let taskCasesCache = [];
+        let taskProgressByCase = {};
         let taskUsersByProject = {};
         let taskFilters = { projects: [], units: [], severities: [], statuses: [], people: [], overdueOnly: false, dueSoonOnly: false, dateFrom: null, dateTo: null };
         let taskActionTab = 'overdue';
@@ -6130,14 +5953,17 @@
             const { data: projects } = await _supabase.from('projects').select('*').order('name');
             taskProjectsCache = (projects || []).filter(p => p.is_guide || isAdmin || myProjectAccess.some(a => a.project_name === p.name));
 
-            const [{ data: casesData }, { data: updatesData }] = await Promise.all([
-                _supabase.from('cases').select('id, project_name, title').in('status', [...DECIDED_STATUSES, 'اقدام میان‌مدت']).order('proposed_at', { ascending: false }),
+            const [{ data: casesData }, { data: updatesData }, { data: progressData }] = await Promise.all([
+                _supabase.from('cases').select('*').in('status', [...DECIDED_STATUSES, 'اقدام میان‌مدت']).order('proposed_at', { ascending: false }),
                 _supabase.from('case_updates').select('*').eq('kind', 'task').order('created_at', { ascending: false }),
+                _supabase.from('case_updates').select('*').eq('kind', 'progress').order('created_at', { ascending: true }),
             ]);
             taskCasesCache = casesData || [];
             const caseById = {};
             taskCasesCache.forEach(c => { caseById[c.id] = c; });
             allTasksRaw = (updatesData || []).map(t => ({ ...t, project_name: (caseById[t.case_id] || {}).project_name, case_title: (caseById[t.case_id] || {}).title }));
+            taskProgressByCase = {};
+            (progressData || []).forEach(p => { (taskProgressByCase[p.case_id] ??= []).push(p); });
 
             const uniqueProjectNames = [...new Set(taskProjectsCache.map(p => p.name))];
             const entries = await Promise.all(uniqueProjectNames.map(async pn => {
@@ -6232,6 +6058,158 @@
             if (!chips.length) { el.innerHTML = '<span class="text-slate-400">فیلتری فعال نیست.</span>'; return; }
             el.innerHTML = chips.map((c, idx) => `<span class="bg-slate-100 text-slate-700 px-2 py-1 rounded-full flex items-center gap-1">${esc(c.text)}<button type="button" data-idx="${idx}" class="task-chip-remove font-bold text-slate-400 hover:text-red-600">×</button></span>`).join('');
             el.querySelectorAll('.task-chip-remove').forEach((btn, idx) => btn.addEventListener('click', () => { chips[idx].remove(); syncTaskFilterSelectsFromState(); renderAllTaskSections(); }));
+        }
+
+        // Per-project/case operational view — a Quick Win or اقدام میان‌مدت's
+        // own status/progress (previously the whole point of پیگیری اجرای
+        // اقدامات زودبازده, now retired) plus, new, a full table of every
+        // task under it with a strikethrough on completed ones. `filtered`
+        // only narrows which TASKS show in each table (so severity/unit/
+        // status/person/date filters stay meaningful here); the set of
+        // cases itself only responds to the project filter, since a case's
+        // own progress tracking isn't something a task-attribute filter
+        // should hide.
+        function renderTaskProjectCards(filtered) {
+            const container = document.getElementById('taskProjectCardsBody');
+            const isAdmin = currentProfile.role === 'admin';
+
+            let cases = taskCasesCache;
+            if (taskFilters.projects.length) cases = cases.filter(c => taskFilters.projects.includes(c.project_name));
+
+            if (!cases.length) {
+                container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">اقدام زودبازده یا میان‌مدتی برای نمایش نیست.</p>';
+                return;
+            }
+
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+
+            container.innerHTML = cases.map(dec => {
+                const caseLogs = taskProgressByCase[dec.id] || [];
+                const latest = caseLogs[caseLogs.length - 1];
+                const percent = latest ? latest.progress_percent : 0;
+                const status = latest ? latest.status : 'شروع نشده';
+                const responsible = dec.plan_responsible || dec.organization;
+
+                const target = new Date(dec.execution_target_date || dec.plan_target_date);
+                const daysLeft = Math.round((target - today) / 86400000);
+                const isDone = percent >= 100;
+                const isOverdue = !isDone && daysLeft < 0;
+
+                const badge = isDone
+                    ? '<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded-lg text-xs font-bold">✅ تکمیل شده</span>'
+                    : isOverdue
+                        ? `<span class="bg-red-100 text-red-800 px-2 py-1 rounded-lg text-xs font-bold">⏰ ${toPersianDigits(Math.abs(daysLeft))} روز تأخیر</span>`
+                        : `<span class="bg-amber-100 text-amber-800 px-2 py-1 rounded-lg text-xs font-bold">${toPersianDigits(daysLeft)} روز باقی‌مانده</span>`;
+                const barColor = isDone ? 'bg-emerald-500' : isOverdue ? 'bg-red-500' : 'bg-blue-900';
+                const kindTag = dec.status === 'اقدام میان‌مدت'
+                    ? '<span class="bg-blue-100 text-blue-900 text-[10px] font-bold px-2 py-0.5 rounded-full">🕒 اقدام میان‌مدت</span>'
+                    : '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">🏆 اقدام زودبازده منتخب</span>';
+
+                const timelineHtml = caseLogs.length ? `<div class="space-y-1 max-h-32 overflow-y-auto">${caseLogs.slice().reverse().map(l => `
+                    <div class="flex gap-2 text-[11px] border-r-2 border-slate-200 pr-3 py-1 flex-wrap">
+                        <span class="text-slate-400 whitespace-nowrap">${formatJalali(l.created_at)}</span>
+                        <span class="font-bold">${esc(l.status)}</span>
+                        <span class="text-slate-500">${l.progress_percent}%</span>
+                        <span class="text-slate-600">${esc(l.note || '')}</span>
+                        <span class="text-slate-400">- ${esc(l.reported_by || '')}</span>
+                    </div>`).join('')}</div>` : '';
+
+                const caseTasks = filtered.filter(t => t.case_id === dec.id).sort((a, b) => (a.due_date || '') < (b.due_date || '') ? -1 : 1);
+                const doneTaskCount = caseTasks.filter(t => t.task_status === 'انجام‌شده').length;
+                const taskTableHtml = caseTasks.length ? `
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-[11px]">
+                            <thead class="bg-slate-100 text-slate-600">
+                                <tr><th class="p-2 border">عنوان تسک</th><th class="p-2 border">مسئول</th><th class="p-2 border">مهلت</th><th class="p-2 border">وضعیت</th></tr>
+                            </thead>
+                            <tbody>
+                                ${caseTasks.map(t => {
+                                    const tDone = t.task_status === 'انجام‌شده';
+                                    const tOverdue = isTaskOverdue(t);
+                                    const statusCls = tDone ? 'bg-emerald-100 text-emerald-800' : tOverdue ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-700';
+                                    const statusText = tDone ? '✅ انجام‌شده' : tOverdue ? `⏰ ${toPersianDigits(taskOverdueDays(t))} روز تأخیر` : esc(t.task_status);
+                                    return `<tr class="task-table-row cursor-pointer hover:bg-slate-50" data-task-id="${t.id}">
+                                        <td class="p-2 border font-bold ${tDone ? 'line-through text-slate-400' : ''}">${esc(t.title)}</td>
+                                        <td class="p-2 border">${esc(t.responsible_name || '-')}</td>
+                                        <td class="p-2 border">${t.due_date ? formatJalali(t.due_date) : '-'}</td>
+                                        <td class="p-2 border"><span class="px-1.5 py-0.5 rounded-md font-bold ${statusCls}">${statusText}</span></td>
+                                    </tr>`;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>` : '<p class="text-[11px] text-slate-400 text-center py-2">تسکی مطابق فیلتر فعلی برای این اقدام ثبت نشده.</p>';
+
+                return `<div class="border rounded-2xl border-slate-200 p-4 space-y-3" data-case-id="${dec.id}">
+                    <div class="flex justify-between items-center flex-wrap gap-2">
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h4 class="font-bold text-blue-900">📁 ${esc(dec.project_name)}</h4>
+                                ${kindTag}
+                            </div>
+                            <p class="text-xs text-slate-500">${esc(dec.title)} (${esc(dec.organization)})</p>
+                        </div>
+                        ${badge}
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2.5">
+                        <div class="${barColor} h-2.5 rounded-full" style="width:${Math.min(percent, 100)}%"></div>
+                    </div>
+                    <p class="text-xs text-slate-500">وضعیت فعلی: <b>${esc(status)}</b> — 👤 مسئول: <b>${esc(responsible)}</b> — مهلت: ${formatJalali(dec.execution_target_date || dec.plan_target_date)}</p>
+                    ${timelineHtml}
+
+                    ${isAdmin ? `
+                    <div class="no-print grid grid-cols-1 md:grid-cols-4 gap-2 pt-3 border-t text-xs">
+                        <select class="status-select border rounded-lg p-2">${STATUS_OPTIONS.map(s => `<option ${s === status ? 'selected' : ''}>${s}</option>`).join('')}</select>
+                        <input class="percent-input border rounded-lg p-2" type="number" step="any" min="0" max="100" value="${percent}" placeholder="درصد پیشرفت">
+                        <input class="note-input border rounded-lg p-2 md:col-span-2" type="text" placeholder="توضیح بروزرسانی">
+                    </div>
+                    <button type="button" class="update-btn no-print w-full bg-amber-600 hover:bg-amber-500 text-white rounded-lg py-2 font-bold text-xs">ثبت بروزرسانی پیشرفت</button>` : ''}
+                    ${isAdmin && isDone ? `
+                    <div class="no-print pt-3 border-t space-y-2 bg-emerald-50 -mx-4 px-4 pb-4 rounded-b-2xl">
+                        <p class="text-xs font-bold text-emerald-800">🏁 نتیجه نهایی و ارزش محقق‌شده</p>
+                        <textarea class="actual-result-input w-full border rounded-lg p-2 text-xs" rows="2" placeholder="نتیجه واقعی این اقدام زودبازده چه بود؟">${esc(dec.actual_result || '')}</textarea>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] text-slate-500 mb-0.5">صرفه‌جویی زمانی واقعی (روز)</label>
+                                <input class="actual-days-input w-full border rounded-lg p-2 text-xs" type="number" step="any" value="${dec.actual_value_json?.days_saved ?? dec.impact_delay_days ?? ''}">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-slate-500 mb-0.5">صرفه‌جویی مالی واقعی (ریال)</label>
+                                <input class="actual-cost-input w-full border rounded-lg p-2 text-xs" type="number" step="any" value="${dec.actual_value_json?.cost_avoided_rial ?? dec.impact_cost_avoided ?? ''}">
+                            </div>
+                        </div>
+                        <button type="button" class="save-actual-value-btn w-full bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg py-1.5 font-bold text-xs">ثبت نتیجه نهایی</button>
+                    </div>` : ''}
+
+                    <div class="pt-3 border-t">
+                        <p class="text-xs font-bold text-slate-700 mb-2">🗂 تسک‌های این اقدام (${toPersianDigits(doneTaskCount)} از ${toPersianDigits(caseTasks.length)} انجام‌شده)</p>
+                        ${taskTableHtml}
+                    </div>
+                </div>`;
+            }).join('');
+
+            container.querySelectorAll('[data-case-id]').forEach(cardEl => {
+                const caseId = Number(cardEl.dataset.caseId);
+                if (isAdmin) {
+                    const updateBtn = cardEl.querySelector('.update-btn');
+                    if (updateBtn) {
+                        updateBtn.addEventListener('click', () => {
+                            addProgressUpdate(caseId, cardEl.querySelector('.status-select').value, cardEl.querySelector('.percent-input').value, cardEl.querySelector('.note-input').value);
+                        });
+                    }
+                    const saveActualBtn = cardEl.querySelector('.save-actual-value-btn');
+                    if (saveActualBtn) {
+                        saveActualBtn.addEventListener('click', () => {
+                            saveActualValue(
+                                caseId,
+                                cardEl.querySelector('.actual-result-input').value.trim(),
+                                cardEl.querySelector('.actual-days-input').value,
+                                cardEl.querySelector('.actual-cost-input').value,
+                            );
+                        });
+                    }
+                }
+                cardEl.querySelectorAll('.task-table-row').forEach(tr => tr.addEventListener('click', () => openTaskDrawer(Number(tr.dataset.taskId))));
+            });
         }
 
         function renderTaskKpis(filtered) {
@@ -6495,6 +6473,7 @@
         function renderAllTaskSections() {
             const filtered = computeFilteredTasks();
             renderActiveTaskFilterChips();
+            renderTaskProjectCards(filtered);
             renderTaskKpis(filtered);
             renderStatusDonut('taskStatusDonut', 'taskStatusDonutCenter', 'taskStatusLegend', TASK_STATUSES.map(s => ({ label: s, value: filtered.filter(t => t.task_status === s).length, color: TASK_STATUS_COLOR[s] })));
             renderTaskSeverityChart(filtered);
