@@ -282,7 +282,7 @@
                     <span class="font-bold text-xs text-slate-800 truncate">طرح خط لوله ششم سراسری</span>
                 </div>
                 <p class="hidden md:block text-xs text-slate-500" id="headerSubtitle">سامانه تحول و پایش ۳۰ روزه پروژه‌ها</p>
-                <p class="hidden md:block text-lg font-extrabold brand-title" style="background: linear-gradient(90deg, #f97316, #db2777); -webkit-background-clip: text; background-clip: text; color: transparent;">چالش ۳۰ روزه اقدامات زودبازده</p>
+                <p class="hidden md:block text-lg font-extrabold brand-title" style="background: linear-gradient(90deg, #f97316, #db2777); -webkit-background-clip: text; background-clip: text; color: transparent;">شناسایی، حل و پایش مسائل پروژه‌ها</p>
                 <div class="flex items-center gap-2 md:gap-3 text-slate-400 text-xs relative min-w-0">
                     <span id="topbarUserEmail" class="hidden font-bold text-slate-700 border-l pl-2 md:pl-3 truncate max-w-[96px] sm:max-w-[160px] md:max-w-none" dir="ltr"></span>
                     <span id="topbarDate" class="hidden sm:inline font-bold text-slate-600"></span>
@@ -883,7 +883,7 @@
                             <option value="openai">ChatGPT</option>
                         </select>
                     </div>
-                    <button id="aiaGenerateBtn" type="button" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 rounded-xl transition shadow flex items-center justify-center gap-2">
+                    <button id="aiaGenerateBtn" type="button" class="w-full bg-purple-600 hover:bg-purple-700 text-[#ffffff] font-bold py-2.5 rounded-xl transition shadow flex items-center justify-center gap-2">
                         <svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z"/></svg> تولید تحلیل هوشمند
                     </button>
                 </div>
@@ -948,7 +948,6 @@
             <!-- OVERVIEW (landing dashboard for admin + managers, scoped by RLS) -->
             <div id="overviewView" class="hidden space-y-4">
                 <div class="bg-blue-950 rounded-2xl p-5 space-y-3">
-                    <p class="text-xs font-bold" style="color:#bfdbfe;">۸ سؤال مدیرعامل — بدون نیاز به تحلیل هوش مصنوعی، مستقیم از داده‌ها</p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3" id="ovExecCards"></div>
                 </div>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="ovStatCards"></div>
@@ -1144,7 +1143,7 @@
                         <select id="execSpProjectSelect" class="p-2.5 border rounded-xl text-sm md:col-span-2">
                             <option value="">-- بازگشت به گزارش پورتفولیو --</option>
                         </select>
-                        <button type="button" id="execSpGenerateBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 rounded-xl transition shadow flex items-center justify-center gap-2">
+                        <button type="button" id="execSpGenerateBtn" class="bg-purple-600 hover:bg-purple-700 text-[#ffffff] font-bold py-2.5 rounded-xl transition shadow flex items-center justify-center gap-2">
                             <svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z"/></svg> تولید گزارش مصور
                         </button>
                     </div>
@@ -1260,6 +1259,29 @@
                     <div id="taskProjectCardsBody" class="space-y-4"></div>
                 </div>
 
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800">آمار وضعیت تسک‌ها</h3>
+                        <p class="text-[11px] text-slate-500 mt-0.5">شمار و سهم تسک‌های مطابق فیلترهای بالا، به تفکیک وضعیت.</p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs">
+                            <thead class="bg-slate-100 text-slate-600">
+                                <tr><th class="p-2.5">وضعیت</th><th class="p-2.5">تعداد</th><th class="p-2.5">درصد</th><th class="p-2.5">معوق</th></tr>
+                            </thead>
+                            <tbody id="taskStatusStatsBody"></tbody>
+                            <tfoot>
+                                <tr class="bg-slate-50 font-bold border-t">
+                                    <td class="p-2.5">جمع کل</td>
+                                    <td class="p-2.5" id="taskStatusStatsTotal"></td>
+                                    <td class="p-2.5">۱۰۰٪</td>
+                                    <td class="p-2.5" id="taskStatusStatsTotalOverdue"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                         <h3 class="text-sm font-bold text-slate-800">وضعیت تسک‌ها</h3>
@@ -1365,7 +1387,7 @@
                     <input id="newTaskTitle" type="text" class="w-full border rounded-lg p-2" placeholder="عنوان کوتاه و مشخص">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-500 mb-1">واحد مسئول</label>
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1">واحد مسئول *</label>
                     <select id="newTaskUnit" class="w-full border rounded-lg p-2 bg-white"><option value="">-- انتخاب --</option></select>
                 </div>
                 <div>
@@ -6031,9 +6053,9 @@
         // report (section M) — every answer computed directly from cases/
         // check_ins, no AI call, so it's always instantly available.
         function execQCard(q, a) {
-            return `<div class="bg-white/5 border border-white/10 rounded-xl p-3">
+            return `<div class="bg-white/10 border border-white/15 rounded-xl p-3">
                 <p class="text-[11px] text-blue-300 font-bold mb-1">${esc(q)}</p>
-                <p class="text-sm text-white leading-snug">${a}</p>
+                <p class="text-sm text-[#ffffff] leading-snug">${a}</p>
             </div>`;
         }
 
@@ -6468,6 +6490,29 @@
             row.querySelectorAll('.task-kpi-card').forEach((btn, idx) => btn.addEventListener('click', cards[idx].onClick));
         }
 
+        function renderTaskStatusStatsTable(filtered) {
+            const total = filtered.length;
+            const body = document.getElementById('taskStatusStatsBody');
+            body.innerHTML = TASK_STATUSES.map(s => {
+                const rows = filtered.filter(t => t.task_status === s);
+                const count = rows.length;
+                const pct = total ? Math.round(count / total * 100) : 0;
+                const overdue = rows.filter(isTaskOverdue).length;
+                return `<tr class="border-b last:border-0 hover:bg-slate-50 cursor-pointer task-status-stats-row" data-status="${esc(s)}">
+                    <td class="p-2.5"><span class="inline-block w-2 h-2 rounded-full ml-1.5" style="background:${TASK_STATUS_COLOR[s]}"></span>${esc(s)}</td>
+                    <td class="p-2.5 font-bold">${toPersianDigits(count)}</td>
+                    <td class="p-2.5">${toPersianDigits(pct)}٪</td>
+                    <td class="p-2.5 ${overdue ? 'text-red-600 font-bold' : 'text-slate-400'}">${toPersianDigits(overdue)}</td>
+                </tr>`;
+            }).join('');
+            document.getElementById('taskStatusStatsTotal').textContent = toPersianDigits(total);
+            document.getElementById('taskStatusStatsTotalOverdue').textContent = toPersianDigits(filtered.filter(isTaskOverdue).length);
+            body.querySelectorAll('.task-status-stats-row').forEach(row => row.addEventListener('click', () => {
+                const s = row.dataset.status;
+                if (!taskFilters.statuses.includes(s)) { taskFilters.statuses.push(s); syncTaskFilterSelectsFromState(); renderAllTaskSections(); }
+            }));
+        }
+
         function renderTaskSeverityChart(filtered) {
             const counts = TASK_SEVERITIES.map(s => filtered.filter(t => t.severity === s).length);
             if (taskCharts.taskSeverityChart) taskCharts.taskSeverityChart.destroy();
@@ -6672,7 +6717,12 @@
             const byUnit = {};
             filtered.forEach(t => { const u = t.responsible_unit || 'نامشخص'; byUnit[u] = (byUnit[u] || 0) + 1; });
             const topUnit = Object.entries(byUnit).sort((a, b) => b[1] - a[1])[0];
-            if (topUnit) insights.push(`📌 ${toPersianDigits(Math.round(topUnit[1] / filtered.length * 100))}٪ از تسک‌های ثبت‌شده مربوط به واحد «${esc(topUnit[0])}» است.`);
+            if (topUnit) {
+                const pct = toPersianDigits(Math.round(topUnit[1] / filtered.length * 100));
+                insights.push(topUnit[0] === 'نامشخص'
+                    ? `📌 ${pct}٪ از تسک‌ها فاقد «واحد مسئول» ثبت‌شده‌اند («نامشخص» یعنی این فیلد هنگام ثبت تسک خالی مانده، نه یک واحد واقعی). برای رفع: در جدول «کل تسک‌ها» روی تسک موردنظر کلیک کنید، از پنل جزئیات فیلد «واحد مسئول» را تکمیل کنید و «ذخیره تغییرات» را بزنید.`
+                    : `📌 ${pct}٪ از تسک‌های ثبت‌شده مربوط به واحد «${esc(topUnit[0])}» است.`);
+            }
 
             const criticalOverdue = filtered.filter(t => t.severity === 'بحرانی' && isTaskOverdue(t));
             if (criticalOverdue.length) insights.push(`🚨 ${toPersianDigits(criticalOverdue.length)} تسک بحرانی از موعد خود عبور کرده‌اند (حداکثر ${toPersianDigits(Math.max(...criticalOverdue.map(taskOverdueDays)))} روز تأخیر).`);
@@ -6703,6 +6753,7 @@
             renderTaskActionCenter(filtered);
             renderAllTasksTable(filtered);
             renderCaseProgressCards();
+            renderTaskStatusStatsTable(filtered);
             renderStatusDonut('taskStatusDonut', 'taskStatusDonutCenter', 'taskStatusLegend', TASK_STATUSES.map(s => ({ label: s, value: filtered.filter(t => t.task_status === s).length, color: TASK_STATUS_COLOR[s] })));
             renderTaskSeverityChart(filtered);
             renderTaskAgingChart(filtered);
@@ -6777,13 +6828,15 @@
         async function submitNewTask() {
             const caseIdRaw = document.getElementById('newTaskCase').value;
             const title = document.getElementById('newTaskTitle').value.trim();
+            const unit = document.getElementById('newTaskUnit').value;
             if (!caseIdRaw || !title) { alert('انتخاب اقدام زودبازده/میان‌مدت و عنوان تسک الزامی است.'); return; }
+            if (!unit) { alert('انتخاب «واحد مسئول» الزامی است تا تسک‌ها همیشه قابل دسته‌بندی باشند.'); return; }
             const [respName, respEmail] = (document.getElementById('newTaskResponsible').value || '').split('|||');
             await addQuickWinTask(
                 Number(caseIdRaw), title, respName || '', respEmail || '',
                 document.getElementById('newTaskStartDate').value.trim(),
                 document.getElementById('newTaskDueDate').value.trim(),
-                { severity: document.getElementById('newTaskSeverity').value, responsibleUnit: document.getElementById('newTaskUnit').value || null },
+                { severity: document.getElementById('newTaskSeverity').value, responsibleUnit: unit },
             );
             closeNewTaskModal();
         }
