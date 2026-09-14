@@ -737,34 +737,38 @@
                             <h3 class="text-sm font-bold text-slate-800">وضعیت پیشرفت و زمان‌بندی</h3>
                         </div>
                         <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                            <div><label class="block text-xs font-semibold mb-1">پیشرفت برنامه‌ای کل (٪)</label><input type="number" step="any" id="cr_progress_planned" readonly title="میانگین پیشرفت برنامه‌ای رشته‌های زیر (بر اساس نوع قرارداد)" class="w-full p-2 border rounded-lg text-sm outline-none bg-slate-50 text-slate-500"></div>
-                            <div><label class="block text-xs font-semibold mb-1">پیشرفت واقعی کل (٪)</label><input type="number" step="any" id="cr_progress_physical" readonly title="میانگین پیشرفت واقعی رشته‌های زیر (بر اساس نوع قرارداد)" class="w-full p-2 border rounded-lg text-sm outline-none bg-slate-50 text-slate-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">پیشرفت برنامه‌ای کل (٪)</label><input type="number" step="any" id="cr_progress_planned" readonly title="میانگین وزنی پیشرفت برنامه‌ای رشته‌های زیر، بر اساس وزن هرکدام (وقتی وزنی ثبت نشده باشد، میانگین ساده محاسبه می‌شود)" class="w-full p-2 border rounded-lg text-sm outline-none bg-slate-50 text-slate-500"></div>
+                            <div><label class="block text-xs font-semibold mb-1">پیشرفت واقعی کل (٪)</label><input type="number" step="any" id="cr_progress_physical" readonly title="میانگین وزنی پیشرفت واقعی رشته‌های زیر، بر اساس وزن هرکدام (وقتی وزنی ثبت نشده باشد، میانگین ساده محاسبه می‌شود)" class="w-full p-2 border rounded-lg text-sm outline-none bg-slate-50 text-slate-500"></div>
                             <div><label class="block text-xs font-semibold mb-1">تاریخ پیش‌بینی فعلی تکمیل *</label><input type="text" id="cr_forecast_date" required dir="ltr" placeholder="۱۴۰۵/۰۶/۰۸" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500 text-center"></div>
                         </div>
                         <p id="cr_deviation_live" class="text-xs font-bold" title="انحراف پیشرفت (واقعی − برنامه‌ای)، به‌صورت خودکار محاسبه می‌شود"></p>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div id="cr_progress_eng_row" class="p-3 bg-slate-50 rounded-xl space-y-2">
                                 <p class="text-xs font-bold text-slate-600">پیشرفت مهندسی (E)</p>
-                                <div class="grid grid-cols-2 gap-2">
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div><label class="block text-[11px] mb-1">وزن (٪)</label><input type="number" step="any" id="cr_progress_eng_weight" min="0" max="100" title="سهم رشته مهندسی از کل ارزش قرارداد" class="w-full p-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
                                     <div><label class="block text-[11px] mb-1">برنامه‌ای (٪)</label><input type="number" step="any" id="cr_progress_eng_planned" min="0" max="100" class="w-full p-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
                                     <div><label class="block text-[11px] mb-1">واقعی (٪)</label><input type="number" step="any" id="cr_progress_eng_actual" min="0" max="100" class="w-full p-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
                                 </div>
                             </div>
                             <div id="cr_progress_proc_row" class="p-3 bg-slate-50 rounded-xl space-y-2">
                                 <p class="text-xs font-bold text-slate-600">پیشرفت تأمین (P)</p>
-                                <div class="grid grid-cols-2 gap-2">
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div><label class="block text-[11px] mb-1">وزن (٪)</label><input type="number" step="any" id="cr_progress_proc_weight" min="0" max="100" title="سهم رشته تأمین از کل ارزش قرارداد" class="w-full p-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
                                     <div><label class="block text-[11px] mb-1">برنامه‌ای (٪)</label><input type="number" step="any" id="cr_progress_proc_planned" min="0" max="100" class="w-full p-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
                                     <div><label class="block text-[11px] mb-1">واقعی (٪)</label><input type="number" step="any" id="cr_progress_proc_actual" min="0" max="100" class="w-full p-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
                                 </div>
                             </div>
                             <div id="cr_progress_constr_row" class="p-3 bg-slate-50 rounded-xl space-y-2">
                                 <p class="text-xs font-bold text-slate-600">پیشرفت اجرا (C)</p>
-                                <div class="grid grid-cols-2 gap-2">
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div><label class="block text-[11px] mb-1">وزن (٪)</label><input type="number" step="any" id="cr_progress_constr_weight" min="0" max="100" title="سهم رشته اجرا از کل ارزش قرارداد" class="w-full p-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
                                     <div><label class="block text-[11px] mb-1">برنامه‌ای (٪)</label><input type="number" step="any" id="cr_progress_constr_planned" min="0" max="100" class="w-full p-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
                                     <div><label class="block text-[11px] mb-1">واقعی (٪)</label><input type="number" step="any" id="cr_progress_constr_actual" min="0" max="100" class="w-full p-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
                                 </div>
                             </div>
                         </div>
+                        <p id="cr_weight_sum_hint" class="text-xs font-bold"></p>
                         <div class="flex items-center gap-2.5 pt-1 border-t">
                             <span class="shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-[11px] text-[#ffffff]" style="background: linear-gradient(135deg, #f59e0b, #db2777);">🏁</span>
                             <h4 class="text-xs font-bold text-slate-600">مهم‌ترین Milestone پیش‌رو</h4>
@@ -3094,10 +3098,13 @@
             document.getElementById('cr_duration').value = row.contract_duration_months ?? '';
             updateEndDateFromStartAndDuration();
             document.getElementById('cr_forecast_date').value = formatJalali(row.forecast_completion_date);
+            document.getElementById('cr_progress_eng_weight').value = row.progress_engineering_weight ?? '';
             document.getElementById('cr_progress_eng_planned').value = row.progress_engineering_planned ?? '';
             document.getElementById('cr_progress_eng_actual').value = row.progress_engineering ?? '';
+            document.getElementById('cr_progress_proc_weight').value = row.progress_procurement_weight ?? '';
             document.getElementById('cr_progress_proc_planned').value = row.progress_procurement_planned ?? '';
             document.getElementById('cr_progress_proc_actual').value = row.progress_procurement ?? '';
+            document.getElementById('cr_progress_constr_weight').value = row.progress_construction_weight ?? '';
             document.getElementById('cr_progress_constr_planned').value = row.progress_construction_planned ?? '';
             document.getElementById('cr_progress_constr_actual').value = row.progress_construction ?? '';
             updateProgressFieldsVisibility();
@@ -3252,32 +3259,65 @@
         function progressDisciplineGroups() {
             const type = document.getElementById('cr_contract_type').value;
             return [
-                { rowId: 'cr_progress_eng_row', planned: 'cr_progress_eng_planned', actual: 'cr_progress_eng_actual', show: type === 'E' || type === 'EPC' || type === 'سایر' },
-                { rowId: 'cr_progress_proc_row', planned: 'cr_progress_proc_planned', actual: 'cr_progress_proc_actual', show: type === 'PC' || type === 'EPC' || type === 'سایر' },
-                { rowId: 'cr_progress_constr_row', planned: 'cr_progress_constr_planned', actual: 'cr_progress_constr_actual', show: type === 'PC' || type === 'C' || type === 'EPC' || type === 'سایر' },
+                { rowId: 'cr_progress_eng_row', weight: 'cr_progress_eng_weight', planned: 'cr_progress_eng_planned', actual: 'cr_progress_eng_actual', show: type === 'E' || type === 'EPC' || type === 'سایر' },
+                { rowId: 'cr_progress_proc_row', weight: 'cr_progress_proc_weight', planned: 'cr_progress_proc_planned', actual: 'cr_progress_proc_actual', show: type === 'PC' || type === 'EPC' || type === 'سایر' },
+                { rowId: 'cr_progress_constr_row', weight: 'cr_progress_constr_weight', planned: 'cr_progress_constr_planned', actual: 'cr_progress_constr_actual', show: type === 'PC' || type === 'C' || type === 'EPC' || type === 'سایر' },
             ];
         }
 
+        // Weighted by each discipline's share (%) of the contract, as entered by
+        // the PM — not a plain average, since disciplines rarely carry equal
+        // shares of a contract's value. A discipline with no weight entered yet
+        // (e.g. an older report) falls back to weight 1, so a project with no
+        // weights at all still reduces to the old equal-weight average.
         function updateOverallProgressFromDisciplines() {
             const groups = progressDisciplineGroups().filter(g => g.show);
-            const avg = (field) => {
-                const vals = groups.map(g => document.getElementById(g[field]).value).filter(v => v !== '').map(Number);
-                return vals.length ? String(Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)) : '';
+            const weighted = (field) => {
+                if (groups.length <= 1) {
+                    const v = groups.length ? document.getElementById(groups[0][field]).value : '';
+                    return v !== '' ? String(Math.round(Number(v))) : '';
+                }
+                let sumWeighted = 0, sumWeight = 0;
+                groups.forEach(g => {
+                    const v = document.getElementById(g[field]).value;
+                    if (v === '') return;
+                    const wRaw = document.getElementById(g.weight).value;
+                    const w = wRaw !== '' ? Number(wRaw) : 1;
+                    sumWeighted += Number(v) * w;
+                    sumWeight += w;
+                });
+                return sumWeight > 0 ? String(Math.round(sumWeighted / sumWeight)) : '';
             };
-            document.getElementById('cr_progress_planned').value = avg('planned');
-            document.getElementById('cr_progress_physical').value = avg('actual');
+            document.getElementById('cr_progress_planned').value = weighted('planned');
+            document.getElementById('cr_progress_physical').value = weighted('actual');
+            updateWeightSumHint();
             updateProgressDeviationLive();
         }
 
+        function updateWeightSumHint() {
+            const el = document.getElementById('cr_weight_sum_hint');
+            const groups = progressDisciplineGroups().filter(g => g.show);
+            if (groups.length <= 1) { el.textContent = ''; return; }
+            const vals = groups.map(g => document.getElementById(g.weight).value);
+            if (vals.every(v => v === '')) { el.textContent = ''; return; }
+            const sum = vals.reduce((s, v) => s + (v !== '' ? Number(v) : 0), 0);
+            const ok = Math.abs(sum - 100) <= 1;
+            el.className = 'text-xs font-bold ' + (ok ? 'text-emerald-600' : 'text-red-600');
+            el.textContent = `مجموع وزن رشته‌ها: ${toPersianDigits(String(sum))}٪ ${ok ? '' : '(باید ۱۰۰٪ باشد)'}`;
+        }
+
         function updateProgressFieldsVisibility() {
-            progressDisciplineGroups().forEach(g => {
+            const groups = progressDisciplineGroups();
+            const shownCount = groups.filter(g => g.show).length;
+            groups.forEach(g => {
                 document.getElementById(g.rowId).classList.toggle('hidden', !g.show);
                 document.getElementById(g.planned).required = g.show;
                 document.getElementById(g.actual).required = g.show;
+                document.getElementById(g.weight).required = g.show && shownCount > 1;
             });
             updateOverallProgressFromDisciplines();
         }
-        ['cr_progress_eng_planned', 'cr_progress_eng_actual', 'cr_progress_proc_planned', 'cr_progress_proc_actual', 'cr_progress_constr_planned', 'cr_progress_constr_actual']
+        ['cr_progress_eng_weight', 'cr_progress_eng_planned', 'cr_progress_eng_actual', 'cr_progress_proc_weight', 'cr_progress_proc_planned', 'cr_progress_proc_actual', 'cr_progress_constr_weight', 'cr_progress_constr_planned', 'cr_progress_constr_actual']
             .forEach(id => document.getElementById(id).addEventListener('input', updateOverallProgressFromDisciplines));
         updateProgressFieldsVisibility();
 
@@ -3563,6 +3603,15 @@
             const forecastIso = jalaliInputToIso(document.getElementById('cr_forecast_date').value);
             if (!startIso || !endIso || !milestoneIso || !forecastIso) { alert('لطفاً تاریخ‌ها را به‌صورت شمسی معتبر (مثلاً ۱۴۰۵/۰۱/۰۱) وارد کنید.'); return; }
 
+            const shownProgressGroups = progressDisciplineGroups().filter(g => g.show);
+            if (shownProgressGroups.length > 1) {
+                const weightSum = shownProgressGroups.reduce((s, g) => s + Number(document.getElementById(g.weight).value || 0), 0);
+                if (Math.abs(weightSum - 100) > 1) {
+                    alert(`مجموع وزن رشته‌ها (مهندسی/تأمین/اجرا) باید ۱۰۰٪ باشد؛ اکنون ${toPersianDigits(String(weightSum))}٪ است.`);
+                    return;
+                }
+            }
+
             const contractType = document.getElementById('cr_contract_type').value;
             const row = {
                 user_id: currentUser.id,
@@ -3593,6 +3642,9 @@
                 progress_engineering_planned: document.getElementById('cr_progress_eng_planned').value ? Number(document.getElementById('cr_progress_eng_planned').value) : null,
                 progress_procurement_planned: document.getElementById('cr_progress_proc_planned').value ? Number(document.getElementById('cr_progress_proc_planned').value) : null,
                 progress_construction_planned: document.getElementById('cr_progress_constr_planned').value ? Number(document.getElementById('cr_progress_constr_planned').value) : null,
+                progress_engineering_weight: document.getElementById('cr_progress_eng_weight').value ? Number(document.getElementById('cr_progress_eng_weight').value) : null,
+                progress_procurement_weight: document.getElementById('cr_progress_proc_weight').value ? Number(document.getElementById('cr_progress_proc_weight').value) : null,
+                progress_construction_weight: document.getElementById('cr_progress_constr_weight').value ? Number(document.getElementById('cr_progress_constr_weight').value) : null,
                 milestone_name: document.getElementById('cr_milestone_name').value,
                 milestone_planned_date: milestoneIso,
                 milestone_status: document.getElementById('cr_milestone_status').value,
