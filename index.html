@@ -1174,6 +1174,26 @@
                 </div>
             </div>
 
+            <!-- LATEST PROJECT STATUS — fully visual per-project report: progress
+                 gauges, budget-absorption donut, schedule donut(s), and key dates. -->
+            <div id="projectsStatusView" class="hidden space-y-5">
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-5">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                        <div class="flex items-center gap-3">
+                            <span class="shrink-0 h-11 w-11 rounded-2xl flex items-center justify-center text-[#ffffff]" style="background: linear-gradient(135deg, #1e3a8a, #4c1d95);">
+                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 12 17 7"/></svg>
+                            </span>
+                            <div>
+                                <h2 class="text-lg font-extrabold text-slate-800">آخرین وضعیت پروژه‌ها</h2>
+                                <p class="text-xs text-slate-500 mt-0.5">پیشرفت، جذب بودجه و زمان‌بندی هر پروژه، بر اساس آخرین «اطلاعات پایه و پیشرفت پروژه» ثبت‌شده</p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="window.print()" class="no-print text-xs font-bold px-4 py-2 rounded-xl border text-slate-600 hover:bg-slate-50">🖨 چاپ / PDF</button>
+                    </div>
+                </div>
+                <div id="projectsStatusCards" class="space-y-5"></div>
+            </div>
+
             <div id="tasksView" class="hidden space-y-5">
                 <div class="print-card bg-white rounded-2xl shadow-sm border p-5">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
@@ -1760,7 +1780,7 @@
             return `<svg class="${cls || 'w-5 h-5'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name] || ''}</svg>`;
         }
 
-        const NAV_ICON = { overview: 'grid', aiAnalysis: 'activity', admin: 'tool', selection: 'zap', execReport: 'fileText', checkin: 'edit', clientReport: 'clipboard', qwProposal: 'target', tasks: 'checklist' };
+        const NAV_ICON = { overview: 'grid', aiAnalysis: 'activity', admin: 'tool', selection: 'zap', execReport: 'fileText', checkin: 'edit', clientReport: 'clipboard', qwProposal: 'target', tasks: 'checklist', projectsStatus: 'gauge' };
         const SIDEBAR_ACTIVE_CLASS = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold bg-blue-900/10 text-blue-900 transition';
         const SIDEBAR_INACTIVE_CLASS = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition';
         const MOBILE_ACTIVE_CLASS = 'flex flex-col items-center gap-0.5 px-3 py-2 shrink-0 text-blue-900';
@@ -1892,10 +1912,10 @@
             mobileNav.innerHTML = '';
 
             const buttons = currentProfile.role === 'admin'
-                ? [['overview', 'نمای کلی'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب اقدام زودبازده'], ['tasks', 'پایش اقدامات'], ['execReport', 'گزارش تحلیلی مدیریتی'], ['admin', 'مدیریت کاربران']]
+                ? [['overview', 'نمای کلی'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب اقدام زودبازده'], ['tasks', 'پایش اقدامات'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['execReport', 'گزارش تحلیلی مدیریتی'], ['admin', 'مدیریت کاربران']]
                 : hasOrganization('کارفرما')
-                    ? [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['selection', 'پیشنهادها'], ['tasks', 'پایش اقدامات']]
-                    : [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['tasks', 'پایش اقدامات']];
+                    ? [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['selection', 'پیشنهادها'], ['tasks', 'پایش اقدامات'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها']]
+                    : [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['tasks', 'پایش اقدامات'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها']];
 
             buttons.forEach(([view, label], i) => {
                 const iconName = NAV_ICON[view] || 'grid';
@@ -1917,7 +1937,7 @@
             switchView(buttons[0][0]);
         }
 
-        const ALL_VIEWS = ['overview', 'checkin', 'clientReport', 'qwProposal', 'admin', 'selection', 'aiAnalysis', 'execReport', 'tasks'];
+        const ALL_VIEWS = ['overview', 'checkin', 'clientReport', 'qwProposal', 'admin', 'selection', 'aiAnalysis', 'execReport', 'tasks', 'projectsStatus'];
 
         function switchView(view) {
             ALL_VIEWS.forEach(v => {
@@ -1940,6 +1960,7 @@
             if (view === 'aiAnalysis') loadAiAnalysisView();
             if (view === 'execReport') loadExecReport();
             if (view === 'tasks') loadTasksView();
+            if (view === 'projectsStatus') loadProjectsStatusView();
         }
 
         function startTopbarClock() {
@@ -3787,6 +3808,189 @@
         document.getElementById('projectsReportModal').addEventListener('click', (e) => {
             if (e.target.id === 'projectsReportModal') document.getElementById('projectsReportModal').classList.add('hidden');
         });
+
+        // --------------------------------------------------
+        // LATEST PROJECT STATUS — fully visual per-project report (progress
+        // gauges, budget-absorption donut, schedule donut), from the latest
+        // «اطلاعات پایه و پیشرفت پروژه» (client_reports) row per project.
+        // Same latest-row-per-project fetch as openProjectsReportModal above,
+        // rendered as charts instead of a table and scoped to the caller's
+        // own project(s) when not admin.
+        // --------------------------------------------------
+        const PS_DISCIPLINE_LABELS = { engineering: 'مهندسی (E)', procurement: 'تأمین (P)', construction: 'اجرا (C)' };
+        function psDisciplineKeysForType(type) {
+            const keys = [];
+            if (type === 'E' || type === 'EPC' || type === 'سایر') keys.push('engineering');
+            if (type === 'PC' || type === 'EPC' || type === 'سایر') keys.push('procurement');
+            if (type === 'PC' || type === 'C' || type === 'EPC' || type === 'سایر') keys.push('construction');
+            return keys;
+        }
+
+        function psPct(part, whole) {
+            if (part == null || !whole) return null;
+            return Math.max(0, Math.min(100, Math.round((part / whole) * 100)));
+        }
+
+        // میزان جذب بودجه (cr_amount_current_rial/eur, labeled «میزان جذب»)
+        // against the initial contract amount; زمان سپری‌شده live from
+        // contract_start_date (not the possibly-stale stored elapsed_months)
+        // against both the original duration and, when a تطویل has been
+        // approved, the extended one.
+        function computeProjectStatusMetrics(cr) {
+            const budgetPct = cr.contract_current_amount_rial != null && cr.contract_initial_amount_rial
+                ? psPct(cr.contract_current_amount_rial, cr.contract_initial_amount_rial)
+                : (cr.contract_current_amount_eur != null && cr.contract_initial_amount_eur ? psPct(cr.contract_current_amount_eur, cr.contract_initial_amount_eur) : null);
+            const elapsedMonths = cr.contract_start_date ? monthsBetween(cr.contract_start_date) : null;
+            const totalPct = (elapsedMonths != null && cr.contract_duration_months) ? psPct(elapsedMonths, cr.contract_duration_months) : null;
+            let extendedPct = null;
+            if (elapsedMonths != null && cr.contract_start_date && cr.latest_extension_end_date) {
+                const extendedMonths = monthsBetween(cr.contract_start_date, new Date(cr.latest_extension_end_date));
+                extendedPct = extendedMonths ? psPct(elapsedMonths, extendedMonths) : null;
+            }
+            return { budgetPct, totalPct, extendedPct };
+        }
+
+        function psGaugeColor(v) {
+            return v >= 90 ? '#10b981' : v >= 60 ? '#3b82f6' : v >= 30 ? '#f59e0b' : '#ef4444';
+        }
+
+        // Half-circle gauge — same technique as renderDivergenceGauge (AI
+        // report), generalized for reuse across every progress figure here.
+        function renderGaugeChart(canvasId, value) {
+            const el = document.getElementById(canvasId);
+            if (!el) return;
+            const v = Math.max(0, Math.min(100, Number(value) || 0));
+            new Chart(el.getContext('2d'), {
+                type: 'doughnut',
+                data: { datasets: [{ data: [v, 100 - v], backgroundColor: [psGaugeColor(v), '#e2e8f0'], borderWidth: 0 }] },
+                options: { circumference: 180, rotation: 270, cutout: '72%', plugins: { legend: { display: false }, tooltip: { enabled: false } } },
+            });
+        }
+
+        function renderDonutChart(canvasId, value, color) {
+            const el = document.getElementById(canvasId);
+            if (!el) return;
+            const v = Math.max(0, Math.min(100, Number(value) || 0));
+            new Chart(el.getContext('2d'), {
+                type: 'doughnut',
+                data: { datasets: [{ data: [v, 100 - v], backgroundColor: [color, '#e2e8f0'], borderWidth: 0 }] },
+                options: { cutout: '68%', plugins: { legend: { display: false }, tooltip: { enabled: false } } },
+            });
+        }
+
+        // Two concentric rings — Chart.js renders multi-dataset doughnuts
+        // outside-in, so dataset[0] (کل مدت قرارداد) is the outer ring and
+        // dataset[1] (آخرین تطویل) nests inside it.
+        function renderNestedDonutChart(canvasId, outerValue, innerValue, outerColor, innerColor) {
+            const el = document.getElementById(canvasId);
+            if (!el) return;
+            const o = Math.max(0, Math.min(100, Number(outerValue) || 0));
+            const i = Math.max(0, Math.min(100, Number(innerValue) || 0));
+            new Chart(el.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    datasets: [
+                        { data: [o, 100 - o], backgroundColor: [outerColor, '#e2e8f0'], borderWidth: 0 },
+                        { data: [i, 100 - i], backgroundColor: [innerColor, '#e2e8f0'], borderWidth: 0 },
+                    ],
+                },
+                options: { cutout: '46%', plugins: { legend: { display: false }, tooltip: { enabled: false } } },
+            });
+        }
+
+        function projectStatusCardHtml(cr, idx) {
+            const disciplineKeys = psDisciplineKeysForType(cr.contract_type);
+            const typeLabel = cr.contract_type === 'سایر' ? (cr.contract_type_other || 'سایر') : (cr.contract_type || '—');
+            const { budgetPct, totalPct, extendedPct } = computeProjectStatusMetrics(cr);
+
+            return `<div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b pb-3">
+                    <div>
+                        <h3 class="text-sm font-extrabold text-slate-800">${esc(cr.project_name)}</h3>
+                        <p class="text-[11px] text-slate-500 mt-0.5">${esc(cr.plan_name || '—')} — نوع قرارداد: <b>${esc(typeLabel)}</b>${cr.contract_number ? ` — شماره قرارداد: ${esc(cr.contract_number)}` : ''}</p>
+                    </div>
+                    <span class="text-[10px] text-slate-400">آخرین به‌روزرسانی: ${formatJalali(cr.created_at)}</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="text-center space-y-1">
+                        <div class="relative h-24 mx-auto" style="max-width:180px"><canvas id="psGaugeTotal${idx}"></canvas></div>
+                        <p class="text-xl font-extrabold -mt-8">${cr.progress_physical != null ? toPersianDigits(String(cr.progress_physical)) + '٪' : '—'}</p>
+                        <p class="text-[11px] font-bold text-slate-600">پیشرفت کل (واقعی)</p>
+                        <p class="text-[10px] text-slate-400">برنامه‌ای: ${cr.progress_planned != null ? toPersianDigits(String(cr.progress_planned)) + '٪' : '—'}</p>
+                    </div>
+                    <div class="text-center space-y-1">
+                        <div class="relative h-24 mx-auto" style="max-width:180px"><canvas id="psDonutBudget${idx}"></canvas></div>
+                        <p class="text-xl font-extrabold -mt-8">${budgetPct != null ? toPersianDigits(String(budgetPct)) + '٪' : '—'}</p>
+                        <p class="text-[11px] font-bold text-slate-600">جذب بودجه</p>
+                        <p class="text-[10px] text-slate-400">میزان جذب از مبلغ اولیه قرارداد</p>
+                    </div>
+                    <div class="text-center space-y-1">
+                        <div class="relative h-24 mx-auto" style="max-width:180px"><canvas id="psDonutDuration${idx}"></canvas></div>
+                        <p class="text-xl font-extrabold -mt-8">${totalPct != null ? toPersianDigits(String(totalPct)) + '٪' : '—'}</p>
+                        <p class="text-[11px] font-bold text-slate-600">زمان سپری‌شده</p>
+                        <p class="text-[10px] text-slate-400">${extendedPct != null ? `حلقه بیرونی: کل مدت — حلقه داخلی: با آخرین تطویل (${toPersianDigits(String(extendedPct))}٪)` : 'از کل مدت قرارداد'}</p>
+                    </div>
+                </div>
+
+                ${disciplineKeys.length > 1 ? `
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-2 border-t">
+                    ${disciplineKeys.map(k => `
+                    <div class="text-center space-y-1">
+                        <div class="relative h-16 mx-auto" style="max-width:120px"><canvas id="psGaugeDisc${idx}_${k}"></canvas></div>
+                        <p class="text-sm font-extrabold -mt-5">${cr['progress_' + k] != null ? toPersianDigits(String(cr['progress_' + k])) + '٪' : '—'}</p>
+                        <p class="text-[10px] font-bold text-slate-500">${PS_DISCIPLINE_LABELS[k]}</p>
+                    </div>`).join('')}
+                </div>` : ''}
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 pt-2 border-t text-[11px]">
+                    <div class="bg-slate-50 rounded-lg p-2"><p class="text-slate-400">تاریخ شروع قرارداد</p><p class="font-bold text-slate-700 tabular-nums">${formatJalali(cr.contract_start_date) || '—'}</p></div>
+                    <div class="bg-slate-50 rounded-lg p-2"><p class="text-slate-400">تاریخ پایان پیمانکار</p><p class="font-bold text-slate-700 tabular-nums">${formatJalali(cr.contract_end_date) || '—'}</p></div>
+                    <div class="bg-slate-50 rounded-lg p-2"><p class="text-slate-400">تاریخ پایان مشاور</p><p class="font-bold text-slate-700 tabular-nums">${cr.consultant_contract_end_date ? formatJalali(cr.consultant_contract_end_date) : '—'}</p></div>
+                    <div class="bg-slate-50 rounded-lg p-2"><p class="text-slate-400">پایان با آخرین تطویل</p><p class="font-bold text-slate-700 tabular-nums">${cr.latest_extension_end_date ? formatJalali(cr.latest_extension_end_date) : '—'}</p></div>
+                </div>
+            </div>`;
+        }
+
+        function drawProjectStatusCharts(cr, idx) {
+            renderGaugeChart('psGaugeTotal' + idx, cr.progress_physical || 0);
+            psDisciplineKeysForType(cr.contract_type).forEach(k => renderGaugeChart(`psGaugeDisc${idx}_${k}`, cr['progress_' + k] || 0));
+
+            const { budgetPct, totalPct, extendedPct } = computeProjectStatusMetrics(cr);
+            renderDonutChart('psDonutBudget' + idx, budgetPct || 0, '#7c3aed');
+            if (extendedPct != null) {
+                renderNestedDonutChart('psDonutDuration' + idx, totalPct || 0, extendedPct || 0, '#1e3a8a', '#f59e0b');
+            } else {
+                renderDonutChart('psDonutDuration' + idx, totalPct || 0, '#1e3a8a');
+            }
+        }
+
+        async function loadProjectsStatusView() {
+            const body = document.getElementById('projectsStatusCards');
+            body.innerHTML = '<p class="text-xs text-slate-500 py-8 text-center">در حال بارگذاری...</p>';
+
+            const [{ data: rawReports }, guideNames] = await Promise.all([
+                _supabase.from('client_reports').select('*').order('created_at', { ascending: true }),
+                getGuideProjectNames(),
+            ]);
+
+            const latestByProject = {};
+            (rawReports || []).forEach(r => { if (!guideNames.has(r.project_name)) latestByProject[r.project_name] = r; });
+            let rows = Object.values(latestByProject);
+            if (currentProfile.role !== 'admin') {
+                const myProjects = new Set(myProjectAccess.map(a => a.project_name));
+                rows = rows.filter(r => myProjects.has(r.project_name));
+            }
+            rows.sort((a, b) => a.project_name.localeCompare(b.project_name, 'fa'));
+
+            if (!rows.length) {
+                body.innerHTML = '<p class="text-xs text-slate-500 py-8 text-center bg-white rounded-2xl border p-8">هنوز هیچ گزارش «اطلاعات پایه و پیشرفت پروژه» ثبت نشده است.</p>';
+                return;
+            }
+
+            body.innerHTML = rows.map((cr, i) => projectStatusCardHtml(cr, i)).join('');
+            rows.forEach((cr, i) => drawProjectStatusCharts(cr, i));
+        }
 
         // --------------------------------------------------
         // ADMIN: projects + invites
