@@ -735,7 +735,11 @@
                         <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
                             <div><label class="block text-xs font-semibold mb-1">تاریخ شروع قرارداد *</label><input type="text" id="cr_start_date" required dir="ltr" placeholder="۱۴۰۴/۰۱/۰۱" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
                             <div><label class="block text-xs font-semibold mb-1">مدت قرارداد (ماه) *</label><input type="number" step="any" id="cr_duration" required min="0" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">تاریخ پایان قراردادی</label><input type="text" id="cr_end_date" readonly dir="ltr" title="به‌صورت خودکار از تاریخ شروع و مدت قرارداد محاسبه می‌شود" placeholder="۱۴۰۶/۰۱/۰۱" class="w-full p-2 border rounded-lg text-sm outline-none bg-slate-50 text-slate-500 text-center"></div>
+                            <div><label class="block text-xs font-semibold mb-1">تاریخ پایان قراردادی پیمانکار</label><input type="text" id="cr_end_date" readonly dir="ltr" title="به‌صورت خودکار از تاریخ شروع و مدت قرارداد محاسبه می‌شود" placeholder="۱۴۰۶/۰۱/۰۱" class="w-full p-2 border rounded-lg text-sm outline-none bg-slate-50 text-slate-500 text-center"></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="block text-xs font-semibold mb-1">تاریخ پایان قرارداد مشاور</label><input type="text" id="cr_consultant_end_date" dir="ltr" placeholder="۱۴۰۶/۰۱/۰۱" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
+                            <div><label class="block text-xs font-semibold mb-1">تاریخ پایان با آخرین تطویل (در صورت وجود)</label><input type="text" id="cr_latest_extension_end_date" dir="ltr" placeholder="در صورت عدم تطویل خالی بگذارید" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
                         </div>
                     </div>
 
@@ -3106,6 +3110,8 @@
             document.getElementById('cr_start_date').value = formatJalali(row.contract_start_date);
             document.getElementById('cr_duration').value = row.contract_duration_months ?? '';
             updateEndDateFromStartAndDuration();
+            document.getElementById('cr_consultant_end_date').value = row.consultant_contract_end_date ? formatJalali(row.consultant_contract_end_date) : '';
+            document.getElementById('cr_latest_extension_end_date').value = row.latest_extension_end_date ? formatJalali(row.latest_extension_end_date) : '';
             document.getElementById('cr_forecast_date').value = formatJalali(row.forecast_completion_date);
             document.getElementById('cr_progress_eng_weight').value = row.progress_engineering_weight ?? '';
             document.getElementById('cr_progress_eng_planned').value = row.progress_engineering_planned ?? '';
@@ -3664,6 +3670,8 @@
                 contract_current_amount_eur: document.getElementById('cr_amount_current_eur').value ? Number(document.getElementById('cr_amount_current_eur').value) : null,
                 contract_start_date: startIso,
                 contract_end_date: endIso,
+                consultant_contract_end_date: jalaliInputToIso(document.getElementById('cr_consultant_end_date').value),
+                latest_extension_end_date: jalaliInputToIso(document.getElementById('cr_latest_extension_end_date').value),
                 contract_duration_months: Number(document.getElementById('cr_duration').value),
                 elapsed_months: monthsBetween(startIso),
                 forecast_completion_date: forecastIso,
@@ -6175,6 +6183,7 @@
         // DOM from page load, only their .value is read/written elsewhere),
         // so this needs to run once, not on every render.
         ['ci_plan_start_date', 'ci_plan_target_date', 'cr_start_date', 'cr_forecast_date', 'cr_milestone_date', 'ci_qwq_due',
+         'cr_consultant_end_date', 'cr_latest_extension_end_date',
          'taskFilterDateFrom', 'taskFilterDateTo', 'newTaskStartDate', 'newTaskDueDate']
             .forEach(id => attachJalaliDatePicker(document.getElementById(id)));
 
