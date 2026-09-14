@@ -762,7 +762,7 @@
                             <div id="cr_progress_constr_row" class="p-3 bg-slate-50 rounded-xl space-y-2">
                                 <p class="text-xs font-bold text-slate-600">پیشرفت اجرا (C)</p>
                                 <div class="grid grid-cols-3 gap-2">
-                                    <div><label class="block text-[11px] mb-1">وزن (٪)</label><input type="number" step="any" id="cr_progress_constr_weight" min="0" max="100" title="سهم رشته اجرا از کل ارزش قرارداد" class="w-full p-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
+                                    <div><label class="block text-[11px] mb-1">وزن (٪)</label><input type="number" step="any" id="cr_progress_constr_weight" min="0" max="100" readonly title="به‌صورت خودکار محاسبه می‌شود تا مجموع وزن رشته‌ها ۱۰۰٪ شود (۱۰۰ منهای وزن رشته‌های دیگر)" class="w-full p-1.5 border rounded-lg text-sm outline-none bg-slate-50 text-slate-500"></div>
                                     <div><label class="block text-[11px] mb-1">برنامه‌ای (٪)</label><input type="number" step="any" id="cr_progress_constr_planned" min="0" max="100" class="w-full p-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
                                     <div><label class="block text-[11px] mb-1">واقعی (٪)</label><input type="number" step="any" id="cr_progress_constr_actual" min="0" max="100" class="w-full p-1.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"></div>
                                 </div>
@@ -3104,7 +3104,9 @@
             document.getElementById('cr_progress_proc_weight').value = row.progress_procurement_weight ?? '';
             document.getElementById('cr_progress_proc_planned').value = row.progress_procurement_planned ?? '';
             document.getElementById('cr_progress_proc_actual').value = row.progress_procurement ?? '';
-            document.getElementById('cr_progress_constr_weight').value = row.progress_construction_weight ?? '';
+            // cr_progress_constr_weight is not hydrated here — it's a readonly,
+            // derived field and updateProgressFieldsVisibility() below recomputes
+            // it from the eng/proc weights just set above.
             document.getElementById('cr_progress_constr_planned').value = row.progress_construction_planned ?? '';
             document.getElementById('cr_progress_constr_actual').value = row.progress_construction ?? '';
             updateProgressFieldsVisibility();
@@ -3265,12 +3267,34 @@
             ];
         }
 
+        // اجرا (construction) is always the last discipline shown, so its weight
+        // is the one PMs most often get wrong doing the subtraction by hand —
+        // computed here instead as 100 minus whatever the other shown
+        // disciplines' weights are, so the total can never NOT be 100 once
+        // every other weight is filled in. Left blank while every other
+        // discipline's weight is still blank too, so a legacy report with no
+        // weights ever entered doesn't get construction pinned to 100 while
+        // the rest fall back to equal weighting.
+        function updateConstrWeightFromOthers() {
+            const groups = progressDisciplineGroups().filter(g => g.show);
+            const constrGroup = groups.find(g => g.rowId === 'cr_progress_constr_row');
+            if (!constrGroup) return;
+            const constrInput = document.getElementById(constrGroup.weight);
+            const others = groups.filter(g => g.rowId !== 'cr_progress_constr_row');
+            if (!others.length) { constrInput.value = '100'; return; }
+            const otherVals = others.map(g => document.getElementById(g.weight).value);
+            if (otherVals.every(v => v === '')) { constrInput.value = ''; return; }
+            const sumOthers = otherVals.reduce((s, v) => s + (v !== '' ? Number(v) : 0), 0);
+            constrInput.value = String(Math.max(0, Math.round((100 - sumOthers) * 100) / 100));
+        }
+
         // Weighted by each discipline's share (%) of the contract, as entered by
         // the PM — not a plain average, since disciplines rarely carry equal
         // shares of a contract's value. A discipline with no weight entered yet
         // (e.g. an older report) falls back to weight 1, so a project with no
         // weights at all still reduces to the old equal-weight average.
         function updateOverallProgressFromDisciplines() {
+            updateConstrWeightFromOthers();
             const groups = progressDisciplineGroups().filter(g => g.show);
             const weighted = (field) => {
                 if (groups.length <= 1) {
@@ -3313,7 +3337,7 @@
                 document.getElementById(g.rowId).classList.toggle('hidden', !g.show);
                 document.getElementById(g.planned).required = g.show;
                 document.getElementById(g.actual).required = g.show;
-                document.getElementById(g.weight).required = g.show && shownCount > 1;
+                document.getElementById(g.weight).required = g.show && shownCount > 1 && g.rowId !== 'cr_progress_constr_row';
             });
             updateOverallProgressFromDisciplines();
         }
