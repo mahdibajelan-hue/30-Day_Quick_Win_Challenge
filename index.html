@@ -142,6 +142,14 @@
             --c-scrollbar-thumb: #cbd5e1;
             --c-color-scheme: light;
         }
+        /* Light theme only — dark theme's bg-white already reads as a
+           distinct panel against the page background, but in light theme
+           every card is the same white, so this filter box needs its own
+           tint to stand out from the plain-white cards around it. */
+        :root[data-theme="light"] #taskFilterBox {
+            background: var(--c-blue-50);
+            border-color: var(--c-blue-200);
+        }
         body { font-family: 'Vazirmatn', sans-serif; }
         canvas { max-width: 100%; }
         .brand-title { letter-spacing: 0.02em; }
@@ -247,7 +255,7 @@
             <div class="flex items-center gap-3 p-5 border-b border-slate-800">
                 <img src="logo.png" alt="لوگوی شرکت" class="h-9 w-9 object-contain shrink-0" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
                 <div class="min-w-0">
-                    <p class="font-bold text-sm text-slate-800 truncate">شرکت ملی گاز ایران</p>
+                    <p class="font-bold text-sm text-slate-800 truncate">شرکت مهندسی و توسعه گاز ایران</p>
                     <p class="text-[11px] text-slate-500 truncate">طرح خط لوله ششم سراسری</p>
                 </div>
             </div>
@@ -264,7 +272,7 @@
                     <p class="relative text-xs leading-relaxed font-medium" style="color:#f1f5f9;">تحقق پروژه‌ها، به‌موقع، با کیفیت و با کمترین هزینه</p>
                     <div class="relative mt-2.5 pt-2.5 text-center" style="border-top:1px solid rgba(251,191,36,.25);">
                         <p class="text-[10px] font-semibold mb-1" style="color:#bfdbfe;">توسعه‌دهنده: مهدی باجلان</p>
-                        <img src="signature.png" alt="امضای توسعه‌دهنده مهدی باجلان" class="h-9 mx-auto object-contain" onerror="this.style.display='none'">
+                        <img src="signature.png" alt="امضای توسعه‌دهنده مهدی باجلان" class="h-12 mx-auto object-contain" onerror="this.style.display='none'">
                     </div>
                 </div>
             </div>
@@ -1176,6 +1184,7 @@
                         </div>
                         <div class="no-print flex items-center gap-2 flex-wrap">
                             <button type="button" id="tasksRefreshBtn" title="بروزرسانی" class="h-9 w-9 flex items-center justify-center rounded-xl border text-slate-500 hover:bg-slate-50">⟲</button>
+                            <button type="button" id="tasksFilterToggleBtn" class="text-xs font-bold px-3 py-2 rounded-xl border text-slate-600 hover:bg-slate-50">🔍 فیلتر</button>
                             <button type="button" id="tasksExportCsvBtn" class="text-xs font-bold px-3 py-2 rounded-xl border text-slate-600 hover:bg-slate-50">خروجی CSV</button>
                             <button type="button" id="tasksPrintBtn" class="text-xs font-bold px-3 py-2 rounded-xl border text-slate-600 hover:bg-slate-50">🖨 چاپ / PDF</button>
                             <button type="button" id="tasksNewBtn" class="hidden bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow">+ ثبت تسک جدید</button>
@@ -1183,7 +1192,7 @@
                     </div>
                 </div>
 
-                <div class="no-print bg-white rounded-2xl shadow-sm border p-4 space-y-3">
+                <div id="taskFilterBox" class="no-print hidden bg-white rounded-2xl shadow-sm border p-4 space-y-3">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 mb-1">پروژه</label>
@@ -6857,6 +6866,7 @@
             document.getElementById('tasksApplyFiltersBtn').addEventListener('click', () => { readTaskFiltersFromForm(); renderAllTaskSections(); });
             document.getElementById('tasksClearFiltersBtn').addEventListener('click', clearAllTaskFilters);
             document.getElementById('tasksRefreshBtn').addEventListener('click', loadTasksView);
+            document.getElementById('tasksFilterToggleBtn').addEventListener('click', () => document.getElementById('taskFilterBox').classList.toggle('hidden'));
             document.getElementById('tasksPrintBtn').addEventListener('click', () => window.print());
             document.getElementById('tasksExportCsvBtn').addEventListener('click', () => exportTasksCsv(computeFilteredTasks()));
             document.getElementById('tasksNewBtn').addEventListener('click', () => openNewTaskModal());
@@ -6963,6 +6973,16 @@
             const isDone = task.task_status === 'انجام‌شده';
             const isPending = task.task_status === 'در انتظار تایید';
 
+            // Admin-only responsible-person options for this task's project;
+            // a task whose current مسئول no longer has project access still
+            // keeps its own value selectable instead of silently losing it.
+            const respCurrentValue = `${task.responsible_name}|||${task.responsible_email}`;
+            const respOptions = (isAdmin ? (taskUsersByProject[task.project_name] || []) : [])
+                .map(u => ({ value: `${personDisplayName(u)}|||${u.email}`, label: `${esc(personDisplayName(u))} — ${esc(u.organization)}` }));
+            if (isAdmin && !respOptions.some(o => o.value === respCurrentValue)) {
+                respOptions.push({ value: respCurrentValue, label: `${esc(task.responsible_name)} (مقدار قبلی)` });
+            }
+
             const actionButtons = [];
             if (isOwner && !isDone && !isPending) actionButtons.push(['drawerSubmitBtn', 'bg-blue-900 hover:bg-blue-800', '📤 ثبت اقدام']);
             if (isAdmin && isPending) { actionButtons.push(['drawerApproveBtn', 'bg-emerald-600 hover:bg-emerald-500', '✅ تایید نهایی']); actionButtons.push(['drawerRejectBtn', 'bg-amber-600 hover:bg-amber-500', '↩️ بازگشت']); }
@@ -7000,6 +7020,9 @@
                 <div class="grid grid-cols-2 gap-2 text-xs">
                     <div><label class="block text-[10px] font-bold text-slate-500 mb-1">واحد مسئول</label><select id="drawerTaskUnit" class="w-full border rounded-lg p-2 bg-white"><option value="">-- انتخاب --</option>${TASK_UNITS.map(u => `<option value="${esc(u)}" ${u === task.responsible_unit ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select></div>
                     <div><label class="block text-[10px] font-bold text-slate-500 mb-1">شدت</label><select id="drawerTaskSeverity" class="w-full border rounded-lg p-2 bg-white">${TASK_SEVERITIES.map(s => `<option value="${esc(s)}" ${s === task.severity ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></div>
+                    <div class="col-span-2"><label class="block text-[10px] font-bold text-slate-500 mb-1">مسئول پیگیری</label><select id="drawerTaskResponsible" class="w-full border rounded-lg p-2 bg-white">${respOptions.map(o => `<option value="${esc(o.value)}" ${o.value === respCurrentValue ? 'selected' : ''}>${o.label}</option>`).join('')}</select></div>
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1">شروع</label><input id="drawerTaskStartDate" data-jalali-picker type="text" dir="ltr" value="${esc(task.start_date ? formatJalali(task.start_date) : '')}" placeholder="۱۴۰۵/۰۶/۰۱" class="w-full border rounded-lg p-2 text-center"></div>
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1">مهلت انجام</label><input id="drawerTaskDueDate" data-jalali-picker type="text" dir="ltr" value="${esc(task.due_date ? formatJalali(task.due_date) : '')}" placeholder="۱۴۰۵/۰۶/۳۰" class="w-full border rounded-lg p-2 text-center"></div>
                 </div>` : ''}
 
                 <div class="grid grid-cols-1 gap-2 text-xs">
@@ -7019,6 +7042,7 @@
                 ${actionButtons.length ? `<div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t">${actionButtons.map(([id, cls, label]) => `<button type="button" id="${id}" class="${cls} text-white font-bold rounded-lg py-2">${label}</button>`).join('')}</div>` : ''}
             `;
 
+            document.querySelectorAll('#taskDrawerContent [data-jalali-picker]').forEach(el => attachJalaliDatePicker(el));
             document.getElementById('taskDrawerCloseBtn').addEventListener('click', closeTaskDrawer);
             if (canEditCapa || isAdmin) {
                 document.getElementById('drawerSaveFieldsBtn').addEventListener('click', () => saveTaskDrawerFields(task.id));
@@ -7046,6 +7070,18 @@
             if (isAdmin) {
                 patch.responsible_unit = document.getElementById('drawerTaskUnit').value || null;
                 patch.severity = document.getElementById('drawerTaskSeverity').value;
+                const [respName, respEmail] = (document.getElementById('drawerTaskResponsible').value || '').split('|||');
+                const startIso = jalaliInputToIso(document.getElementById('drawerTaskStartDate').value);
+                const dueIso = jalaliInputToIso(document.getElementById('drawerTaskDueDate').value);
+                if (!respName || !respEmail || !startIso || !dueIso) {
+                    alert('مسئول پیگیری، تاریخ شروع و مهلت انجام الزامی‌اند.');
+                    return;
+                }
+                if (startIso > dueIso) { alert('تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد.'); return; }
+                patch.responsible_name = respName;
+                patch.responsible_email = respEmail;
+                patch.start_date = startIso;
+                patch.due_date = dueIso;
             }
             const { error } = await _supabase.from('case_updates').update(patch).eq('id', taskId);
             if (error) { alert('خطا در ذخیره: ' + error.message); return; }
