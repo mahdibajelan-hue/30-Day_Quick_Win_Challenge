@@ -327,6 +327,20 @@
                     <hr class="border-t">
 
                     <div class="space-y-2">
+                        <h3 class="text-sm font-bold text-slate-700">امضای دیجیتال</h3>
+                        <p class="text-xs text-slate-500">این تصویر هنگام امضای «متن درخواست مصوبه» به‌عنوان امضای دیجیتال شما درج می‌شود.</p>
+                        <div class="flex items-center gap-3">
+                            <img id="profSignaturePreview" src="" alt="امضا" class="hidden h-14 border rounded-lg bg-slate-50 object-contain px-2">
+                            <p id="profSignatureEmpty" class="text-xs text-slate-400">هنوز امضایی بارگذاری نشده.</p>
+                        </div>
+                        <input id="profSignatureFile" type="file" accept="image/png,image/jpeg" class="w-full text-xs">
+                        <button id="uploadSignatureBtn" type="button" class="w-full bg-blue-900 hover:bg-blue-800 text-white text-sm py-2 rounded-xl font-bold">بارگذاری امضا</button>
+                        <p id="profSignatureMsg" class="text-xs"></p>
+                    </div>
+
+                    <hr class="border-t">
+
+                    <div class="space-y-2">
                         <h3 class="text-sm font-bold text-slate-700">تغییر رمز عبور</h3>
                         <p class="text-xs font-extrabold text-red-600">در اولین ورود حتماً نسبت به تغییر رمز عبور خود اقدام نمایید.</p>
                         <input id="newPassword" type="password" placeholder="رمز عبور جدید (حداقل ۶ کاراکتر)" dir="ltr" class="w-full p-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-900">
@@ -863,7 +877,7 @@
                     <div class="overflow-x-auto">
                         <table class="w-full text-right text-xs">
                             <thead class="bg-slate-100 text-slate-700"><tr>
-                                <th class="p-2 border">پروژه</th><th class="p-2 border">سازمان</th><th class="p-2 border">عملیات دسترسی</th><th class="p-2 border">ایمیل</th><th class="p-2 border">نقش</th><th class="p-2 border">وضعیت</th><th class="p-2 border">عملیات کاربر</th>
+                                <th class="p-2 border">پروژه</th><th class="p-2 border">سازمان</th><th class="p-2 border">عملیات دسترسی</th><th class="p-2 border">ایمیل</th><th class="p-2 border">مشخصات</th><th class="p-2 border">نقش</th><th class="p-2 border">وضعیت</th><th class="p-2 border">عملیات کاربر</th>
                             </tr></thead>
                             <tbody id="admUsersTableBody"></tbody>
                         </table>
@@ -1174,9 +1188,11 @@
                 </div>
             </div>
 
-            <!-- LATEST PROJECT STATUS — fully visual per-project report: progress
-                 gauges, budget-absorption donut, schedule donut(s), and key dates. -->
-            <div id="projectsStatusView" class="hidden space-y-5">
+            <!-- LATEST PROJECT STATUS — small, dense per-project cards: a
+                 headline needle gauge for overall progress, compact bars for
+                 budget/schedule/discipline breakdown, and a project filter —
+                 built to fit as many projects as possible in one glance. -->
+            <div id="projectsStatusView" class="hidden space-y-4">
                 <div class="print-card bg-white rounded-2xl shadow-sm border p-5">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                         <div class="flex items-center gap-3">
@@ -1191,7 +1207,15 @@
                         <button type="button" onclick="window.print()" class="no-print text-xs font-bold px-4 py-2 rounded-xl border text-slate-600 hover:bg-slate-50">🖨 چاپ / PDF</button>
                     </div>
                 </div>
-                <div id="projectsStatusCards" class="space-y-5"></div>
+
+                <div class="no-print bg-white rounded-2xl shadow-sm border p-3 flex flex-wrap items-center gap-2">
+                    <input type="text" id="psFilterSearch" placeholder="🔍 جستجوی نام پروژه..." class="flex-1 min-w-[160px] p-2 border rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-900">
+                    <select id="psFilterProjects" multiple class="flex-1 min-w-[200px] p-2 border rounded-xl text-xs" style="height:38px;"></select>
+                    <button type="button" id="psFilterClearBtn" class="text-xs font-bold px-3 py-2 rounded-xl border text-slate-600 hover:bg-slate-50 shrink-0">پاک کردن فیلتر</button>
+                    <span id="psFilterCount" class="text-[11px] text-slate-400 shrink-0 whitespace-nowrap"></span>
+                </div>
+
+                <div id="projectsStatusCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"></div>
             </div>
 
             <!-- APPROVAL REQUEST — formal one-page CEO approval-request letter,
@@ -1885,6 +1909,16 @@
 
         async function loadMyProjectAccess() {
             if (currentProfile.role === 'admin') { myProjectAccess = []; return; }
+            if (currentProfile.is_support_team) {
+                // تیم پشتیبانی کارفرما holds no real user_project_access row on
+                // any project (see migration 033) — access to every project is
+                // synthesized here instead, from the "support team can view all
+                // projects" RLS grant. The organization name is deliberately
+                // NOT 'کارفرما' so hasOrganization('کارفرما') stays false for them.
+                const { data } = await _supabase.from('projects').select('name').order('name');
+                myProjectAccess = (data || []).map(p => ({ project_name: p.name, organization: 'پشتیبانی کارفرما' }));
+                return;
+            }
             const { data } = await _supabase.from('user_project_access').select('*').eq('user_id', currentUser.id).order('project_name');
             myProjectAccess = data || [];
         }
@@ -1932,6 +1966,8 @@
             document.getElementById('headerSubtitle').textContent = currentProfile
                 ? (currentProfile.role === 'admin'
                     ? 'پنل مدیریت سامانه'
+                    : currentProfile.is_support_team
+                        ? `تیم پشتیبانی کارفرما — ${toPersianDigits(String(myProjectAccess.length))} پروژه`
                     : myProjectAccess.length === 1
                         ? `مدیر پروژه — ${myProjectAccess[0].project_name} (${myProjectAccess[0].organization})`
                         : myProjectAccess.length > 1
@@ -1949,10 +1985,17 @@
             mobileNav.innerHTML = '';
 
             const buttons = currentProfile.role === 'admin'
-                ? [['overview', 'نمای کلی'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب اقدام زودبازده'], ['tasks', 'پایش اقدامات'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['approvalRequest', 'متن درخواست مصوبه'], ['execReport', 'گزارش تحلیلی مدیریتی'], ['admin', 'مدیریت کاربران']]
-                : hasOrganization('کارفرما')
-                    ? [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['selection', 'پیشنهادها'], ['tasks', 'پایش اقدامات'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['approvalRequest', 'متن درخواست مصوبه']]
-                    : [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['tasks', 'پایش اقدامات'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['approvalRequest', 'متن درخواست مصوبه']];
+                ? [['overview', 'نمای کلی'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب اقدام زودبازده'], ['tasks', 'پایش اقدامات'], ['execReport', 'گزارش تحلیلی مدیریتی'], ['approvalRequest', 'متن درخواست مصوبه'], ['admin', 'مدیریت کاربران']]
+                // تیم پشتیبانی کارفرما gets a deliberately minimal nav: only the
+                // project-status overview and پایش اقدامات (their actual job —
+                // working assigned tasks). Every other tab here submits data as
+                // a specific project's org member, which they aren't — showing
+                // those would just dead-end in an RLS error.
+                : currentProfile.is_support_team
+                    ? [['overview', 'وضعیت پروژه'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['tasks', 'پایش اقدامات']]
+                    : hasOrganization('کارفرما')
+                        ? [['overview', 'وضعیت پروژه'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['selection', 'پیشنهادها'], ['tasks', 'پایش اقدامات'], ['approvalRequest', 'متن درخواست مصوبه']]
+                        : [['overview', 'وضعیت پروژه'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['tasks', 'پایش اقدامات'], ['approvalRequest', 'متن درخواست مصوبه']];
 
             buttons.forEach(([view, label], i) => {
                 const iconName = NAV_ICON[view] || 'grid';
@@ -2102,10 +2145,26 @@
             document.getElementById('profCompany').value = currentProfile.company_name || '';
             document.getElementById('profJobTitle').value = currentProfile.job_title || '';
             document.getElementById('profileMsg').textContent = '';
+            renderProfileSignaturePreview();
+            document.getElementById('profSignatureFile').value = '';
+            document.getElementById('profSignatureMsg').textContent = '';
             document.getElementById('newPassword').value = '';
             document.getElementById('newPasswordConfirm').value = '';
             document.getElementById('setPasswordMsg').textContent = '';
             document.getElementById('profileModal').classList.remove('hidden');
+        }
+
+        function renderProfileSignaturePreview() {
+            const img = document.getElementById('profSignaturePreview');
+            const empty = document.getElementById('profSignatureEmpty');
+            if (currentProfile.signature_url) {
+                img.src = currentProfile.signature_url;
+                img.classList.remove('hidden');
+                empty.classList.add('hidden');
+            } else {
+                img.classList.add('hidden');
+                empty.classList.remove('hidden');
+            }
         }
 
         document.getElementById('profileBtn').addEventListener('click', openProfileModal);
@@ -2129,6 +2188,27 @@
             msg.textContent = error ? 'خطا: ' + error.message : 'اطلاعات با موفقیت ذخیره شد.';
             msg.className = error ? 'text-xs text-red-600' : 'text-xs text-emerald-700';
             if (!error) Object.assign(currentProfile, patch);
+        });
+
+        document.getElementById('uploadSignatureBtn').addEventListener('click', async () => {
+            const msg = document.getElementById('profSignatureMsg');
+            const file = document.getElementById('profSignatureFile').files[0];
+            if (!file) { msg.textContent = 'ابتدا یک تصویر انتخاب کنید.'; msg.className = 'text-xs text-red-600'; return; }
+            const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+            const path = `${currentUser.id}/signature.${ext}`;
+            const { error: uploadError } = await _supabase.storage.from('signatures').upload(path, file, { upsert: true });
+            if (uploadError) { msg.textContent = 'خطا در بارگذاری: ' + uploadError.message; msg.className = 'text-xs text-red-600'; return; }
+            const { data: urlData } = _supabase.storage.from('signatures').getPublicUrl(path);
+            // Cache-bust so a re-upload of the same filename shows immediately
+            // instead of the browser/CDN serving the previous image.
+            const signature_url = urlData.publicUrl + '?v=' + Date.now();
+            const { error } = await _supabase.from('app_users').update({ signature_url }).eq('user_id', currentUser.id);
+            if (error) { msg.textContent = 'خطا در ذخیره: ' + error.message; msg.className = 'text-xs text-red-600'; return; }
+            currentProfile.signature_url = signature_url;
+            renderProfileSignaturePreview();
+            document.getElementById('profSignatureFile').value = '';
+            msg.textContent = 'امضا با موفقیت بارگذاری شد.';
+            msg.className = 'text-xs text-emerald-700';
         });
 
         document.getElementById('savePasswordBtn').addEventListener('click', async () => {
@@ -2170,6 +2250,15 @@
         // --------------------------------------------------
         function personDisplayName(u) {
             return [u.first_name, u.last_name].filter(Boolean).join(' ').trim() || u.email;
+        }
+
+        // Some projects were originally entered with a leading serial number
+        // («۱- ...», "2. ...") baked into the stored project_name itself.
+        // Display-only strip — matching/joins everywhere else still use the
+        // real stored value untouched, only headings/prose shown to a reader
+        // go through this.
+        function displayProjectName(name) {
+            return (name || '').replace(/^\s*[0-9۰-۹]+\s*[-–.)]\s*/, '');
         }
 
         // Redesign backlog (P0 round 2): "مشخصات پاسخ‌دهنده" used to be typed
@@ -3898,120 +3987,147 @@
             return v >= 90 ? '#10b981' : v >= 60 ? '#3b82f6' : v >= 30 ? '#f59e0b' : '#ef4444';
         }
 
-        // Half-circle gauge — same technique as renderDivergenceGauge (AI
-        // report), generalized for reuse across every progress figure here.
-        function renderGaugeChart(canvasId, value) {
+        // Needle/pointer gauge plugin (گیج عقربه‌ای) — draws a needle from
+        // the arc's own center out to an angle interpolated between the
+        // doughnut arc element's actual startAngle/endAngle (whatever
+        // rotation/circumference the chart was built with), so the needle
+        // always lines up with the visible arc without hand-deriving its
+        // angle convention. Registered once and reused by every gauge below.
+        const needleGaugePlugin = {
+            id: 'needleGauge',
+            afterDatasetsDraw(chart) {
+                const opts = chart.config.options.plugins && chart.config.options.plugins.needleGauge;
+                if (!opts) return;
+                const arc = chart.getDatasetMeta(0).data[0];
+                if (!arc) return;
+                const { x: cx, y: cy, startAngle, endAngle, outerRadius } = arc;
+                const v = Math.max(0, Math.min(100, Number(opts.value) || 0));
+                const angle = startAngle + (v / 100) * (endAngle - startAngle);
+                const ctx = chart.ctx;
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(angle);
+                ctx.beginPath();
+                ctx.moveTo(-outerRadius * 0.12, 0);
+                ctx.lineTo(outerRadius * 0.86, 0);
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                ctx.strokeStyle = opts.color || '#1e293b';
+                ctx.stroke();
+                ctx.restore();
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(cx, cy, Math.max(3, outerRadius * 0.07), 0, Math.PI * 2);
+                ctx.fillStyle = opts.color || '#1e293b';
+                ctx.fill();
+                ctx.restore();
+            },
+        };
+        Chart.register(needleGaugePlugin);
+
+        // Half-circle needle gauge: a fixed red/amber/blue/green band track
+        // (matching psGaugeColor's own thresholds) with a needle pointing at
+        // the actual value — a real گیج عقربه‌ای rather than a filled arc.
+        function renderNeedleGauge(canvasId, value) {
             const el = document.getElementById(canvasId);
             if (!el) return;
             const v = Math.max(0, Math.min(100, Number(value) || 0));
             new Chart(el.getContext('2d'), {
                 type: 'doughnut',
-                data: { datasets: [{ data: [v, 100 - v], backgroundColor: [psGaugeColor(v), '#e2e8f0'], borderWidth: 0 }] },
-                options: { circumference: 180, rotation: 270, cutout: '72%', plugins: { legend: { display: false }, tooltip: { enabled: false } } },
-            });
-        }
-
-        function renderDonutChart(canvasId, value, color) {
-            const el = document.getElementById(canvasId);
-            if (!el) return;
-            const v = Math.max(0, Math.min(100, Number(value) || 0));
-            new Chart(el.getContext('2d'), {
-                type: 'doughnut',
-                data: { datasets: [{ data: [v, 100 - v], backgroundColor: [color, '#e2e8f0'], borderWidth: 0 }] },
-                options: { cutout: '68%', plugins: { legend: { display: false }, tooltip: { enabled: false } } },
-            });
-        }
-
-        // Two concentric rings — Chart.js renders multi-dataset doughnuts
-        // outside-in, so dataset[0] (کل مدت قرارداد) is the outer ring and
-        // dataset[1] (آخرین تطویل) nests inside it.
-        function renderNestedDonutChart(canvasId, outerValue, innerValue, outerColor, innerColor) {
-            const el = document.getElementById(canvasId);
-            if (!el) return;
-            const o = Math.max(0, Math.min(100, Number(outerValue) || 0));
-            const i = Math.max(0, Math.min(100, Number(innerValue) || 0));
-            new Chart(el.getContext('2d'), {
-                type: 'doughnut',
-                data: {
-                    datasets: [
-                        { data: [o, 100 - o], backgroundColor: [outerColor, '#e2e8f0'], borderWidth: 0 },
-                        { data: [i, 100 - i], backgroundColor: [innerColor, '#e2e8f0'], borderWidth: 0 },
-                    ],
+                data: { datasets: [{ data: [30, 30, 30, 10], backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981'], borderWidth: 0 }] },
+                options: {
+                    circumference: 180, rotation: 270, cutout: '74%',
+                    plugins: { legend: { display: false }, tooltip: { enabled: false }, needleGauge: { value: v, color: psGaugeColor(v) } },
                 },
-                options: { cutout: '46%', plugins: { legend: { display: false }, tooltip: { enabled: false } } },
             });
+        }
+
+        // Small, dense card — one headline needle gauge (پیشرفت کل) plus
+        // thin bars for budget/schedule/discipline so a lot of projects fit
+        // on screen at once. psGaugeColor doubles as the bar color so the
+        // whole card reads consistently at a glance.
+        function psMiniBarHtml(label, pct) {
+            if (pct == null) return '';
+            const v = Math.max(0, Math.min(100, pct));
+            return `<div class="flex items-center gap-1.5 text-[10px]">
+                <span class="w-9 shrink-0 text-slate-400 truncate">${esc(label)}</span>
+                <div class="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full" style="width:${v}%; background:${psGaugeColor(v)};"></div></div>
+                <span class="w-8 shrink-0 text-left font-bold tabular-nums" style="color:${psGaugeColor(v)};">${toPersianDigits(String(Math.round(v)))}٪</span>
+            </div>`;
         }
 
         function projectStatusCardHtml(cr, idx) {
             const disciplineKeys = psDisciplineKeysForType(cr.contract_type);
             const typeLabel = cr.contract_type === 'سایر' ? (cr.contract_type_other || 'سایر') : (cr.contract_type || '—');
             const { budgetPct, totalPct, extendedPct } = computeProjectStatusMetrics(cr);
+            const displayName = displayProjectName(cr.project_name);
 
-            return `<div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-4">
-                <div class="flex flex-wrap items-center justify-between gap-2 border-b pb-3">
-                    <div>
-                        <h3 class="text-sm font-extrabold text-slate-800">${esc(cr.project_name)}</h3>
-                        <p class="text-[11px] text-slate-500 mt-0.5">${esc(cr.plan_name || '—')} — نوع قرارداد: <b>${esc(typeLabel)}</b>${cr.contract_number ? ` — شماره قرارداد: ${esc(cr.contract_number)}` : ''}</p>
-                    </div>
-                    <span class="text-[10px] text-slate-400">آخرین به‌روزرسانی: ${formatJalali(cr.created_at)}</span>
+            return `<div class="print-card bg-white rounded-2xl shadow-sm border p-3 space-y-1.5">
+                <div class="border-b pb-1.5">
+                    <h3 class="text-[12px] font-extrabold text-slate-800 truncate" title="${esc(displayName)}">${esc(displayName)}</h3>
+                    <p class="text-[10px] text-slate-400 truncate">${esc(typeLabel)}${cr.contract_number ? ' · ' + esc(cr.contract_number) : ''}</p>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="text-center space-y-1">
-                        <div class="relative h-24 mx-auto" style="max-width:180px"><canvas id="psGaugeTotal${idx}"></canvas></div>
-                        <p class="text-xl font-extrabold -mt-8">${cr.progress_physical != null ? toPersianDigits(String(cr.progress_physical)) + '٪' : '—'}</p>
-                        <p class="text-[11px] font-bold text-slate-600">پیشرفت کل (واقعی)</p>
-                        <p class="text-[10px] text-slate-400">برنامه‌ای: ${cr.progress_planned != null ? toPersianDigits(String(cr.progress_planned)) + '٪' : '—'}</p>
-                    </div>
-                    <div class="text-center space-y-1">
-                        <div class="relative h-24 mx-auto" style="max-width:180px"><canvas id="psDonutBudget${idx}"></canvas></div>
-                        <p class="text-xl font-extrabold -mt-8">${budgetPct != null ? toPersianDigits(String(budgetPct)) + '٪' : '—'}</p>
-                        <p class="text-[11px] font-bold text-slate-600">جذب بودجه</p>
-                        <p class="text-[10px] text-slate-400">میزان جذب از مبلغ اولیه قرارداد</p>
-                    </div>
-                    <div class="text-center space-y-1">
-                        <div class="relative h-24 mx-auto" style="max-width:180px"><canvas id="psDonutDuration${idx}"></canvas></div>
-                        <p class="text-xl font-extrabold -mt-8">${totalPct != null ? toPersianDigits(String(totalPct)) + '٪' : '—'}</p>
-                        <p class="text-[11px] font-bold text-slate-600">زمان سپری‌شده</p>
-                        <p class="text-[10px] text-slate-400">${extendedPct != null ? `حلقه بیرونی: کل مدت — حلقه داخلی: با آخرین تطویل (${toPersianDigits(String(extendedPct))}٪)` : 'از کل مدت قرارداد'}</p>
-                    </div>
+                <div class="relative h-20 mx-auto" style="max-width:130px"><canvas id="psGaugeTotal${idx}"></canvas></div>
+                <p class="text-center text-lg font-extrabold -mt-9" style="color:${psGaugeColor(cr.progress_physical || 0)}">${cr.progress_physical != null ? toPersianDigits(String(cr.progress_physical)) + '٪' : '—'}</p>
+                <p class="text-center text-[9px] text-slate-400 -mt-1">پیشرفت کل${cr.progress_planned != null ? ` (برنامه: ${toPersianDigits(String(cr.progress_planned))}٪)` : ''}</p>
+
+                <div class="space-y-1 pt-1.5 border-t">
+                    ${psMiniBarHtml('بودجه', budgetPct)}
+                    ${psMiniBarHtml('زمان', extendedPct != null ? extendedPct : totalPct)}
+                    ${disciplineKeys.map(k => psMiniBarHtml(PS_DISCIPLINE_LABELS[k].split(' ')[0], cr['progress_' + k])).join('')}
                 </div>
 
-                ${disciplineKeys.length > 1 ? `
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-2 border-t">
-                    ${disciplineKeys.map(k => `
-                    <div class="text-center space-y-1">
-                        <div class="relative h-16 mx-auto" style="max-width:120px"><canvas id="psGaugeDisc${idx}_${k}"></canvas></div>
-                        <p class="text-sm font-extrabold -mt-5">${cr['progress_' + k] != null ? toPersianDigits(String(cr['progress_' + k])) + '٪' : '—'}</p>
-                        <p class="text-[10px] font-bold text-slate-500">${PS_DISCIPLINE_LABELS[k]}</p>
-                    </div>`).join('')}
-                </div>` : ''}
-
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 pt-2 border-t text-[11px]">
-                    <div class="bg-slate-50 rounded-lg p-2"><p class="text-slate-400">تاریخ شروع قرارداد</p><p class="font-bold text-slate-700 tabular-nums">${formatJalali(cr.contract_start_date) || '—'}</p></div>
-                    <div class="bg-slate-50 rounded-lg p-2"><p class="text-slate-400">تاریخ پایان پیمانکار</p><p class="font-bold text-slate-700 tabular-nums">${formatJalali(cr.contract_end_date) || '—'}</p></div>
-                    <div class="bg-slate-50 rounded-lg p-2"><p class="text-slate-400">تاریخ پایان مشاور</p><p class="font-bold text-slate-700 tabular-nums">${cr.consultant_contract_end_date ? formatJalali(cr.consultant_contract_end_date) : '—'}</p></div>
-                    <div class="bg-slate-50 rounded-lg p-2"><p class="text-slate-400">پایان با آخرین تطویل</p><p class="font-bold text-slate-700 tabular-nums">${cr.latest_extension_end_date ? formatJalali(cr.latest_extension_end_date) : '—'}</p></div>
-                </div>
+                <p class="text-[9px] text-slate-400 text-center pt-1 border-t">به‌روزرسانی: ${formatJalali(cr.created_at)}</p>
             </div>`;
         }
 
         function drawProjectStatusCharts(cr, idx) {
-            renderGaugeChart('psGaugeTotal' + idx, cr.progress_physical || 0);
-            psDisciplineKeysForType(cr.contract_type).forEach(k => renderGaugeChart(`psGaugeDisc${idx}_${k}`, cr['progress_' + k] || 0));
+            renderNeedleGauge('psGaugeTotal' + idx, cr.progress_physical || 0);
+        }
 
-            const { budgetPct, totalPct, extendedPct } = computeProjectStatusMetrics(cr);
-            renderDonutChart('psDonutBudget' + idx, budgetPct || 0, '#7c3aed');
-            if (extendedPct != null) {
-                renderNestedDonutChart('psDonutDuration' + idx, totalPct || 0, extendedPct || 0, '#1e3a8a', '#f59e0b');
-            } else {
-                renderDonutChart('psDonutDuration' + idx, totalPct || 0, '#1e3a8a');
+        let psAllRows = [];
+        let psFilterControlsWired = false;
+
+        function renderProjectsStatusCards(rows) {
+            const body = document.getElementById('projectsStatusCards');
+            if (!rows.length) {
+                body.innerHTML = '<p class="text-xs text-slate-500 py-8 text-center bg-white rounded-2xl border p-8 col-span-full">هیچ پروژه‌ای با این فیلتر یافت نشد.</p>';
+                return;
             }
+            body.innerHTML = rows.map((cr, i) => projectStatusCardHtml(cr, i)).join('');
+            rows.forEach((cr, i) => drawProjectStatusCharts(cr, i));
+        }
+
+        // «امکان انتخاب و فیلتر پروژه» — free-text search plus a multi-select
+        // project picker, combined; either narrows the grid, both together
+        // intersect.
+        function psApplyFilters() {
+            const search = toLatinDigits(document.getElementById('psFilterSearch').value.trim()).toLowerCase();
+            const selected = [...document.getElementById('psFilterProjects').selectedOptions].map(o => o.value);
+            let rows = psAllRows;
+            if (selected.length) rows = rows.filter(r => selected.includes(r.project_name));
+            if (search) rows = rows.filter(r => toLatinDigits(displayProjectName(r.project_name)).toLowerCase().includes(search));
+            renderProjectsStatusCards(rows);
+            document.getElementById('psFilterCount').textContent = `${toPersianDigits(String(rows.length))} از ${toPersianDigits(String(psAllRows.length))} پروژه`;
+        }
+
+        function wirePsFilterControls() {
+            if (psFilterControlsWired) return;
+            psFilterControlsWired = true;
+            document.getElementById('psFilterSearch').addEventListener('input', psApplyFilters);
+            document.getElementById('psFilterProjects').addEventListener('change', psApplyFilters);
+            document.getElementById('psFilterClearBtn').addEventListener('click', () => {
+                document.getElementById('psFilterSearch').value = '';
+                [...document.getElementById('psFilterProjects').options].forEach(o => { o.selected = false; });
+                psApplyFilters();
+            });
         }
 
         async function loadProjectsStatusView() {
+            wirePsFilterControls();
             const body = document.getElementById('projectsStatusCards');
-            body.innerHTML = '<p class="text-xs text-slate-500 py-8 text-center">در حال بارگذاری...</p>';
+            body.innerHTML = '<p class="text-xs text-slate-500 py-8 text-center col-span-full">در حال بارگذاری...</p>';
 
             const [{ data: rawReports }, guideNames] = await Promise.all([
                 _supabase.from('client_reports').select('*').order('created_at', { ascending: true }),
@@ -4026,14 +4142,17 @@
                 rows = rows.filter(r => myProjects.has(r.project_name));
             }
             rows.sort((a, b) => a.project_name.localeCompare(b.project_name, 'fa'));
+            psAllRows = rows;
+
+            document.getElementById('psFilterProjects').innerHTML = rows.map(r => `<option value="${esc(r.project_name)}">${esc(displayProjectName(r.project_name))}</option>`).join('');
 
             if (!rows.length) {
-                body.innerHTML = '<p class="text-xs text-slate-500 py-8 text-center bg-white rounded-2xl border p-8">هنوز هیچ گزارش «اطلاعات پایه و پیشرفت پروژه» ثبت نشده است.</p>';
+                body.innerHTML = '<p class="text-xs text-slate-500 py-8 text-center bg-white rounded-2xl border p-8 col-span-full">هنوز هیچ گزارش «اطلاعات پایه و پیشرفت پروژه» ثبت نشده است.</p>';
+                document.getElementById('psFilterCount').textContent = '';
                 return;
             }
 
-            body.innerHTML = rows.map((cr, i) => projectStatusCardHtml(cr, i)).join('');
-            rows.forEach((cr, i) => drawProjectStatusCharts(cr, i));
+            psApplyFilters();
         }
 
         // --------------------------------------------------
@@ -4042,12 +4161,14 @@
         // table, and a per-organization digital sign-off. Requests are
         // insert-only per submission (like check_ins/client_reports) —
         // signatures are the one exception, written only through the
-        // sign_approval_request() RPC (migration 032), never a direct
+        // sign_approval_request() RPC (migrations 032/034), never a direct
         // table update, so a signature can never be attributed to anyone
         // but the person who actually clicked «امضای من».
         // --------------------------------------------------
         let arProjectContext = null;
-        let arLatestRequest = null;
+        let arRequestHistory = []; // every request for this project, oldest first — powers شماره مصوبه + the archive below
+        let arLatestRequest = null; // arRequestHistory's last element, or null
+        let arDisplayedRequest = null; // the one actually shown in view mode; the archive can point this at an older one while arLatestRequest stays the real latest
         let arMode = 'view'; // 'view' | 'compose'
         let arDraftResolutions = [];
         const AR_ORG_FIELD = { 'کارفرما': 'signed_by_client', 'مشاور': 'signed_by_consultant', 'پیمانکار': 'signed_by_contractor' };
@@ -4073,34 +4194,54 @@
                 await openApprovalRequestPreview(myProjectAccess[0].project_name);
             }
             const p = effectiveProfile();
-            document.getElementById('arProjectName').textContent = p ? p.project_name : '—';
+            document.getElementById('arProjectName').textContent = p ? displayProjectName(p.project_name) : '—';
         }
 
         async function openApprovalRequestPreview(project_name) {
             if (!project_name) { alert('لطفاً ابتدا پروژه را انتخاب کنید.'); return; }
             pickedProjectContext = { project_name, organization: 'کارفرما' };
-            document.getElementById('arProjectName').textContent = project_name;
+            document.getElementById('arProjectName').textContent = displayProjectName(project_name);
             arProjectContext = { project_name };
             arMode = 'view';
 
             const { data } = await _supabase.from('approval_requests').select('*')
                 .eq('project_name', project_name)
-                .order('created_at', { ascending: false }).limit(1).maybeSingle();
-            arLatestRequest = data || null;
+                .order('created_at', { ascending: true });
+            arRequestHistory = data || [];
+            arLatestRequest = arRequestHistory.length ? arRequestHistory[arRequestHistory.length - 1] : null;
+            arDisplayedRequest = arLatestRequest;
             if (!arLatestRequest) arDraftResolutions = [{ resolution: '', contractor_commitment: '', expected_result: '' }];
             renderApprovalRequestBody();
         }
 
-        function arFormalLetterHtml(projectName) {
+        // Centered company logo, reused for both the formal letter and (once
+        // signed) the standing record of that project's مصوبه/صورتجلسه.
+        function arLetterheadHtml() {
+            return `<div class="text-center space-y-1 pb-3 border-b-2 border-slate-200">
+                <img src="logo.png" alt="لوگوی شرکت" class="h-14 w-14 object-contain mx-auto" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
+                <p class="text-sm font-extrabold text-slate-800">شرکت مهندسی و توسعه گاز ایران</p>
+            </div>`;
+        }
+
+        // requestNumber is this project's own sequential شماره مصوبه (its
+        // 1-based position in arRequestHistory) — request is null only for
+        // an unsaved compose-mode draft, where the created_at date isn't
+        // known yet and today's date is shown instead.
+        function arFormalLetterHtml(projectName, requestNumber, request) {
+            const displayName = displayProjectName(projectName);
             return `<div class="print-card bg-white rounded-2xl shadow-sm border p-6 md:p-8 space-y-4" style="line-height: 2;">
-                <p class="text-center text-sm font-bold text-slate-700">بسمه‌تعالی</p>
-                <p class="text-left text-[11px] text-slate-400" dir="ltr">${esc(todayJalali())}</p>
-                <p class="text-sm font-bold text-slate-800">ریاست محترم هیئت‌مدیره و مدیرعامل محترم شرکت مهندسی و توسعه گاز ایران</p>
-                <p class="text-sm font-bold text-slate-600">موضوع: درخواست اخذ مصوبه در خصوص پروژه «${esc(projectName)}»</p>
+                ${arLetterheadHtml()}
+                <div class="flex items-center justify-between text-[11px] text-slate-400">
+                    <span>شماره مصوبه: <b class="text-slate-600">${toPersianDigits(String(requestNumber))}</b></span>
+                    <span dir="ltr">${request ? formatJalali(request.created_at) : todayJalali()}</span>
+                </div>
+                <p class="text-sm font-bold text-slate-800">مدیرعامل محترم شرکت مهندسی و توسعه گاز ایران</p>
+                <p class="text-sm font-bold text-slate-600">موضوع: درخواست اخذ مصوبه در خصوص پروژه «${esc(displayName)}»</p>
                 <p class="text-sm text-slate-700">با سلام و احترام؛<br>
-                پیرو پیگیری‌های صورت‌گرفته در خصوص روند اجرای پروژه «${esc(projectName)}»، به استحضار می‌رساند مصوبات، تعهدات پیمانکار و نتایج مورد انتظار مندرج در جدول ذیل، پس از بررسی کارشناسی و توافق مشترک هر سه رکن پروژه (کارفرما، مشاور و پیمانکار) — که امضای دیجیتال ایشان در پایان این درخواست درج شده است — جهت اخذ تصمیم و صدور دستور مقتضی، به حضور آن مقام محترم تقدیم می‌گردد.</p>
+                پیرو پیگیری‌های صورت‌گرفته در خصوص روند اجرای پروژه «${esc(displayName)}»، به استحضار می‌رساند مصوبات، تعهدات پیمانکار و نتایج مورد انتظار مندرج در جدول ذیل، پس از بررسی کارشناسی و توافق مشترک هر سه رکن پروژه (کارفرما، مشاور و پیمانکار) جهت اخذ تصمیم و صدور دستور مقتضی، به حضور آن مقام محترم تقدیم می‌گردد.</p>
                 <p class="text-sm text-slate-700">خواهشمند است دستور فرمایید نتیجه بررسی و تصمیم متخذه به این واحد ابلاغ گردد.</p>
                 <p class="text-sm text-slate-700">با تشکر و احترام مجدد</p>
+                <p class="text-sm font-bold text-slate-800">مهدی باجلان- مجری طرح خط ششم سراسری</p>
             </div>`;
         }
 
@@ -4136,24 +4277,45 @@
             ${editable ? '<button type="button" id="arAddRowBtn" class="no-print text-xs font-bold text-blue-900 underline">+ افزودن ردیف</button>' : ''}`;
         }
 
-        function arSignatureSectionHtml(request) {
-            const isAdmin = currentProfile.role === 'admin';
+        // allowSign is false for a historical (non-latest) request pulled up
+        // from the archive — re-signing history isn't a thing, so only the
+        // latest request ever shows a «امضای من» button.
+        function arSignatureSectionHtml(request, allowSign) {
             return `<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                 ${['کارفرما', 'مشاور', 'پیمانکار'].map(org => {
                     const sig = request[AR_ORG_FIELD[org]];
                     if (sig) {
                         return `<div class="border-2 border-emerald-200 bg-emerald-50 rounded-xl p-3 text-center space-y-1">
                             <p class="text-[11px] font-extrabold text-emerald-700">✅ امضای ${esc(org)}</p>
+                            ${sig.signature_url ? `<img src="${esc(sig.signature_url)}" alt="امضا" class="h-10 mx-auto object-contain">` : ''}
                             <p class="text-xs font-bold text-slate-700">${esc(sig.name)}</p>
                             <p class="text-[10px] text-slate-500">${formatJalali(sig.signed_at)}</p>
                         </div>`;
                     }
-                    const canSign = isAdmin || myProjectAccess.some(a => a.project_name === request.project_name && a.organization === org);
+                    // Only that project's real org PM may sign — not even
+                    // admin (کاربر می‌خواهد صرفاً مدیران پروژه هر رکن امضا کنند).
+                    const canSign = allowSign && myProjectAccess.some(a => a.project_name === request.project_name && a.organization === org);
                     return `<div class="border-2 border-dashed border-slate-200 rounded-xl p-3 text-center space-y-1.5">
                         <p class="text-[11px] font-extrabold text-slate-400">⏳ در انتظار امضای ${esc(org)}</p>
                         ${canSign ? `<button type="button" data-ar-sign="${esc(org)}" class="no-print text-xs font-bold bg-blue-900 hover:bg-blue-800 text-white px-3 py-1.5 rounded-lg">🖋 امضای من</button>` : '<p class="text-[10px] text-slate-400">—</p>'}
                     </div>`;
                 }).join('')}
+            </div>`;
+        }
+
+        // Prior requests for this project, newest first, clickable to review
+        // — «آرشیو مصوبات و صورتجلسات قدیمی... با تاریخ آنها».
+        function arArchiveListHtml() {
+            if (arRequestHistory.length <= 1) return '';
+            return `<div class="print-card no-print bg-white rounded-2xl shadow-sm border p-5 space-y-2">
+                <h3 class="text-sm font-bold text-slate-800">آرشیو مصوبات و صورتجلسات قبلی</h3>
+                <div class="flex flex-wrap gap-2">
+                    ${arRequestHistory.slice().reverse().map(r => {
+                        const num = arRequestHistory.findIndex(x => x.id === r.id) + 1;
+                        const isShown = arDisplayedRequest && r.id === arDisplayedRequest.id;
+                        return `<button type="button" data-ar-archive-id="${r.id}" class="text-[11px] font-bold px-3 py-1.5 rounded-lg border ${isShown ? 'bg-blue-900 text-white border-blue-900' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}">مصوبه شماره ${toPersianDigits(String(num))} — ${formatJalali(r.created_at)}</button>`;
+                    }).join('')}
+                </div>
             </div>`;
         }
 
@@ -4164,7 +4326,7 @@
 
             if (arMode === 'compose' || !arLatestRequest) {
                 body.innerHTML = `
-                    ${arFormalLetterHtml(projectName)}
+                    ${arFormalLetterHtml(projectName, arRequestHistory.length + 1, null)}
                     <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                         <div class="flex items-center justify-between flex-wrap gap-2">
                             <h3 class="text-sm font-bold text-slate-800">مصوبات، تعهدات پیمانکار و نتایج مورد انتظار</h3>
@@ -4175,18 +4337,28 @@
                     </div>`;
                 wireArComposeEvents();
             } else {
+                const shown = arDisplayedRequest || arLatestRequest;
+                const shownNumber = arRequestHistory.findIndex(r => r.id === shown.id) + 1;
+                const isLatest = shown.id === arLatestRequest.id;
+                const isAdmin = currentProfile.role === 'admin';
+                // «پس از امضا فقط ادمین اجازه ویرایش را داشته باشد»: once any
+                // org has signed the latest request, starting a fresh one
+                // (which effectively supersedes it) is admin-only.
+                const hasAnySignature = !!(arLatestRequest.signed_by_client || arLatestRequest.signed_by_consultant || arLatestRequest.signed_by_contractor);
+                const canStartNew = isLatest && (isAdmin || !hasAnySignature);
                 body.innerHTML = `
-                    ${arFormalLetterHtml(projectName)}
+                    ${arFormalLetterHtml(projectName, shownNumber, shown)}
                     <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                         <h3 class="text-sm font-bold text-slate-800">مصوبات، تعهدات پیمانکار و نتایج مورد انتظار</h3>
-                        ${arResolutionsTableHtml(arLatestRequest.resolutions || [], false)}
+                        ${arResolutionsTableHtml(shown.resolutions || [], false)}
                     </div>
                     <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                         <h3 class="text-sm font-bold text-slate-800">امضای دیجیتال ارکان پروژه</h3>
                         <p class="text-[11px] text-slate-500">هرکدام از ارکان زیر با اکانت خود این درخواست را امضا می‌کند تا رسمیت و تعهد بیشتری ایجاد شود.</p>
-                        ${arSignatureSectionHtml(arLatestRequest)}
+                        ${arSignatureSectionHtml(shown, isLatest)}
                     </div>
-                    <button type="button" id="arNewRequestBtn" class="no-print text-xs font-bold text-blue-900 underline">✏️ ثبت درخواست مصوبه جدید</button>`;
+                    ${canStartNew ? '<button type="button" id="arNewRequestBtn" class="no-print text-xs font-bold text-blue-900 underline">✏️ ثبت درخواست مصوبه جدید</button>' : ''}
+                    ${arArchiveListHtml()}`;
                 wireArViewEvents();
             }
         }
@@ -4214,12 +4386,28 @@
             body.querySelectorAll('[data-ar-sign]').forEach(el => {
                 el.addEventListener('click', () => signApprovalRequestAs(el.dataset.arSign));
             });
-            document.getElementById('arNewRequestBtn').addEventListener('click', startNewApprovalRequest);
+            const newBtn = document.getElementById('arNewRequestBtn');
+            if (newBtn) newBtn.addEventListener('click', startNewApprovalRequest);
+            body.querySelectorAll('[data-ar-archive-id]').forEach(el => {
+                el.addEventListener('click', () => {
+                    const id = Number(el.dataset.arArchiveId);
+                    arDisplayedRequest = arRequestHistory.find(r => r.id === id) || arLatestRequest;
+                    renderApprovalRequestBody();
+                });
+            });
         }
 
+        // «ثبت درخواست مصوبه جدید ظاهرا مصوبات قدیم رو پاک میکنه» — carry the
+        // latest request's own resolutions into the new draft (deep-copied,
+        // so editing/removing a draft row never mutates the stored latest
+        // request) instead of resetting to one blank row; still falls back
+        // to a single blank row the very first time, when there's nothing
+        // to carry over yet.
         function startNewApprovalRequest() {
             arMode = 'compose';
-            arDraftResolutions = [{ resolution: '', contractor_commitment: '', expected_result: '' }];
+            arDraftResolutions = (arLatestRequest && arLatestRequest.resolutions && arLatestRequest.resolutions.length)
+                ? arLatestRequest.resolutions.map(r => ({ ...r }))
+                : [{ resolution: '', contractor_commitment: '', expected_result: '' }];
             renderApprovalRequestBody();
         }
 
@@ -4242,6 +4430,9 @@
             const { data, error } = await _supabase.rpc('sign_approval_request', { p_request_id: arLatestRequest.id, p_organization: organization });
             if (error) { alert('خطا در ثبت امضا: ' + error.message); return; }
             arLatestRequest = data;
+            arDisplayedRequest = data;
+            const idx = arRequestHistory.findIndex(r => r.id === data.id);
+            if (idx !== -1) arRequestHistory[idx] = data;
             renderApprovalRequestBody();
         }
 
@@ -4297,7 +4488,7 @@
             tbody.innerHTML = '';
 
             if (!(users || []).length && !(invites || []).length) {
-                tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center text-slate-400">هنوز کاربری دعوت نشده.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="p-3 text-center text-slate-400">هنوز کاربری دعوت نشده.</td></tr>';
                 return;
             }
 
@@ -4315,8 +4506,18 @@
                 const identityCellsHtml = `
                     <td class="p-2 border" dir="ltr" rowspan="${rowCount}">${esc(u.email)}</td>
                     <td class="p-1 border" rowspan="${rowCount}">
+                        <div class="flex flex-col gap-1" style="min-width:130px">
+                            <input class="adm-row-first-name p-1 border rounded text-xs" placeholder="نام" ${isSelf ? 'disabled' : ''}>
+                            <input class="adm-row-last-name p-1 border rounded text-xs" placeholder="نام خانوادگی" ${isSelf ? 'disabled' : ''}>
+                            <input class="adm-row-phone p-1 border rounded text-xs" dir="ltr" placeholder="تماس" ${isSelf ? 'disabled' : ''}>
+                            <input class="adm-row-company p-1 border rounded text-xs" placeholder="شرکت" ${isSelf ? 'disabled' : ''}>
+                            <input class="adm-row-job-title p-1 border rounded text-xs" placeholder="سمت" ${isSelf ? 'disabled' : ''}>
+                        </div>
+                    </td>
+                    <td class="p-1 border" rowspan="${rowCount}">
                         <select class="adm-row-role p-1.5 border rounded text-xs w-full" ${isSelf ? 'disabled' : ''}>
                             <option value="manager">مدیر پروژه</option>
+                            <option value="support">تیم پشتیبانی کارفرما</option>
                             <option value="admin">ادمین سامانه</option>
                         </select>
                     </td>
@@ -4325,7 +4526,7 @@
                         ${isSelf
                             ? '<span class="text-slate-400">حساب شما</span>'
                             : `<div class="flex flex-col gap-1">
-                                <button type="button" class="adm-save-role-btn bg-blue-100 hover:bg-blue-200 text-blue-900 px-2 py-1 rounded font-bold">💾 ذخیره نقش</button>
+                                <button type="button" class="adm-save-role-btn bg-blue-100 hover:bg-blue-200 text-blue-900 px-2 py-1 rounded font-bold">💾 ذخیره</button>
                                 <button type="button" class="adm-delete-user-btn bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded font-bold">🗑 حذف کاربر</button>
                                </div>`}
                     </td>`;
@@ -4360,10 +4561,24 @@
                         row.querySelector('.adm-delete-grant-btn').addEventListener('click', () => deleteGrant(grant.id, u.email, grant.project_name, grant.organization));
                     }
                     if (i === 0) {
-                        row.querySelector('.adm-row-role').value = u.role;
+                        row.querySelector('.adm-row-role').value = u.role === 'admin' ? 'admin' : (u.is_support_team ? 'support' : 'manager');
+                        row.querySelector('.adm-row-first-name').value = u.first_name || '';
+                        row.querySelector('.adm-row-last-name').value = u.last_name || '';
+                        row.querySelector('.adm-row-phone').value = u.phone || '';
+                        row.querySelector('.adm-row-company').value = u.company_name || '';
+                        row.querySelector('.adm-row-job-title').value = u.job_title || '';
                         if (!isSelf) {
                             row.querySelector('.adm-save-role-btn').addEventListener('click', () => {
-                                saveUserRole(u.user_id, row.querySelector('.adm-row-role').value);
+                                const uiRole = row.querySelector('.adm-row-role').value;
+                                saveUserDetails(u.user_id, {
+                                    role: uiRole === 'admin' ? 'admin' : 'manager',
+                                    is_support_team: uiRole === 'support',
+                                    first_name: row.querySelector('.adm-row-first-name').value.trim() || null,
+                                    last_name: row.querySelector('.adm-row-last-name').value.trim() || null,
+                                    phone: row.querySelector('.adm-row-phone').value.trim() || null,
+                                    company_name: row.querySelector('.adm-row-company').value.trim() || null,
+                                    job_title: row.querySelector('.adm-row-job-title').value.trim() || null,
+                                });
                             });
                             row.querySelector('.adm-delete-user-btn').addEventListener('click', () => deleteAppUser(u.user_id, u.email));
                         }
@@ -4383,6 +4598,7 @@
                     </div></td>
                     <td class="p-2 border" dir="ltr">${esc(i.email)}</td>
                     <td class="p-2 border text-slate-400 text-center">—</td>
+                    <td class="p-2 border text-slate-400 text-center">—</td>
                     <td class="p-2 border">در انتظار ورود ⏳</td>
                     <td class="p-1 border"></td>
                 </tr>`;
@@ -4400,10 +4616,10 @@
             });
         }
 
-        async function saveUserRole(userId, role) {
-            const { error } = await _supabase.from('app_users').update({ role }).eq('user_id', userId);
-            if (error) { alert('خطا در ذخیره نقش: ' + error.message); return; }
-            alert('نقش کاربر ذخیره شد.');
+        async function saveUserDetails(userId, patch) {
+            const { error } = await _supabase.from('app_users').update(patch).eq('user_id', userId);
+            if (error) { alert('خطا در ذخیره اطلاعات کاربر: ' + error.message); return; }
+            alert('اطلاعات کاربر ذخیره شد.');
             loadAdminData();
         }
 
