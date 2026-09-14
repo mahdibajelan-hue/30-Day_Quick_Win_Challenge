@@ -1194,6 +1194,43 @@
                 <div id="projectsStatusCards" class="space-y-5"></div>
             </div>
 
+            <!-- APPROVAL REQUEST — formal one-page CEO approval-request letter,
+                 a resolutions table, and a per-organization digital sign-off. -->
+            <div id="approvalRequestView" class="hidden space-y-5">
+                <div class="relative overflow-hidden p-6 md:p-7 rounded-2xl shadow-lg no-print" style="background: linear-gradient(135deg, #1e3a8a 0%, #4c1d95 100%);">
+                    <div class="absolute -top-10 -left-10 h-40 w-40 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(251,191,36,.25), transparent 70%);"></div>
+                    <div class="relative flex flex-wrap items-center justify-between gap-4">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="shrink-0 h-11 w-11 rounded-2xl flex items-center justify-center text-xl" style="background: rgba(255,255,255,.15); backdrop-filter: blur(4px);">✒️</div>
+                            <div class="min-w-0">
+                                <h2 class="text-lg md:text-xl font-extrabold text-[#ffffff]">متن درخواست مصوبه</h2>
+                                <p class="text-xs" style="color: rgba(219,234,254,.9);">درخواست رسمی مصوبه از مدیرعامل، به همراه امضای دیجیتال هر سه رکن پروژه. پروژه: <b id="arProjectName" class="text-[#ffffff]"></b></p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="window.print()" class="shrink-0 flex items-center gap-2 bg-[#ffffff] hover:bg-[#f8fafc] text-[#1e3a8a] text-xs font-bold px-4 py-2.5 rounded-xl shadow transition">
+                            <span>🖨</span><span>چاپ / PDF</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="ar_adminPicker" class="hidden no-print bg-white p-4 rounded-2xl shadow-sm border space-y-2">
+                    <p class="text-xs text-slate-500">به‌عنوان ادمین، پروژه‌ای که می‌خواهید درخواست مصوبه آن را ببینید/ثبت کنید انتخاب کنید.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <select id="ar_adm_project" class="p-2.5 border rounded-xl text-xs md:col-span-2"></select>
+                        <button id="ar_adm_load_btn" type="button" class="bg-blue-900 hover:bg-blue-800 text-white text-xs px-4 rounded-xl font-bold">بارگذاری</button>
+                    </div>
+                </div>
+                <div id="ar_managerPicker" class="hidden no-print bg-white p-4 rounded-2xl shadow-sm border space-y-2">
+                    <p class="text-xs text-slate-500">شما به چند پروژه دسترسی دارید — پروژه‌ای که می‌خواهید درخواست مصوبه آن را ببینید/ثبت کنید انتخاب کنید.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <select id="ar_mgr_access" class="p-2.5 border rounded-xl text-xs md:col-span-2"></select>
+                        <button id="ar_mgr_load_btn" type="button" class="bg-blue-900 hover:bg-blue-800 text-white text-xs px-4 rounded-xl font-bold">بارگذاری</button>
+                    </div>
+                </div>
+
+                <div id="approvalRequestBody"></div>
+            </div>
+
             <div id="tasksView" class="hidden space-y-5">
                 <div class="print-card bg-white rounded-2xl shadow-sm border p-5">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
@@ -1780,7 +1817,7 @@
             return `<svg class="${cls || 'w-5 h-5'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name] || ''}</svg>`;
         }
 
-        const NAV_ICON = { overview: 'grid', aiAnalysis: 'activity', admin: 'tool', selection: 'zap', execReport: 'fileText', checkin: 'edit', clientReport: 'clipboard', qwProposal: 'target', tasks: 'checklist', projectsStatus: 'gauge' };
+        const NAV_ICON = { overview: 'grid', aiAnalysis: 'activity', admin: 'tool', selection: 'zap', execReport: 'fileText', checkin: 'edit', clientReport: 'clipboard', qwProposal: 'target', tasks: 'checklist', projectsStatus: 'gauge', approvalRequest: 'fileText' };
         const SIDEBAR_ACTIVE_CLASS = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold bg-blue-900/10 text-blue-900 transition';
         const SIDEBAR_INACTIVE_CLASS = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition';
         const MOBILE_ACTIVE_CLASS = 'flex flex-col items-center gap-0.5 px-3 py-2 shrink-0 text-blue-900';
@@ -1912,10 +1949,10 @@
             mobileNav.innerHTML = '';
 
             const buttons = currentProfile.role === 'admin'
-                ? [['overview', 'نمای کلی'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب اقدام زودبازده'], ['tasks', 'پایش اقدامات'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['execReport', 'گزارش تحلیلی مدیریتی'], ['admin', 'مدیریت کاربران']]
+                ? [['overview', 'نمای کلی'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب اقدام زودبازده'], ['tasks', 'پایش اقدامات'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['approvalRequest', 'متن درخواست مصوبه'], ['execReport', 'گزارش تحلیلی مدیریتی'], ['admin', 'مدیریت کاربران']]
                 : hasOrganization('کارفرما')
-                    ? [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['selection', 'پیشنهادها'], ['tasks', 'پایش اقدامات'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها']]
-                    : [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['tasks', 'پایش اقدامات'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها']];
+                    ? [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['selection', 'پیشنهادها'], ['tasks', 'پایش اقدامات'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['approvalRequest', 'متن درخواست مصوبه']]
+                    : [['overview', 'وضعیت پروژه'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['tasks', 'پایش اقدامات'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['approvalRequest', 'متن درخواست مصوبه']];
 
             buttons.forEach(([view, label], i) => {
                 const iconName = NAV_ICON[view] || 'grid';
@@ -1937,7 +1974,7 @@
             switchView(buttons[0][0]);
         }
 
-        const ALL_VIEWS = ['overview', 'checkin', 'clientReport', 'qwProposal', 'admin', 'selection', 'aiAnalysis', 'execReport', 'tasks', 'projectsStatus'];
+        const ALL_VIEWS = ['overview', 'checkin', 'clientReport', 'qwProposal', 'admin', 'selection', 'aiAnalysis', 'execReport', 'tasks', 'projectsStatus', 'approvalRequest'];
 
         function switchView(view) {
             ALL_VIEWS.forEach(v => {
@@ -1961,6 +1998,7 @@
             if (view === 'execReport') loadExecReport();
             if (view === 'tasks') loadTasksView();
             if (view === 'projectsStatus') loadProjectsStatusView();
+            if (view === 'approvalRequest') prefillApprovalRequestView();
         }
 
         function startTopbarClock() {
@@ -3244,6 +3282,12 @@
         document.getElementById('cr_mgr_load_btn').addEventListener('click', () => {
             openPreviewFromAccessSelect('cr_mgr_access', (project_name) => openClientReportPreview(project_name));
         });
+        document.getElementById('ar_adm_load_btn').addEventListener('click', () => {
+            openApprovalRequestPreview(document.getElementById('ar_adm_project').value);
+        });
+        document.getElementById('ar_mgr_load_btn').addEventListener('click', () => {
+            openPreviewFromAccessSelect('ar_mgr_access', (project_name) => openApprovalRequestPreview(project_name));
+        });
         document.getElementById('qwp_mgr_load_btn').addEventListener('click', () => {
             openPreviewFromAccessSelect('qwp_mgr_access', openQwProposalPreview);
         });
@@ -3990,6 +4034,215 @@
 
             body.innerHTML = rows.map((cr, i) => projectStatusCardHtml(cr, i)).join('');
             rows.forEach((cr, i) => drawProjectStatusCharts(cr, i));
+        }
+
+        // --------------------------------------------------
+        // APPROVAL REQUEST — formal one-page CEO approval request per
+        // project: a fixed formal letter template, an editable مصوبات
+        // table, and a per-organization digital sign-off. Requests are
+        // insert-only per submission (like check_ins/client_reports) —
+        // signatures are the one exception, written only through the
+        // sign_approval_request() RPC (migration 032), never a direct
+        // table update, so a signature can never be attributed to anyone
+        // but the person who actually clicked «امضای من».
+        // --------------------------------------------------
+        let arProjectContext = null;
+        let arLatestRequest = null;
+        let arMode = 'view'; // 'view' | 'compose'
+        let arDraftResolutions = [];
+        const AR_ORG_FIELD = { 'کارفرما': 'signed_by_client', 'مشاور': 'signed_by_consultant', 'پیمانکار': 'signed_by_contractor' };
+
+        async function prefillApprovalRequestView() {
+            const isAdmin = currentProfile.role === 'admin';
+            document.getElementById('ar_adminPicker').classList.toggle('hidden', !isAdmin);
+            document.getElementById('ar_managerPicker').classList.toggle('hidden', isAdmin || myProjectAccess.length <= 1);
+            if (isAdmin) {
+                await populateProjectSelect('ar_adm_project');
+                if (pickedProjectContext) {
+                    document.getElementById('ar_adm_project').value = pickedProjectContext.project_name;
+                    await openApprovalRequestPreview(pickedProjectContext.project_name);
+                }
+            } else if (myProjectAccess.length > 1) {
+                populateAccessSelect('ar_mgr_access');
+                const ctx = pickedProjectContext && myProjectAccess.find(a => a.project_name === pickedProjectContext.project_name);
+                if (ctx) {
+                    document.getElementById('ar_mgr_access').value = `${ctx.project_name}|||${ctx.organization}`;
+                    await openApprovalRequestPreview(ctx.project_name);
+                }
+            } else if (myProjectAccess.length === 1) {
+                await openApprovalRequestPreview(myProjectAccess[0].project_name);
+            }
+            const p = effectiveProfile();
+            document.getElementById('arProjectName').textContent = p ? p.project_name : '—';
+        }
+
+        async function openApprovalRequestPreview(project_name) {
+            if (!project_name) { alert('لطفاً ابتدا پروژه را انتخاب کنید.'); return; }
+            pickedProjectContext = { project_name, organization: 'کارفرما' };
+            document.getElementById('arProjectName').textContent = project_name;
+            arProjectContext = { project_name };
+            arMode = 'view';
+
+            const { data } = await _supabase.from('approval_requests').select('*')
+                .eq('project_name', project_name)
+                .order('created_at', { ascending: false }).limit(1).maybeSingle();
+            arLatestRequest = data || null;
+            if (!arLatestRequest) arDraftResolutions = [{ resolution: '', contractor_commitment: '', expected_result: '' }];
+            renderApprovalRequestBody();
+        }
+
+        function arFormalLetterHtml(projectName) {
+            return `<div class="print-card bg-white rounded-2xl shadow-sm border p-6 md:p-8 space-y-4" style="line-height: 2;">
+                <p class="text-center text-sm font-bold text-slate-700">بسمه‌تعالی</p>
+                <p class="text-left text-[11px] text-slate-400" dir="ltr">${esc(todayJalali())}</p>
+                <p class="text-sm font-bold text-slate-800">ریاست محترم هیئت‌مدیره و مدیرعامل محترم شرکت مهندسی و توسعه گاز ایران</p>
+                <p class="text-sm font-bold text-slate-600">موضوع: درخواست اخذ مصوبه در خصوص پروژه «${esc(projectName)}»</p>
+                <p class="text-sm text-slate-700">با سلام و احترام؛<br>
+                پیرو پیگیری‌های صورت‌گرفته در خصوص روند اجرای پروژه «${esc(projectName)}»، به استحضار می‌رساند مصوبات، تعهدات پیمانکار و نتایج مورد انتظار مندرج در جدول ذیل، پس از بررسی کارشناسی و توافق مشترک هر سه رکن پروژه (کارفرما، مشاور و پیمانکار) — که امضای دیجیتال ایشان در پایان این درخواست درج شده است — جهت اخذ تصمیم و صدور دستور مقتضی، به حضور آن مقام محترم تقدیم می‌گردد.</p>
+                <p class="text-sm text-slate-700">خواهشمند است دستور فرمایید نتیجه بررسی و تصمیم متخذه به این واحد ابلاغ گردد.</p>
+                <p class="text-sm text-slate-700">با تشکر و احترام مجدد</p>
+            </div>`;
+        }
+
+        function arResolutionsTableHtml(resolutions, editable) {
+            const rows = resolutions || [];
+            return `<div class="overflow-x-auto">
+                <table class="w-full text-right text-xs rounded-xl overflow-hidden">
+                    <thead><tr>
+                        <th class="p-2.5 text-[#ffffff] font-bold text-center" style="background: linear-gradient(135deg, #1e3a8a, #4c1d95);">ردیف</th>
+                        <th class="p-2.5 text-[#ffffff] font-bold" style="background: linear-gradient(135deg, #1e3a8a, #4c1d95);">مصوبه</th>
+                        <th class="p-2.5 text-[#ffffff] font-bold" style="background: linear-gradient(135deg, #1e3a8a, #4c1d95);">تعهد پیمانکار</th>
+                        <th class="p-2.5 text-[#ffffff] font-bold" style="background: linear-gradient(135deg, #1e3a8a, #4c1d95);">نتیجه مورد انتظار</th>
+                        ${editable ? '<th class="p-2.5 no-print" style="background: linear-gradient(135deg, #1e3a8a, #4c1d95);"></th>' : ''}
+                    </tr></thead>
+                    <tbody>
+                        ${rows.length ? rows.map((r, i) => editable ? `
+                        <tr class="${i % 2 ? 'bg-slate-50' : 'bg-white'}">
+                            <td class="p-2 text-center font-bold text-slate-400 border-b">${toPersianDigits(String(i + 1))}</td>
+                            <td class="p-2 border-b"><textarea data-ar-field="resolution" data-idx="${i}" rows="2" class="w-full border rounded-lg p-1.5 text-xs">${esc(r.resolution || '')}</textarea></td>
+                            <td class="p-2 border-b"><textarea data-ar-field="contractor_commitment" data-idx="${i}" rows="2" class="w-full border rounded-lg p-1.5 text-xs">${esc(r.contractor_commitment || '')}</textarea></td>
+                            <td class="p-2 border-b"><textarea data-ar-field="expected_result" data-idx="${i}" rows="2" class="w-full border rounded-lg p-1.5 text-xs">${esc(r.expected_result || '')}</textarea></td>
+                            <td class="p-2 border-b text-center no-print"><button type="button" data-ar-remove-row="${i}" class="text-red-500 hover:text-red-700" title="حذف ردیف">🗑</button></td>
+                        </tr>` : `
+                        <tr class="${i % 2 ? 'bg-slate-50' : 'bg-white'}">
+                            <td class="p-2.5 text-center font-bold text-slate-400 border-b">${toPersianDigits(String(i + 1))}</td>
+                            <td class="p-2.5 border-b">${esc(r.resolution || '—')}</td>
+                            <td class="p-2.5 border-b">${esc(r.contractor_commitment || '—')}</td>
+                            <td class="p-2.5 border-b">${esc(r.expected_result || '—')}</td>
+                        </tr>`).join('') : `<tr><td colspan="${editable ? 5 : 4}" class="p-4 text-center text-slate-400">هنوز مصوبه‌ای اضافه نشده است.</td></tr>`}
+                    </tbody>
+                </table>
+            </div>
+            ${editable ? '<button type="button" id="arAddRowBtn" class="no-print text-xs font-bold text-blue-900 underline">+ افزودن ردیف</button>' : ''}`;
+        }
+
+        function arSignatureSectionHtml(request) {
+            const isAdmin = currentProfile.role === 'admin';
+            return `<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                ${['کارفرما', 'مشاور', 'پیمانکار'].map(org => {
+                    const sig = request[AR_ORG_FIELD[org]];
+                    if (sig) {
+                        return `<div class="border-2 border-emerald-200 bg-emerald-50 rounded-xl p-3 text-center space-y-1">
+                            <p class="text-[11px] font-extrabold text-emerald-700">✅ امضای ${esc(org)}</p>
+                            <p class="text-xs font-bold text-slate-700">${esc(sig.name)}</p>
+                            <p class="text-[10px] text-slate-500">${formatJalali(sig.signed_at)}</p>
+                        </div>`;
+                    }
+                    const canSign = isAdmin || myProjectAccess.some(a => a.project_name === request.project_name && a.organization === org);
+                    return `<div class="border-2 border-dashed border-slate-200 rounded-xl p-3 text-center space-y-1.5">
+                        <p class="text-[11px] font-extrabold text-slate-400">⏳ در انتظار امضای ${esc(org)}</p>
+                        ${canSign ? `<button type="button" data-ar-sign="${esc(org)}" class="no-print text-xs font-bold bg-blue-900 hover:bg-blue-800 text-white px-3 py-1.5 rounded-lg">🖋 امضای من</button>` : '<p class="text-[10px] text-slate-400">—</p>'}
+                    </div>`;
+                }).join('')}
+            </div>`;
+        }
+
+        function renderApprovalRequestBody() {
+            const body = document.getElementById('approvalRequestBody');
+            if (!arProjectContext) { body.innerHTML = ''; return; }
+            const projectName = arProjectContext.project_name;
+
+            if (arMode === 'compose' || !arLatestRequest) {
+                body.innerHTML = `
+                    ${arFormalLetterHtml(projectName)}
+                    <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <h3 class="text-sm font-bold text-slate-800">مصوبات، تعهدات پیمانکار و نتایج مورد انتظار</h3>
+                            ${arLatestRequest ? '<button type="button" id="arCancelComposeBtn" class="no-print text-xs text-slate-400 underline">انصراف</button>' : ''}
+                        </div>
+                        ${arResolutionsTableHtml(arDraftResolutions, true)}
+                        <button type="button" id="arSubmitBtn" class="no-print w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-2.5 rounded-xl">ثبت درخواست مصوبه</button>
+                    </div>`;
+                wireArComposeEvents();
+            } else {
+                body.innerHTML = `
+                    ${arFormalLetterHtml(projectName)}
+                    <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <h3 class="text-sm font-bold text-slate-800">مصوبات، تعهدات پیمانکار و نتایج مورد انتظار</h3>
+                        ${arResolutionsTableHtml(arLatestRequest.resolutions || [], false)}
+                    </div>
+                    <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                        <h3 class="text-sm font-bold text-slate-800">امضای دیجیتال ارکان پروژه</h3>
+                        <p class="text-[11px] text-slate-500">هرکدام از ارکان زیر با اکانت خود این درخواست را امضا می‌کند تا رسمیت و تعهد بیشتری ایجاد شود.</p>
+                        ${arSignatureSectionHtml(arLatestRequest)}
+                    </div>
+                    <button type="button" id="arNewRequestBtn" class="no-print text-xs font-bold text-blue-900 underline">✏️ ثبت درخواست مصوبه جدید</button>`;
+                wireArViewEvents();
+            }
+        }
+
+        function wireArComposeEvents() {
+            const body = document.getElementById('approvalRequestBody');
+            body.querySelectorAll('[data-ar-field]').forEach(el => {
+                el.addEventListener('input', () => { arDraftResolutions[+el.dataset.idx][el.dataset.arField] = el.value; });
+            });
+            body.querySelectorAll('[data-ar-remove-row]').forEach(el => {
+                el.addEventListener('click', () => { arDraftResolutions.splice(+el.dataset.arRemoveRow, 1); renderApprovalRequestBody(); });
+            });
+            const addBtn = document.getElementById('arAddRowBtn');
+            if (addBtn) addBtn.addEventListener('click', () => {
+                arDraftResolutions.push({ resolution: '', contractor_commitment: '', expected_result: '' });
+                renderApprovalRequestBody();
+            });
+            const cancelBtn = document.getElementById('arCancelComposeBtn');
+            if (cancelBtn) cancelBtn.addEventListener('click', () => { arMode = 'view'; renderApprovalRequestBody(); });
+            document.getElementById('arSubmitBtn').addEventListener('click', submitApprovalRequest);
+        }
+
+        function wireArViewEvents() {
+            const body = document.getElementById('approvalRequestBody');
+            body.querySelectorAll('[data-ar-sign]').forEach(el => {
+                el.addEventListener('click', () => signApprovalRequestAs(el.dataset.arSign));
+            });
+            document.getElementById('arNewRequestBtn').addEventListener('click', startNewApprovalRequest);
+        }
+
+        function startNewApprovalRequest() {
+            arMode = 'compose';
+            arDraftResolutions = [{ resolution: '', contractor_commitment: '', expected_result: '' }];
+            renderApprovalRequestBody();
+        }
+
+        async function submitApprovalRequest() {
+            const cleaned = arDraftResolutions
+                .map(r => ({ resolution: (r.resolution || '').trim(), contractor_commitment: (r.contractor_commitment || '').trim(), expected_result: (r.expected_result || '').trim() }))
+                .filter(r => r.resolution || r.contractor_commitment || r.expected_result);
+            if (!cleaned.length) { alert('حداقل یک ردیف مصوبه را تکمیل کنید.'); return; }
+            const { error } = await _supabase.from('approval_requests').insert([{
+                project_name: arProjectContext.project_name,
+                created_by: currentUser.id,
+                resolutions: cleaned,
+            }]);
+            if (error) { alert('خطا در ثبت درخواست: ' + error.message); return; }
+            await openApprovalRequestPreview(arProjectContext.project_name);
+        }
+
+        async function signApprovalRequestAs(organization) {
+            if (!arLatestRequest) return;
+            const { data, error } = await _supabase.rpc('sign_approval_request', { p_request_id: arLatestRequest.id, p_organization: organization });
+            if (error) { alert('خطا در ثبت امضا: ' + error.message); return; }
+            arLatestRequest = data;
+            renderApprovalRequestBody();
         }
 
         // --------------------------------------------------
