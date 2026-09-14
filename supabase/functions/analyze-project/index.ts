@@ -40,6 +40,47 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
+const PERSIAN_DIGITS = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
+function toPersianDigits(str: string): string {
+  return str.replace(/[0-9]/g, (d) => PERSIAN_DIGITS[Number(d)]);
+}
+
+// Same algorithm as gregorianToJalali() in index.html / notify-overdue-tasks,
+// kept in sync so a date the model reasons about matches what the app shows
+// everywhere else.
+function gregorianToJalali(gy: number, gm: number, gd: number): [number, number, number] {
+  const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+  let jy = gy <= 1600 ? 0 : 979;
+  gy -= gy <= 1600 ? 621 : 1600;
+  const gy2 = gm > 2 ? gy + 1 : gy;
+  let days = 365 * gy + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) +
+    Math.floor((gy2 + 399) / 400) - 80 + gd + g_d_m[gm - 1];
+  jy += 33 * Math.floor(days / 12053);
+  days %= 12053;
+  jy += 4 * Math.floor(days / 1461);
+  days %= 1461;
+  if (days > 365) {
+    jy += Math.floor((days - 1) / 365);
+    days = (days - 1) % 365;
+  }
+  const jm = days < 186 ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
+  const jd = days < 186 ? 1 + (days % 31) : 1 + ((days - 186) % 30);
+  return [jy, jm, jd];
+}
+
+// Every date fed into the prompt goes through this — "2026-08-30" (or an ISO
+// timestamp), or null/undefined -> "۱۴۰۵/۰۶/۰۸" or "-" — so the model only
+// ever sees Jalali dates and echoes Jalali back in its generated text
+// instead of the raw Gregorian dates the database stores.
+function fmtDate(isoDateStr: string | null | undefined): string {
+  if (!isoDateStr) return "-";
+  const datePart = String(isoDateStr).slice(0, 10);
+  const [gy, gm, gd] = datePart.split("-").map(Number);
+  if (!gy || !gm || !gd) return datePart;
+  const [jy, jm, jd] = gregorianToJalali(gy, gm, gd);
+  return toPersianDigits(`${jy}/${String(jm).padStart(2, "0")}/${String(jd).padStart(2, "0")}`);
+}
+
 // Both Gemini and OpenAI occasionally answer a request with 503 ("model
 // overloaded" / "try again later") purely due to transient load on their
 // end — the request itself was never even processed, so retrying costs
@@ -268,7 +309,7 @@ Deno.serve(async (req) => {
     // deno-lint-ignore no-explicit-any
     function summarizeCapaAction(action: any): string {
       if (!action || !action.action) return "-";
-      return `${action.action}${action.owner ? ` — مسئول: ${action.owner}` : ""}${action.due_date ? ` — سررسید: ${action.due_date}` : ""}${action.status ? ` — وضعیت: ${action.status}` : ""}`;
+      return `${action.action}${action.owner ? ` — مسئول: ${action.owner}` : ""}${action.due_date ? ` — سررسید: ${fmtDate(action.due_date)}` : ""}${action.status ? ` — وضعیت: ${action.status}` : ""}`;
     }
 
     const perspectiveText = Object.entries(latestByOrg)
@@ -285,18 +326,18 @@ Deno.serve(async (req) => {
 - اقدام اصلاحی: ${summarizeCapaAction(c.capa_corrective)} | اقدام پیشگیرانه: ${summarizeCapaAction(c.capa_preventive)} | اثربخشی: ${c.capa_effectiveness || "-"}
 - نیاز به تصمیم مدیریت ارشد (اولویت ${c.senior_decision_priority || "-"}): ${c.senior_decision_needed || "-"}
 - پیشنهاد اقدام زودبازده: ${c.quick_win_title} — اقدام: ${c.action_details} — چرا: ${c.qw_rationale || "-"} — نتیجه ۳۰ روزه: ${c.tangible_result}
-- برنامه تحقق: مسئول=${c.plan_responsible || "-"}, تاریخ هدف=${c.plan_target_date || "-"}, خروجی=${c.plan_deliverable || "-"}
+- برنامه تحقق: مسئول=${c.plan_responsible || "-"}, تاریخ هدف=${fmtDate(c.plan_target_date)}, خروجی=${c.plan_deliverable || "-"}
 - اثر برآوردی: تأخیر=${c.impact_delay_days ?? "-"} روز, پیشرفت=${c.impact_progress_increase ?? "-"}%, هزینه=${c.impact_cost_avoided ?? "-"} ریال
 - حمایت لازم: ${c.support_needed} | برآورد زمان تحقق: ${c.time_estimate || "-"}`)
       .join("\n");
 
     const decisionText = decision
-      ? `\nاقدام زودبازده برگزیده فعلی: ${decision.title} (${decision.organization}) — دلیل: ${decision.rationale || "-"} — مهلت: ${decision.execution_target_date || decision.plan_target_date}`
+      ? `\nاقدام زودبازده برگزیده فعلی: ${decision.title} (${decision.organization}) — دلیل: ${decision.rationale || "-"} — مهلت: ${fmtDate(decision.execution_target_date || decision.plan_target_date)}`
       : "\nهنوز اقدام زودبازده‌ای برای این پروژه انتخاب نشده است.";
 
     const progressText = progress && progress.length > 0
       // deno-lint-ignore no-explicit-any
-      ? "\nتاریخچه پایش:\n" + progress.map((p: any) => `- ${String(p.created_at).slice(0, 10)}: ${p.status}, ${p.progress_percent}% — ${p.note || ""}`).join("\n")
+      ? "\nتاریخچه پایش:\n" + progress.map((p: any) => `- ${fmtDate(p.created_at)}: ${p.status}, ${p.progress_percent}% — ${p.note || ""}`).join("\n")
       : "";
 
     // deno-lint-ignore no-explicit-any
@@ -314,11 +355,11 @@ Deno.serve(async (req) => {
 - پیمانکار: ${cr.contractor_name || "-"} | مشاور: ${cr.consultant_name || "-"} | مدیر پروژه کارفرما: ${cr.client_pm_name || "-"}
 - مبلغ اولیه/فعلی قرارداد — ریالی (میلیارد ریال): ${cr.contract_initial_amount_rial ?? "-"} / ${cr.contract_current_amount_rial ?? "-"}
 - مبلغ اولیه/فعلی قرارداد — ارزی (میلیون یورو): ${cr.contract_initial_amount_eur ?? "-"} / ${cr.contract_current_amount_eur ?? "-"}
-- تاریخ شروع/پایان قراردادی: ${cr.contract_start_date || "-"} تا ${cr.contract_end_date || "-"}
+- تاریخ شروع/پایان قراردادی: ${fmtDate(cr.contract_start_date)} تا ${fmtDate(cr.contract_end_date)}
 - مدت قرارداد: ${cr.contract_duration_months ?? "-"} ماه | مدت سپری‌شده: ${cr.elapsed_months ?? "-"} ماه${elapsedPercent !== null ? ` (${elapsedPercent}% از مدت قرارداد)` : ""}
 - پیشرفت برنامه‌ای رسمی: ${cr.progress_planned ?? "-"}% | پیشرفت واقعی رسمی: ${cr.progress_physical ?? "-"}%${variance !== null ? ` (انحراف ${variance > 0 ? "+" : ""}${variance}%)` : ""}
 - پیشرفت مهندسی: ${cr.progress_engineering ?? "-"}% | پیشرفت تأمین: ${cr.progress_procurement ?? "-"}% | پیشرفت اجرا: ${cr.progress_construction ?? "-"}%
-- مهم‌ترین Milestone پیش‌رو: ${cr.milestone_name || "-"} — تاریخ برنامه‌ای ${cr.milestone_planned_date || "-"} — وضعیت: ${cr.milestone_status || "-"}${cr.milestone_delay_days ? ` (برآورد تأخیر ${cr.milestone_delay_days} روز)` : ""}`;
+- مهم‌ترین Milestone پیش‌رو: ${cr.milestone_name || "-"} — تاریخ برنامه‌ای ${fmtDate(cr.milestone_planned_date)} — وضعیت: ${cr.milestone_status || "-"}${cr.milestone_delay_days ? ` (برآورد تأخیر ${cr.milestone_delay_days} روز)` : ""}`;
     }
 
     const clientReportText = buildClientReportText(clientReport);
@@ -330,6 +371,8 @@ ${decisionText}
 ${progressText}
 
 با استفاده از تمام اطلاعات بالا، یک تحلیل عمیق و کاملاً مستند تهیه کن. هدف اصلی این است که نکاتی را آشکار کنی که در نگاه سطحی و جداگانه به هر گزارش دیده نمی‌شوند: مغایرت‌های عددی هرچند کوچک بین دیدگاه‌ها یا بین فرم اول کارفرما و ادعای خود کارفرما در فرم‌های بعدی، جمله یا نکته‌ای که فقط یک رکن به آن اشاره کرده اما می‌تواند نشانه یک مسئله بزرگ‌تر باشد، و الگوهایی که فقط با کنار هم گذاشتن وضعیت چند حوزه یا جبهه کاری مختلف آشکار می‌شوند (نه هرکدام به‌تنهایی).
+
+توجه مهم: تمام تاریخ‌های داده‌شده در بالا به‌صورت شمسی (جلالی) و با ارقام فارسی نوشته شده‌اند (مثلاً «۱۴۰۵/۰۶/۰۸»). هرجای متن تولیدی خودت (status_summary، divergence_note، why_it_matters، synthesis، final_recommendation و هر فیلد متنی دیگر) که به تاریخی اشاره می‌کنی، حتماً با همین قالب شمسی و ارقام فارسی بنویس؛ هرگز از تاریخ یا تقویم میلادی استفاده نکن.
 
 خروجی را دقیقاً و فقط به‌صورت یک شیء JSON معتبر برگردان — بدون Markdown، بدون بلوک کد، بدون هیچ متنی قبل یا بعد از آن. همه فیلدها الزامی‌اند؛ اگر آرایه‌ای موردی ندارد [] بگذار، هرگز فیلد را حذف نکن. دقیقاً با این ساختار:
 
