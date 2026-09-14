@@ -2623,9 +2623,22 @@
             </div>`;
         }
 
+        // Effectiveness can only be judged once the actions it's judging have actually
+        // been carried out — otherwise the question is asked before there's anything to answer.
+        function rcaCapaReadyForEffectiveness() {
+            const defined = ['corrective', 'preventive'].filter(k => rcaState[k].action.trim());
+            return defined.length > 0 && defined.every(k => rcaState[k].status === 'انجام‌شده');
+        }
+
         // ---- Effectiveness + Value ----
         function renderRcaEffectivenessSection() {
             if (!rcaState.confirmedCauses.length) return '';
+            if (!rcaCapaReadyForEffectiveness()) {
+                return `<div class="bg-white rounded-2xl shadow-sm border p-5 space-y-1.5">
+                    <h4 class="text-sm font-bold text-slate-800">آیا اقدام انجام‌شده مؤثر بوده است؟</h4>
+                    <p class="text-xs text-slate-500 leading-relaxed">پس از آنکه وضعیت اقدام(های) اصلاحی/پیشگیرانه بالا به «انجام‌شده» تغییر کند، امکان ارزیابی اثربخشی و ثبت نتیجه فراهم می‌شود.</p>
+                </div>`;
+            }
             const opts = [['مؤثر', '🟢'], ['تا حدی مؤثر', '🟡'], ['غیرمؤثر', '🔴']];
             return `<div class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                 <h4 class="text-sm font-bold text-slate-800">آیا اقدام انجام‌شده مؤثر بوده است؟</h4>
