@@ -975,6 +975,46 @@
                 </div>
             </div>
 
+            <!-- PROJECT LIFECYCLE & STAGE-GATE — orbital lifecycle control tower.
+                 Project Core (dual planned/actual rings) + 9 phase nodes (G1..G9)
+                 laid out on an orbit; clicking a node opens its detail panel
+                 (objectives/outputs/exit-criteria checklists + gate governance)
+                 without leaving the page. All phase content is fetched from the
+                 lifecycle_* master/project tables — nothing below is hard-coded. -->
+            <div id="lifecycleView" class="hidden space-y-5">
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-5">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                        <div class="flex items-center gap-3">
+                            <span class="shrink-0 h-11 w-11 rounded-2xl flex items-center justify-center text-[#ffffff]" style="background: linear-gradient(135deg, #0e2a5e, #0f766e);">
+                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><ellipse cx="12" cy="12" rx="10" ry="4.5"/><ellipse cx="12" cy="12" rx="10" ry="4.5" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4.5" transform="rotate(120 12 12)"/></svg>
+                            </span>
+                            <div>
+                                <h2 class="text-lg font-extrabold text-slate-800">چرخه عمر پروژه — Stage-Gate</h2>
+                                <p class="text-xs text-slate-500 mt-0.5">مدل ۹ گیتی چرخه عمر پروژه: تعریف تا تسویه حساب. پروژه: <b id="lcProjectNameLabel" class="text-slate-700">—</b></p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="window.print()" class="no-print text-xs font-bold px-4 py-2 rounded-xl border text-slate-600 hover:bg-slate-50">🖨 چاپ / PDF</button>
+                    </div>
+                </div>
+
+                <div id="lc_adminPicker" class="hidden no-print bg-white p-4 rounded-2xl shadow-sm border space-y-2">
+                    <p class="text-xs text-slate-500">به‌عنوان ادمین، پروژه‌ای که می‌خواهید چرخه عمر آن را ببینید انتخاب کنید.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <select id="lc_adm_project" class="p-2.5 border rounded-xl text-xs md:col-span-2"></select>
+                        <button id="lc_adm_load_btn" type="button" class="bg-blue-900 hover:bg-blue-800 text-white text-xs px-4 rounded-xl font-bold">بارگذاری</button>
+                    </div>
+                </div>
+                <div id="lc_managerPicker" class="hidden no-print bg-white p-4 rounded-2xl shadow-sm border space-y-2">
+                    <p class="text-xs text-slate-500">شما به چند پروژه دسترسی دارید — پروژه‌ای که می‌خواهید چرخه عمر آن را ببینید انتخاب کنید.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <select id="lc_mgr_access" class="p-2.5 border rounded-xl text-xs md:col-span-2"></select>
+                        <button id="lc_mgr_load_btn" type="button" class="bg-blue-900 hover:bg-blue-800 text-white text-xs px-4 rounded-xl font-bold">بارگذاری</button>
+                    </div>
+                </div>
+
+                <div id="lcBody"></div>
+            </div>
+
             <!-- OVERVIEW (landing dashboard for admin + managers, scoped by RLS) -->
             <div id="overviewView" class="hidden space-y-4">
                 <div class="bg-blue-950 rounded-2xl p-5 space-y-3">
@@ -1841,7 +1881,7 @@
             return `<svg class="${cls || 'w-5 h-5'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name] || ''}</svg>`;
         }
 
-        const NAV_ICON = { overview: 'grid', aiAnalysis: 'activity', admin: 'tool', selection: 'zap', execReport: 'fileText', checkin: 'edit', clientReport: 'clipboard', qwProposal: 'target', tasks: 'checklist', projectsStatus: 'gauge', approvalRequest: 'fileText' };
+        const NAV_ICON = { overview: 'grid', lifecycle: 'trendingUp', aiAnalysis: 'activity', admin: 'tool', selection: 'zap', execReport: 'fileText', checkin: 'edit', clientReport: 'clipboard', qwProposal: 'target', tasks: 'checklist', projectsStatus: 'gauge', approvalRequest: 'fileText' };
         const SIDEBAR_ACTIVE_CLASS = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold bg-blue-900/10 text-blue-900 transition';
         const SIDEBAR_INACTIVE_CLASS = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition';
         const MOBILE_ACTIVE_CLASS = 'flex flex-col items-center gap-0.5 px-3 py-2 shrink-0 text-blue-900';
@@ -1985,7 +2025,7 @@
             mobileNav.innerHTML = '';
 
             const buttons = currentProfile.role === 'admin'
-                ? [['overview', 'نمای کلی'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب اقدام زودبازده'], ['tasks', 'پایش اقدامات'], ['execReport', 'گزارش تحلیلی مدیریتی'], ['approvalRequest', 'متن درخواست مصوبه'], ['admin', 'مدیریت کاربران']]
+                ? [['overview', 'نمای کلی'], ['lifecycle', 'چرخه عمر پروژه'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب اقدام زودبازده'], ['tasks', 'پایش اقدامات'], ['execReport', 'گزارش تحلیلی مدیریتی'], ['approvalRequest', 'متن درخواست مصوبه'], ['admin', 'مدیریت کاربران']]
                 // تیم پشتیبانی کارفرما gets a deliberately minimal nav: only the
                 // project-status overview and پایش اقدامات (their actual job —
                 // working assigned tasks). Every other tab here submits data as
@@ -1994,8 +2034,8 @@
                 : currentProfile.is_support_team
                     ? [['overview', 'وضعیت پروژه'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['tasks', 'پایش اقدامات']]
                     : hasOrganization('کارفرما')
-                        ? [['overview', 'وضعیت پروژه'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['selection', 'پیشنهادها'], ['tasks', 'پایش اقدامات'], ['approvalRequest', 'متن درخواست مصوبه']]
-                        : [['overview', 'وضعیت پروژه'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['tasks', 'پایش اقدامات'], ['approvalRequest', 'متن درخواست مصوبه']];
+                        ? [['overview', 'وضعیت پروژه'], ['lifecycle', 'چرخه عمر پروژه'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['selection', 'پیشنهادها'], ['tasks', 'پایش اقدامات'], ['approvalRequest', 'متن درخواست مصوبه']]
+                        : [['overview', 'وضعیت پروژه'], ['lifecycle', 'چرخه عمر پروژه'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['tasks', 'پایش اقدامات'], ['approvalRequest', 'متن درخواست مصوبه']];
 
             buttons.forEach(([view, label], i) => {
                 const iconName = NAV_ICON[view] || 'grid';
@@ -2017,7 +2057,7 @@
             switchView(buttons[0][0]);
         }
 
-        const ALL_VIEWS = ['overview', 'checkin', 'clientReport', 'qwProposal', 'admin', 'selection', 'aiAnalysis', 'execReport', 'tasks', 'projectsStatus', 'approvalRequest'];
+        const ALL_VIEWS = ['overview', 'lifecycle', 'checkin', 'clientReport', 'qwProposal', 'admin', 'selection', 'aiAnalysis', 'execReport', 'tasks', 'projectsStatus', 'approvalRequest'];
 
         function switchView(view) {
             ALL_VIEWS.forEach(v => {
@@ -2032,6 +2072,7 @@
                 b.className = b.dataset.view === view ? MOBILE_ACTIVE_CLASS : MOBILE_INACTIVE_CLASS;
             });
             if (view === 'overview') loadOverview();
+            if (view === 'lifecycle') prefillLifecycleView();
             if (view === 'checkin') prefillCheckinForm();
             if (view === 'clientReport') prefillClientReportForm();
             if (view === 'qwProposal') prefillQwProposalForm();
@@ -7782,6 +7823,807 @@
             task.latest_update = newNote;
             renderTaskDrawerContent(task);
             loadTasksView();
+        }
+
+        // ============================================================
+        // PROJECT LIFECYCLE & STAGE-GATE MODULE
+        //
+        // Renders the org's 9-gate lifecycle (lifecycle_phases +
+        // objectives/outputs/criteria, all fetched — nothing about a phase's
+        // content is hard-coded here) as an orbit around a Project Core with
+        // dual planned/actual rings. Progress is always DERIVED from item
+        // completion (never typed in), and Gate readiness is tracked
+        // separately from Progress% — a phase can sit at 100% progress and
+        // still not be gate-PASSED if a mandatory exit criterion is pending.
+        //
+        // G6 (EPC) deliberately has no progress fields of its own: its E/P/C
+        // planned/actual/weight already live on client_reports (the same
+        // numbers شown on «اطلاعات پایه پروژه»), reused here rather than
+        // duplicated. G4 (Basic Design) is the only phase with its own
+        // manually-recorded, history-tracked periodic actual %.
+        // ============================================================
+        let lcState = {
+            projectName: null,
+            phases: [],
+            projectPhases: {},
+            items: {},
+            gateDecisions: {},
+            progressHistory: {},
+            clientReport: null,
+            clientReportHistory: [],
+            selectedPhase: null,
+            canEdit: false,
+        };
+
+        const LC_OBJECTIVE_STATUSES = [['not_started', 'شروع نشده', 'slate'], ['in_progress', 'در حال انجام', 'amber'], ['completed', 'تکمیل‌شده', 'emerald'], ['blocked', 'مسدود', 'red']];
+        const LC_OUTPUT_STATUSES = [['pending', 'در انتظار', 'slate'], ['submitted', 'ارسال‌شده', 'amber'], ['verified', 'تاییدشده', 'emerald'], ['rejected', 'رد شده', 'red']];
+        const LC_CRITERION_STATUSES = [['pending', 'در انتظار', 'slate'], ['completed', 'انجام‌شده', 'amber'], ['verified', 'تاییدشده', 'emerald'], ['failed', 'ناموفق', 'red'], ['waived', 'صرف‌نظرشده', 'purple']];
+        const LC_KIND_STATUSES = { objective: LC_OBJECTIVE_STATUSES, output: LC_OUTPUT_STATUSES, criterion: LC_CRITERION_STATUSES };
+        const LC_KIND_FRACTION = {
+            objective: { not_started: 0, in_progress: 0.5, completed: 1, blocked: 0 },
+            output: { pending: 0, submitted: 0.5, verified: 1, rejected: 0 },
+            criterion: { pending: 0, completed: 0.5, verified: 1, failed: 0, waived: 1 },
+        };
+        const LC_GATE_STATUS_META = {
+            not_ready: { label: 'آماده نیست', color: 'slate' },
+            ready_for_review: { label: 'آماده بررسی', color: 'blue' },
+            conditional: { label: 'عبور مشروط', color: 'purple' },
+            passed: { label: 'گذر تاییدشده', color: 'emerald' },
+            blocked: { label: 'مسدود', color: 'red' },
+        };
+        const LC_NODE_STATUS_META = {
+            completed: { label: 'گیت گذشته‌شده', color: '#10b981' },
+            conditional: { label: 'عبور مشروط', color: '#a855f7' },
+            ready: { label: 'آماده بررسی گیت', color: '#3b82f6' },
+            active: { label: 'در حال اجرا', color: '#f59e0b' },
+            upcoming: { label: 'پیش رو', color: '#64748b' },
+            blocked: { label: 'مسدود', color: '#ef4444' },
+        };
+        const LC_GROUP_COLOR = { fel: '#3b82f6', execution: '#10b981', commissioning: '#f59e0b' };
+
+        function isAdminUser() { return currentProfile.role === 'admin'; }
+
+        function lcTitleWithReviewFlag(title) {
+            const t = title || '';
+            const needsReview = /\[NEEDS REVIEW\]/i.test(t);
+            return { clean: t.replace(/\s*\[NEEDS REVIEW\]/i, ''), needsReview };
+        }
+
+        function populateManagerProjectNames(selectId) {
+            const seen = new Set();
+            const opts = myProjectAccess.filter(a => (seen.has(a.project_name) ? false : (seen.add(a.project_name), true)));
+            document.getElementById(selectId).innerHTML = opts.length
+                ? opts.map(a => `<option value="${esc(a.project_name)}">${esc(a.project_name)}</option>`).join('')
+                : '<option value="">-- دسترسی به پروژه‌ای ندارید --</option>';
+        }
+
+        async function prefillLifecycleView() {
+            const isAdmin = isAdminUser();
+            document.getElementById('lc_adminPicker').classList.toggle('hidden', !isAdmin);
+            document.getElementById('lc_managerPicker').classList.toggle('hidden', isAdmin || myProjectAccess.length <= 1);
+            if (isAdmin) {
+                await populateProjectSelect('lc_adm_project');
+                if (pickedProjectContext) {
+                    document.getElementById('lc_adm_project').value = pickedProjectContext.project_name;
+                    await openLifecyclePreview(pickedProjectContext.project_name);
+                } else {
+                    document.getElementById('lcBody').innerHTML = lcEmptyStateHtml('برای مشاهده چرخه عمر، پروژه‌ای را از فهرست بالا انتخاب کنید.');
+                }
+            } else if (myProjectAccess.length > 1) {
+                populateManagerProjectNames('lc_mgr_access');
+                const ctx = pickedProjectContext && myProjectAccess.find(a => a.project_name === pickedProjectContext.project_name);
+                if (ctx) {
+                    document.getElementById('lc_mgr_access').value = ctx.project_name;
+                    await openLifecyclePreview(ctx.project_name);
+                } else {
+                    document.getElementById('lcBody').innerHTML = lcEmptyStateHtml('برای مشاهده چرخه عمر، پروژه‌ای را از فهرست بالا انتخاب کنید.');
+                }
+            } else if (myProjectAccess.length === 1) {
+                await openLifecyclePreview(myProjectAccess[0].project_name);
+            } else {
+                document.getElementById('lcBody').innerHTML = lcEmptyStateHtml('شما به هیچ پروژه‌ای دسترسی ندارید.');
+            }
+        }
+        document.getElementById('lc_adm_load_btn').addEventListener('click', () => openLifecyclePreview(document.getElementById('lc_adm_project').value));
+        document.getElementById('lc_mgr_load_btn').addEventListener('click', () => openLifecyclePreview(document.getElementById('lc_mgr_access').value));
+
+        function lcEmptyStateHtml(msg) {
+            return `<div class="bg-white rounded-2xl shadow-sm border p-10 text-center text-slate-400 text-sm">${esc(msg)}</div>`;
+        }
+
+        async function openLifecyclePreview(projectName) {
+            if (!projectName) { alert('لطفاً ابتدا پروژه را انتخاب کنید.'); return; }
+            pickedProjectContext = { project_name: projectName, organization: (myProjectAccess.find(a => a.project_name === projectName) || {}).organization || 'کارفرما' };
+            lcState.projectName = projectName;
+            document.getElementById('lcProjectNameLabel').textContent = projectName;
+            document.getElementById('lcBody').innerHTML = '<p class="text-center text-slate-400 p-10">در حال بارگذاری چرخه عمر پروژه...</p>';
+
+            const [{ data: phases, error: phasesErr }, { data: projectPhases }, { data: items }, { data: gateDecisions }, { data: progressHistory }, { data: clientReports }] = await Promise.all([
+                _supabase.from('lifecycle_phases').select('*, lifecycle_objectives(*), lifecycle_outputs(*), lifecycle_criteria(*)').eq('is_active', true).order('sort_order'),
+                _supabase.from('project_lifecycle_phases').select('*').eq('project_name', projectName),
+                _supabase.from('project_phase_items').select('*').eq('project_name', projectName),
+                _supabase.from('lifecycle_gate_decisions').select('*').eq('project_name', projectName).order('decided_at', { ascending: false }),
+                _supabase.from('lifecycle_progress_history').select('*').eq('project_name', projectName).order('recorded_at', { ascending: true }),
+                _supabase.from('client_reports').select('*').eq('project_name', projectName).order('created_at', { ascending: true }),
+            ]);
+
+            if (phasesErr) {
+                document.getElementById('lcBody').innerHTML = lcEmptyStateHtml('خطا در بارگذاری داده مرجع چرخه عمر: ' + phasesErr.message);
+                return;
+            }
+
+            lcState.phases = (phases || []).slice().sort((a, b) => a.sort_order - b.sort_order);
+            lcState.projectPhases = {};
+            (projectPhases || []).forEach(pp => { lcState.projectPhases[pp.phase_code] = pp; });
+            lcState.items = {};
+            (items || []).forEach(it => {
+                lcState.items[it.phase_code] = lcState.items[it.phase_code] || { objective: {}, output: {}, criterion: {} };
+                lcState.items[it.phase_code][it.kind][it.item_id] = it;
+            });
+            lcState.gateDecisions = {};
+            (gateDecisions || []).forEach(d => {
+                lcState.gateDecisions[d.phase_code] = lcState.gateDecisions[d.phase_code] || [];
+                lcState.gateDecisions[d.phase_code].push(d);
+            });
+            lcState.progressHistory = {};
+            (progressHistory || []).forEach(h => {
+                lcState.progressHistory[h.phase_code] = lcState.progressHistory[h.phase_code] || [];
+                lcState.progressHistory[h.phase_code].push(h);
+            });
+            lcState.clientReportHistory = clientReports || [];
+            lcState.clientReport = lcState.clientReportHistory.length ? lcState.clientReportHistory[lcState.clientReportHistory.length - 1] : null;
+            lcState.canEdit = isAdminUser() || myProjectAccess.some(a => a.project_name === projectName);
+            lcState.selectedPhase = null;
+
+            lcRenderAll();
+        }
+
+        // ---------------- Calculation engine ----------------
+        function lcItemFraction(kind, row) {
+            if (!row) return 0;
+            return (LC_KIND_FRACTION[kind] || {})[row.status] ?? 0;
+        }
+
+        function lcCategoryProgress(masterList, progressMap, kind) {
+            const active = (masterList || []).filter(m => m.is_active !== false);
+            if (!active.length) return 100;
+            const hasCustomWeight = active.some(m => typeof m.weight === 'number');
+            let sum = 0, totalW = 0;
+            active.forEach(m => {
+                const w = hasCustomWeight ? (Number(m.weight) || 0) : 1;
+                sum += lcItemFraction(kind, progressMap[m.id]) * w;
+                totalW += w;
+            });
+            return totalW ? (sum / totalW) * 100 : 0;
+        }
+
+        function lcPhaseCategoryBreakdown(phase) {
+            const it = lcState.items[phase.code] || { objective: {}, output: {}, criterion: {} };
+            return {
+                objective: lcCategoryProgress(phase.lifecycle_objectives, it.objective, 'objective'),
+                output: lcCategoryProgress(phase.lifecycle_outputs, it.output, 'output'),
+                criterion: lcCategoryProgress(phase.lifecycle_criteria, it.criterion, 'criterion'),
+            };
+        }
+
+        function lcPlannedProgressByDate(plannedStart, plannedFinish, asOf) {
+            if (!plannedStart || !plannedFinish) return null;
+            const s = new Date(plannedStart).getTime(), f = new Date(plannedFinish).getTime(), n = (asOf || new Date()).getTime();
+            if (!(f > s)) return null;
+            if (n <= s) return 0;
+            if (n >= f) return 100;
+            return Math.round((n - s) / (f - s) * 100);
+        }
+
+        function lcEpcWeighted(cr, mode) {
+            if (!cr) return 0;
+            const we = Number(cr.progress_engineering_weight) || 0;
+            const wp = Number(cr.progress_procurement_weight) || 0;
+            const wc = Number(cr.progress_construction_weight) || 0;
+            const totalW = (we + wp + wc) || 100;
+            const suffix = mode === 'planned' ? '_planned' : '';
+            const e = Number(cr['progress_engineering' + suffix]) || 0;
+            const p = Number(cr['progress_procurement' + suffix]) || 0;
+            const c = Number(cr['progress_construction' + suffix]) || 0;
+            const effWe = we || (totalW / 3), effWp = wp || (totalW / 3), effWc = wc || (totalW / 3);
+            return (e * effWe + p * effWp + c * effWc) / totalW;
+        }
+
+        function lcPhaseProgress(phase) {
+            const pp = lcState.projectPhases[phase.code];
+            if (phase.progress_engine === 'epc') {
+                return { actual: lcEpcWeighted(lcState.clientReport, 'actual'), planned: lcEpcWeighted(lcState.clientReport, 'planned') };
+            }
+            if (phase.progress_engine === 'basic_design') {
+                const actual = pp && typeof pp.manual_actual_pct === 'number' ? pp.manual_actual_pct : 0;
+                const planned = lcPlannedProgressByDate(pp?.planned_start, pp?.planned_finish);
+                return { actual, planned: planned == null ? actual : planned };
+            }
+            const cat = lcPhaseCategoryBreakdown(phase);
+            const actual = (cat.objective * phase.objectives_weight_pct + cat.output * phase.outputs_weight_pct + cat.criterion * phase.criteria_weight_pct) / 100;
+            const planned = lcPlannedProgressByDate(pp?.planned_start, pp?.planned_finish);
+            return { actual, planned: planned == null ? actual : planned, cat };
+        }
+
+        function lcGateReadiness(phase) {
+            const pp = lcState.projectPhases[phase.code];
+            const it = lcState.items[phase.code] || { objective: {}, output: {}, criterion: {} };
+            const mandatoryCriteria = (phase.lifecycle_criteria || []).filter(c => c.is_active !== false && c.is_mandatory);
+            const criteriaOk = mandatoryCriteria.every(c => ['verified', 'waived'].includes(it.criterion[c.id]?.status));
+            const outputsOk = (phase.lifecycle_outputs || []).filter(o => o.is_active !== false).every(o => it.output[o.id]?.status === 'verified');
+            const objectivesOk = (phase.lifecycle_objectives || []).filter(o => o.is_active !== false).every(o => it.objective[o.id]?.status === 'completed');
+            const readyForGate = criteriaOk && outputsOk && objectivesOk;
+            const stored = pp?.gate_status || 'not_ready';
+            const pendingMandatory = mandatoryCriteria.filter(c => !['verified', 'waived'].includes(it.criterion[c.id]?.status));
+            let effective = stored;
+            if (stored === 'not_ready' || stored === 'ready_for_review') effective = readyForGate ? 'ready_for_review' : 'not_ready';
+            return { effective, readyForGate, criteriaOk, outputsOk, objectivesOk, pendingMandatory };
+        }
+
+        function lcOverallProgress() {
+            let sumW = 0, sumActual = 0, sumPlanned = 0;
+            const n = lcState.phases.length || 1;
+            lcState.phases.forEach(p => {
+                const pp = lcState.projectPhases[p.code];
+                const w = (pp && typeof pp.weight_pct === 'number') ? pp.weight_pct : (100 / n);
+                const { actual, planned } = lcPhaseProgress(p);
+                sumW += w; sumActual += w * actual; sumPlanned += w * planned;
+            });
+            return { actual: sumW ? sumActual / sumW : 0, planned: sumW ? sumPlanned / sumW : 0 };
+        }
+
+        function lcTotalWeight() {
+            const n = lcState.phases.length || 1;
+            return lcState.phases.reduce((sum, p) => sum + (lcState.projectPhases[p.code]?.weight_pct ?? (100 / n)), 0);
+        }
+
+        function lcCurrentActivePhase() {
+            return lcState.phases.find(p => (lcState.projectPhases[p.code]?.gate_status) !== 'passed') || lcState.phases[lcState.phases.length - 1];
+        }
+
+        function lcNodeStatus(phase) {
+            const pp = lcState.projectPhases[phase.code];
+            const gate = pp?.gate_status || 'not_ready';
+            if (gate === 'blocked') return 'blocked';
+            if (gate === 'passed') return 'completed';
+            if (gate === 'conditional') return 'conditional';
+            if (gate === 'ready_for_review') return 'ready';
+            const { actual } = lcPhaseProgress(phase);
+            return actual > 0 ? 'active' : 'upcoming';
+        }
+
+        // ---------------- Rendering ----------------
+        function lcRenderAll() {
+            if (!lcState.phases.length) {
+                document.getElementById('lcBody').innerHTML = lcEmptyStateHtml('داده مرجع چرخه عمر هنوز در سامانه ثبت نشده است — از فایل seed_lifecycle_master_data.sql برای بارگذاری آن استفاده کنید.');
+                return;
+            }
+            document.getElementById('lcBody').innerHTML = `
+                <style>
+                    .lc-node { transition: transform .15s ease; transform-box: fill-box; transform-origin: center; cursor: pointer; }
+                    .lc-node:hover { transform: scale(1.07); }
+                </style>
+                ${lcExecStripHtml()}
+                <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_400px] gap-5 items-start">
+                    <div class="bg-white rounded-2xl shadow-sm border p-4 md:p-8">
+                        <div class="relative flex items-center justify-center" id="lcOrbitStage">
+                            ${lcOrbitSvg()}
+                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">${lcCoreOverlayHtml()}</div>
+                        </div>
+                        ${lcLegendHtml()}
+                    </div>
+                    <div id="lcDetailPanel" class="bg-white rounded-2xl shadow-sm border p-5 min-h-[200px]">${lcDetailPanelHtml()}</div>
+                </div>
+                ${lcMetadataBarHtml()}
+            `;
+            lcBindEvents();
+        }
+
+        function lcArcPath(cx, cy, r, a1, a2) {
+            const toXY = (a) => { const rad = a * Math.PI / 180; return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)]; };
+            const [x1, y1] = toXY(a1 + 4), [x2, y2] = toXY(a2 - 4);
+            const large = (a2 - a1) > 180 ? 1 : 0;
+            return `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`;
+        }
+
+        function lcOrbitSvg() {
+            const N = lcState.phases.length;
+            const cx = 320, cy = 320, coreR = 150, plannedR = 142, actualR = 122, nodeOrbitR = 250, nodeR = 38;
+            const overall = lcOverallProgress();
+            const variance = Math.round(overall.actual) - Math.round(overall.planned);
+            const ringLen = (r) => 2 * Math.PI * r;
+            const arc = (r, pct, style) => {
+                const len = ringLen(r);
+                const dash = len * Math.max(0, Math.min(100, pct)) / 100;
+                return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke-linecap="round" stroke-dasharray="${dash} ${len - dash}" transform="rotate(-90 ${cx} ${cy})" style="${style}"/>`;
+            };
+            const varianceColor = variance < -5 ? '#ef4444' : variance > 2 ? '#10b981' : '#3b82f6';
+
+            let nodesHtml = '', connectorsHtml = '';
+            lcState.phases.forEach((p, i) => {
+                const angle = -90 + (360 / N) * i;
+                const nextAngle = -90 + (360 / N) * (i + 1);
+                const rad = angle * Math.PI / 180;
+                const nx = cx + nodeOrbitR * Math.cos(rad), ny = cy + nodeOrbitR * Math.sin(rad);
+                const status = lcNodeStatus(p);
+                const meta = LC_NODE_STATUS_META[status];
+                const { actual } = lcPhaseProgress(p);
+                const isSelected = lcState.selectedPhase === p.code;
+                const nodeRingLen = 2 * Math.PI * nodeR;
+                const nodeDash = nodeRingLen * Math.max(0, Math.min(100, actual)) / 100;
+
+                connectorsHtml += `<path d="${lcArcPath(cx, cy, nodeOrbitR, angle, nextAngle)}" fill="none" stroke="${LC_GROUP_COLOR[p.phase_group]}" stroke-opacity="0.18" stroke-width="10"/>`;
+
+                nodesHtml += `
+                <g class="lc-node" data-lc-phase="${p.code}" transform="translate(${nx} ${ny})">
+                    ${isSelected ? `<circle r="${nodeR + 9}" fill="none" stroke="${meta.color}" stroke-width="2" stroke-dasharray="3 5" opacity="0.7"/>` : ''}
+                    <circle r="${nodeR}" fill="var(--c-white)" stroke="${meta.color}" stroke-width="${isSelected ? 4 : 2.5}" opacity="${status === 'upcoming' ? 0.6 : 1}"/>
+                    <circle r="${nodeR}" fill="none" stroke="${meta.color}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${nodeDash} ${nodeRingLen - nodeDash}" transform="rotate(-90)" opacity="0.9"/>
+                    <g transform="translate(-9,-32) scale(0.75)" stroke="${meta.color}" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[p.icon_key] || ''}</g>
+                    <text text-anchor="middle" dy="8" font-size="14" font-weight="800" fill="${meta.color}">${esc(p.code)}</text>
+                    <text text-anchor="middle" dy="21" font-size="9" font-weight="700" fill="var(--c-slate-500)">${toPersianDigits(Math.round(actual))}٪</text>
+                </g>`;
+            });
+
+            return `
+            <svg viewBox="0 0 640 640" class="w-full h-auto select-none" style="max-height:640px; overflow: visible;">
+                <defs><radialGradient id="lcCoreGrad" cx="50%" cy="35%" r="75%"><stop offset="0%" stop-color="#123159"/><stop offset="100%" stop-color="#08152c"/></radialGradient></defs>
+                <circle cx="${cx}" cy="${cy}" r="${nodeOrbitR}" fill="none" stroke="currentColor" stroke-opacity="0.08" stroke-width="1" stroke-dasharray="2 6"/>
+                ${connectorsHtml}
+                <circle cx="${cx}" cy="${cy}" r="${coreR}" fill="url(#lcCoreGrad)"/>
+                ${arc(plannedR, overall.planned, 'stroke:#94a3b8;stroke-width:7;opacity:.55;')}
+                ${arc(actualR, overall.actual, `stroke:${varianceColor};stroke-width:12;filter:drop-shadow(0 0 5px ${varianceColor}88);`)}
+                ${nodesHtml}
+            </svg>`;
+        }
+
+        function lcCoreOverlayHtml() {
+            const overall = lcOverallProgress();
+            const variance = Math.round(overall.actual) - Math.round(overall.planned);
+            const status = variance < -5 ? 'عقب از برنامه' : variance > 2 ? 'جلوتر از برنامه' : 'مطابق برنامه';
+            const statusColor = variance < -5 ? 'text-red-400' : variance > 2 ? 'text-emerald-400' : 'text-blue-300';
+            const activePhase = lcCurrentActivePhase();
+            return `
+            <div class="text-center px-4" style="max-width:210px;">
+                <p class="text-[10px] font-bold tracking-wide" style="color:#93c5fd;">پیشرفت کلی پروژه</p>
+                <p class="text-4xl font-extrabold text-white leading-none mt-1">${toPersianDigits(Math.round(overall.actual))}<span class="text-lg">٪</span></p>
+                <p class="text-[10px] mt-0.5" style="color:#cbd5e1;">واقعی</p>
+                <p class="text-[11px] mt-2" style="color:#94a3b8;">برنامه‌ای: <b style="color:#e2e8f0;">${toPersianDigits(Math.round(overall.planned))}٪</b></p>
+                <p class="text-[11px] font-bold mt-1 ${statusColor}">${variance >= 0 ? '+' : ''}${toPersianDigits(Math.round(variance))}٪ — ${status}</p>
+                ${activePhase ? `<p class="text-[10px] mt-2 pt-2 border-t" style="border-color:rgba(255,255,255,.12); color:#93c5fd;">فاز جاری: <b style="color:#fff;">${esc(activePhase.code)} — ${esc(activePhase.title)}</b></p>` : ''}
+            </div>`;
+        }
+
+        function lcLegendHtml() {
+            return `<div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 mt-3 pt-3 border-t border-slate-100">
+                ${Object.values(LC_NODE_STATUS_META).map(m => `<span class="inline-flex items-center gap-1.5 text-[10px] font-semibold text-slate-500"><span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${m.color}"></span>${esc(m.label)}</span>`).join('')}
+            </div>`;
+        }
+
+        function lcExecStripHtml() {
+            const overall = lcOverallProgress();
+            const variance = Math.round(overall.actual) - Math.round(overall.planned);
+            const activePhase = lcCurrentActivePhase();
+            const gate = activePhase ? lcGateReadiness(activePhase) : null;
+            const gateMeta = gate ? LC_GATE_STATUS_META[gate.effective] : null;
+
+            let pendingMandatory = 0, pendingOutputs = 0, blockedItems = 0;
+            lcState.phases.forEach(p => {
+                const it = lcState.items[p.code] || { objective: {}, output: {}, criterion: {} };
+                (p.lifecycle_criteria || []).filter(c => c.is_mandatory && c.is_active !== false).forEach(c => {
+                    if (!['verified', 'waived'].includes(it.criterion[c.id]?.status)) pendingMandatory++;
+                });
+                (p.lifecycle_outputs || []).filter(o => o.is_active !== false).forEach(o => {
+                    if (it.output[o.id]?.status !== 'verified') pendingOutputs++;
+                });
+                Object.values(it.objective).forEach(row => { if (row.status === 'blocked') blockedItems++; });
+            });
+
+            return `
+            <div class="rounded-2xl p-5" style="background: linear-gradient(135deg, #0b1830, #10243f);">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div><p class="text-[11px]" style="color:#93c5fd;">پیشرفت واقعی کل</p><p class="text-2xl font-extrabold text-white">${toPersianDigits(Math.round(overall.actual))}٪</p></div>
+                    <div><p class="text-[11px]" style="color:#93c5fd;">پیشرفت برنامه‌ای کل</p><p class="text-2xl font-extrabold text-white">${toPersianDigits(Math.round(overall.planned))}٪</p></div>
+                    <div><p class="text-[11px]" style="color:#93c5fd;">انحراف</p><p class="text-2xl font-extrabold ${variance < -5 ? 'text-red-400' : variance > 2 ? 'text-emerald-400' : 'text-blue-300'}">${variance >= 0 ? '+' : ''}${toPersianDigits(Math.round(variance))}٪</p></div>
+                    <div><p class="text-[11px]" style="color:#93c5fd;">فاز جاری</p><p class="text-lg font-extrabold text-white">${activePhase ? esc(activePhase.code) : '—'} <span class="text-xs font-semibold" style="color:#cbd5e1;">${activePhase ? esc(activePhase.title) : ''}</span></p></div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t" style="border-color:rgba(255,255,255,.1);">
+                    ${gateMeta ? `<span class="text-[11px] px-2.5 py-1 rounded-full font-bold bg-${gateMeta.color}-100 text-${gateMeta.color}-700">گیت فاز جاری: ${esc(gateMeta.label)}</span>` : ''}
+                    ${pendingMandatory ? `<span class="text-[11px] px-2.5 py-1 rounded-full font-bold bg-amber-100 text-amber-700">${toPersianDigits(pendingMandatory)} معیار الزامی معلق</span>` : ''}
+                    ${pendingOutputs ? `<span class="text-[11px] px-2.5 py-1 rounded-full font-bold bg-slate-100 text-slate-600">${toPersianDigits(pendingOutputs)} خروجی هنوز تاییدنشده</span>` : ''}
+                    ${blockedItems ? `<span class="text-[11px] px-2.5 py-1 rounded-full font-bold bg-red-100 text-red-700">${toPersianDigits(blockedItems)} مورد مسدود</span>` : ''}
+                </div>
+            </div>`;
+        }
+
+        function lcStatusMeta(kind, status) {
+            const found = (LC_KIND_STATUSES[kind] || []).find(([sv]) => sv === status);
+            return found ? { label: found[1], color: found[2] } : { label: status || '—', color: 'slate' };
+        }
+        function lcStatusBadge(kind, status) {
+            const meta = lcStatusMeta(kind, status);
+            return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-${meta.color}-100 text-${meta.color}-700">${esc(meta.label)}</span>`;
+        }
+
+        function lcChecklistSectionHtml(phase, kind, label) {
+            const masterKey = kind === 'objective' ? 'lifecycle_objectives' : kind === 'output' ? 'lifecycle_outputs' : 'lifecycle_criteria';
+            const master = (phase[masterKey] || []).filter(m => m.is_active !== false).slice().sort((a, b) => a.seq - b.seq);
+            if (!master.length) return '';
+            const progressMap = (lcState.items[phase.code] || {})[kind] || {};
+            const statuses = LC_KIND_STATUSES[kind];
+            const catPct = lcCategoryProgress(master, progressMap, kind);
+            return `
+            <div>
+                <p class="text-[11px] font-extrabold text-slate-500 mb-1.5">${esc(label)} <span class="text-slate-400 font-normal">(${toPersianDigits(Math.round(catPct))}٪)</span></p>
+                <div class="space-y-1.5">
+                    ${master.map(m => {
+                        const row = progressMap[m.id] || { status: statuses[0][0] };
+                        const { clean, needsReview } = lcTitleWithReviewFlag(m.title);
+                        const mandatoryTag = (kind === 'criterion' && m.is_mandatory) ? '<span class="text-[9px] font-bold text-red-500 mr-1">[الزامی]</span>' : '';
+                        return `
+                        <div class="border rounded-xl p-2.5" data-lc-item-row data-kind="${kind}" data-item-id="${m.id}" data-phase="${phase.code}">
+                            <div class="flex items-center justify-between gap-2">
+                                <p class="text-xs font-bold text-slate-700 flex-1">${esc(clean)}${mandatoryTag}${needsReview ? ' <span title="این مورد از استخراج تصویری سند مرجع است و باید توسط PMO تایید شود" class="text-amber-500 cursor-help">⚠</span>' : ''}</p>
+                                ${lcStatusBadge(kind, row.status)}
+                            </div>
+                            ${lcState.canEdit ? `
+                            <div class="flex flex-wrap items-center gap-1.5 mt-2">
+                                <select data-lc-action="set-status" class="text-[10px] border rounded-lg px-1.5 py-1">
+                                    ${statuses.map(([sv, sl]) => `<option value="${sv}" ${row.status === sv ? 'selected' : ''}>${esc(sl)}</option>`).join('')}
+                                </select>
+                                <input type="text" data-lc-field="evidence" placeholder="مدرک/شاهد (لینک یا توضیح)" value="${esc(row.evidence || '')}" class="text-[10px] border rounded-lg px-2 py-1 flex-1 min-w-[110px]">
+                                <button type="button" data-lc-action="save-item" class="text-[10px] font-bold px-2 py-1 rounded-lg bg-blue-900 text-white">ذخیره</button>
+                            </div>` : (row.evidence ? `<p class="text-[10px] text-slate-400 mt-1">مدرک: ${esc(row.evidence)}</p>` : '')}
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>`;
+        }
+
+        function lcSparklineHtml(values) {
+            if (!values || values.length < 2) return '';
+            const w = 260, h = 40, pad = 4, max = 100, min = 0;
+            const pts = values.map((v, i) => {
+                const x = pad + (i / (values.length - 1)) * (w - pad * 2);
+                const y = h - pad - ((v - min) / (max - min)) * (h - pad * 2);
+                return `${x},${y}`;
+            }).join(' ');
+            return `<svg viewBox="0 0 ${w} ${h}" class="w-full h-10"><polyline points="${pts}" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+        }
+
+        function lcEpcDrilldownHtml() {
+            const cr = lcState.clientReport;
+            if (!cr) return `<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[11px] text-amber-700">هنوز «اطلاعات پایه و پیشرفت پروژه» برای این پروژه ثبت نشده؛ پیشرفت E/P/C از آن فرم خوانده می‌شود.</div>`;
+            const rows = [['engineering', 'مهندسی (E)'], ['procurement', 'تدارکات (P)'], ['construction', 'اجرا (C)']];
+            const overall = lcEpcWeighted(cr, 'actual'), overallPlanned = lcEpcWeighted(cr, 'planned');
+            return `
+            <div class="border rounded-xl p-3 space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <p class="text-[11px] font-extrabold text-slate-600">درون‌کاوی EPC (مهندسی / تدارکات / اجرا)</p>
+                    <button type="button" data-lc-action="goto-client-report" class="text-[10px] font-bold text-blue-700 underline">ویرایش در «اطلاعات پایه پروژه»</button>
+                </div>
+                ${rows.map(([key, rlabel]) => {
+                    const w = Number(cr[`progress_${key}_weight`]) || 0;
+                    const a = Number(cr[`progress_${key}`]) || 0;
+                    const pl = Number(cr[`progress_${key}_planned`]) || 0;
+                    const v = a - pl;
+                    return `<div>
+                        <div class="flex items-center justify-between text-[11px] mb-1">
+                            <span class="font-bold text-slate-600">${rlabel} <span class="text-slate-400 font-normal">وزن ${toPersianDigits(w)}٪</span></span>
+                            <span class="font-bold ${v < -5 ? 'text-red-600' : v > 0 ? 'text-emerald-600' : 'text-slate-600'}">${toPersianDigits(a)}٪ <span class="text-slate-400 font-normal">(برنامه ${toPersianDigits(pl)}٪)</span></span>
+                        </div>
+                        <div class="h-2 rounded-full bg-slate-100 overflow-hidden relative">
+                            <div class="h-full bg-slate-300 absolute inset-y-0 right-0" style="width:${Math.min(100, pl)}%"></div>
+                            <div class="h-full bg-blue-600 absolute inset-y-0 right-0" style="width:${Math.min(100, a)}%"></div>
+                        </div>
+                    </div>`;
+                }).join('')}
+                <div class="pt-2 border-t flex items-center justify-between text-xs">
+                    <span class="font-extrabold text-slate-700">پیشرفت وزنی EPC</span>
+                    <span class="font-extrabold text-slate-800">${toPersianDigits(Math.round(overall))}٪ <span class="text-slate-400 font-normal text-[10px]">(برنامه ${toPersianDigits(Math.round(overallPlanned))}٪)</span></span>
+                </div>
+            </div>`;
+        }
+
+        function lcBasicDesignHtml(phase, pp) {
+            const history = lcState.progressHistory[phase.code] || [];
+            const latest = pp.manual_actual_pct;
+            return `
+            <div class="border rounded-xl p-3 space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <p class="text-[11px] font-extrabold text-slate-600">پیشرفت دوره‌ای طراحی پایه</p>
+                    ${pp.contract_value ? `<span class="text-[10px] text-slate-400">ارزش قرارداد: ${toPersianDigits(Number(pp.contract_value).toLocaleString('en-US'))} ریال</span>` : ''}
+                </div>
+                ${lcSparklineHtml(history.map(h => h.new_pct))}
+                <div class="text-[11px] text-slate-500">آخرین درصد ثبت‌شده: <b class="text-slate-800">${latest != null ? toPersianDigits(latest) + '٪' : '—'}</b></div>
+                ${history.length ? `<div class="max-h-28 overflow-y-auto scroll-thin space-y-1">
+                    ${history.slice().reverse().map(h => `<div class="flex items-center justify-between text-[10px] text-slate-500 border-b pb-1">
+                        <span>${esc(h.period_label || formatJalali(h.recorded_at))}</span>
+                        <span>${h.previous_pct != null ? toPersianDigits(h.previous_pct) + '٪ ← ' : ''}<b class="text-slate-700">${toPersianDigits(h.new_pct)}٪</b></span>
+                    </div>`).join('')}
+                </div>` : ''}
+                ${lcState.canEdit ? `
+                <div class="grid grid-cols-3 gap-1.5 pt-1">
+                    <input type="text" data-lc-field="bd-period" placeholder="برچسب دوره (مثلاً هفته ۲ آبان)" class="text-[10px] border rounded-lg px-2 py-1.5 col-span-3 md:col-span-1">
+                    <input type="number" min="0" max="100" data-lc-field="bd-pct" placeholder="درصد جدید" class="text-[10px] border rounded-lg px-2 py-1.5">
+                    <button type="button" data-lc-action="record-bd-progress" data-phase="${phase.code}" class="text-[10px] font-bold px-2 py-1.5 rounded-lg bg-blue-900 text-white">ثبت پیشرفت دوره</button>
+                </div>` : ''}
+            </div>`;
+        }
+
+        function lcGateActionsHtml(phase, gate) {
+            if (!lcState.canEdit) return '';
+            const pp = lcState.projectPhases[phase.code] || {};
+            const stored = pp.gate_status || 'not_ready';
+            let body;
+            if (stored === 'passed') {
+                body = `<p class="text-[11px] text-emerald-700 font-bold">✓ این گیت تایید نهایی شده است.</p>`;
+            } else if (stored === 'conditional') {
+                body = `<p class="text-[11px] text-purple-700 font-bold">این گیت با شرط عبور کرده — پیگیری شرط لازم است (به تاریخچه تصمیمات مراجعه کنید).</p>`;
+            } else if (isAdminUser()) {
+                body = `
+                <div class="space-y-2">
+                    <p class="text-[11px] text-slate-500">${gate.readyForGate ? 'همه موارد الزامی تکمیل شده — آماده تصمیم‌گیری Gate.' : 'برخی موارد الزامی هنوز تکمیل نشده است.'}</p>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <button type="button" data-lc-action="gate-pass" data-phase="${phase.code}" class="text-[10px] font-bold px-2 py-1.5 rounded-lg bg-emerald-600 text-white">PASS GATE</button>
+                        <button type="button" data-lc-action="gate-conditional" data-phase="${phase.code}" class="text-[10px] font-bold px-2 py-1.5 rounded-lg bg-purple-600 text-white">عبور مشروط</button>
+                        <button type="button" data-lc-action="gate-return" data-phase="${phase.code}" class="text-[10px] font-bold px-2 py-1.5 rounded-lg bg-red-600 text-white">بازگشت جهت اقدام</button>
+                    </div>
+                </div>`;
+            } else if (stored === 'ready_for_review') {
+                body = `<p class="text-[11px] text-blue-700 font-bold">درخواست بررسی Gate ارسال شده — در انتظار تصمیم PMO/تایید‌کننده.</p>`;
+            } else {
+                body = `<button type="button" data-lc-action="request-gate" data-phase="${phase.code}" ${!gate.readyForGate ? 'disabled' : ''} class="w-full text-[11px] font-bold px-3 py-2 rounded-xl ${gate.readyForGate ? 'bg-blue-900 text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}">درخواست بررسی Gate</button>`;
+            }
+            return `<div class="border rounded-xl p-3">${body}</div>`;
+        }
+
+        function lcApprovalsHistoryHtml(phase) {
+            const decisions = lcState.gateDecisions[phase.code] || [];
+            if (!decisions.length) return '';
+            const labels = { pass: 'PASS', conditional: 'عبور مشروط', return: 'بازگشت جهت اقدام' };
+            return `<div>
+                <p class="text-[11px] font-extrabold text-slate-500 mb-1.5">تاریخچه تصمیمات Gate</p>
+                <div class="space-y-1.5">
+                    ${decisions.map(d => `<div class="text-[10px] border rounded-lg p-2">
+                        <div class="flex items-center justify-between"><b class="text-slate-700">${esc(labels[d.decision] || d.decision)}</b><span class="text-slate-400">${formatJalali(d.decided_at)}</span></div>
+                        <p class="text-slate-500 mt-0.5">توسط: ${esc(d.decided_by)}</p>
+                        ${d.reason ? `<p class="text-red-500 mt-0.5">دلیل: ${esc(d.reason)}</p>` : ''}
+                        ${d.condition_text ? `<p class="text-purple-600 mt-0.5">شرط: ${esc(d.condition_text)}${d.condition_owner ? ' — مسئول: ' + esc(d.condition_owner) : ''}${d.condition_due_date ? ' — مهلت: ' + formatJalali(d.condition_due_date) : ''}</p>` : ''}
+                    </div>`).join('')}
+                </div>
+            </div>`;
+        }
+
+        function lcRisksSectionHtml(phase) {
+            const it = lcState.items[phase.code] || { objective: {}, output: {}, criterion: {} };
+            const risks = [];
+            (phase.lifecycle_objectives || []).forEach(o => { if (it.objective[o.id]?.status === 'blocked') risks.push({ label: o.title, kind: 'هدف مسدود', comment: it.objective[o.id].comment }); });
+            (phase.lifecycle_outputs || []).forEach(o => { if (it.output[o.id]?.status === 'rejected') risks.push({ label: o.title, kind: 'خروجی ردشده', comment: it.output[o.id].comment }); });
+            (phase.lifecycle_criteria || []).forEach(c => { if (it.criterion[c.id]?.status === 'failed') risks.push({ label: c.title, kind: 'معیار ناموفق', comment: it.criterion[c.id].comment }); });
+            if (!risks.length) return '';
+            return `<div class="bg-red-50 border border-red-200 rounded-xl p-3">
+                <p class="text-[11px] font-extrabold text-red-700 mb-1.5">ریسک‌ها / موانع اثرگذار بر گیت</p>
+                <div class="space-y-1">${risks.map(r => `<p class="text-[10px] text-red-600">• <b>${esc(r.kind)}:</b> ${esc(lcTitleWithReviewFlag(r.label).clean)}${r.comment ? ' — ' + esc(r.comment) : ''}</p>`).join('')}</div>
+            </div>`;
+        }
+
+        function lcPhaseScheduleHtml(phase, pp) {
+            const fmt = (d) => d ? formatJalali(d) : '—';
+            return `<div class="border rounded-xl p-3 space-y-1.5 text-[11px]">
+                <div class="flex justify-between"><span class="text-slate-500">شروع برنامه‌ای</span><b class="text-slate-700">${fmt(pp.planned_start)}</b></div>
+                <div class="flex justify-between"><span class="text-slate-500">پایان برنامه‌ای</span><b class="text-slate-700">${fmt(pp.planned_finish)}</b></div>
+                <div class="flex justify-between"><span class="text-slate-500">شروع واقعی</span><b class="text-slate-700">${fmt(pp.actual_start)}</b></div>
+                <div class="flex justify-between"><span class="text-slate-500">پایان واقعی</span><b class="text-slate-700">${fmt(pp.actual_finish)}</b></div>
+                <div class="flex justify-between"><span class="text-slate-500">وزن فاز در چرخه عمر</span><b class="text-slate-700">${pp.weight_pct != null ? toPersianDigits(pp.weight_pct) + '٪' : 'به‌صورت مساوی'}</b></div>
+                ${isAdminUser() ? `
+                <div class="flex items-center gap-2 pt-1">
+                    <input type="number" min="0" max="100" step="0.1" data-lc-field="phase-weight" value="${pp.weight_pct ?? ''}" placeholder="وزن فاز (٪)" class="text-[10px] border rounded-lg px-2 py-1 flex-1">
+                    <button type="button" data-lc-action="save-phase-weight" data-phase="${phase.code}" class="text-[10px] font-bold px-2 py-1 rounded-lg bg-blue-900 text-white">ذخیره وزن</button>
+                </div>
+                <p class="text-[9px] text-slate-400">جمع وزن همه فازها اکنون: ${toPersianDigits(Math.round(lcTotalWeight()))}٪ (باید ۱۰۰٪ باشد)</p>` : ''}
+            </div>`;
+        }
+
+        function lcDetailPanelHtml() {
+            if (!lcState.selectedPhase) {
+                return `<div class="h-full flex flex-col items-center justify-center text-center text-slate-400 py-10 gap-2">
+                    ${iconSvg('target', 'w-10 h-10 opacity-40')}
+                    <p class="text-sm font-bold text-slate-500">یک فاز را از روی مدار انتخاب کنید</p>
+                    <p class="text-xs">اهداف، خروجی‌های کلیدی، معیارهای عبور و وضعیت گیت همین‌جا نمایش داده می‌شود.</p>
+                </div>`;
+            }
+            const phase = lcState.phases.find(p => p.code === lcState.selectedPhase);
+            if (!phase) return lcEmptyStateHtml('فاز یافت نشد.');
+            const { actual, planned } = lcPhaseProgress(phase);
+            const variance = Math.round(actual) - Math.round(planned);
+            const gate = lcGateReadiness(phase);
+            const gateMeta = LC_GATE_STATUS_META[gate.effective];
+            const pp = lcState.projectPhases[phase.code] || {};
+            const gateName = lcTitleWithReviewFlag(phase.gate_name);
+
+            return `
+            <div class="space-y-4">
+                <div class="flex items-start justify-between gap-2">
+                    <div>
+                        <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-900/10 text-blue-900 mb-1">${esc(phase.code)}</span>
+                        <h3 class="text-base font-extrabold text-slate-800">${esc(phase.title)}</h3>
+                        <p class="text-[11px] text-slate-500 mt-0.5">مسئول: ${esc(phase.responsible)}</p>
+                        <p class="text-[11px] text-slate-400 mt-0.5">گیت: ${esc(gateName.clean)}${gateName.needsReview ? ' ⚠' : ''}</p>
+                    </div>
+                    <button type="button" data-lc-close-detail class="text-slate-400 hover:text-slate-600 text-lg leading-none">×</button>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="bg-slate-50 rounded-xl p-2.5"><p class="text-[10px] text-slate-500">واقعی</p><p class="text-lg font-extrabold text-slate-800">${toPersianDigits(Math.round(actual))}٪</p></div>
+                    <div class="bg-slate-50 rounded-xl p-2.5"><p class="text-[10px] text-slate-500">برنامه‌ای</p><p class="text-lg font-extrabold text-slate-600">${toPersianDigits(Math.round(planned))}٪</p></div>
+                    <div class="bg-slate-50 rounded-xl p-2.5"><p class="text-[10px] text-slate-500">انحراف</p><p class="text-lg font-extrabold ${variance < -5 ? 'text-red-600' : variance > 2 ? 'text-emerald-600' : 'text-slate-700'}">${variance >= 0 ? '+' : ''}${toPersianDigits(Math.round(variance))}٪</p></div>
+                </div>
+
+                <div class="flex items-center justify-between bg-${gateMeta.color}-50 border border-${gateMeta.color}-200 rounded-xl px-3 py-2">
+                    <span class="text-xs font-bold text-${gateMeta.color}-700">وضعیت گیت: ${esc(gateMeta.label)}</span>
+                    ${!gate.readyForGate ? `<span class="text-[10px] text-slate-400">${toPersianDigits(gate.pendingMandatory.length)} معیار الزامی باقی‌مانده</span>` : ''}
+                </div>
+
+                ${phase.progress_engine === 'epc' ? lcEpcDrilldownHtml() : ''}
+                ${phase.progress_engine === 'basic_design' ? lcBasicDesignHtml(phase, pp) : ''}
+
+                ${lcChecklistSectionHtml(phase, 'objective', 'اهداف مرحله')}
+                ${lcChecklistSectionHtml(phase, 'output', 'خروجی کلیدی')}
+                ${lcChecklistSectionHtml(phase, 'criterion', 'معیار عبور (Exit Criteria)')}
+
+                ${lcGateActionsHtml(phase, gate)}
+                ${lcRisksSectionHtml(phase)}
+                ${lcApprovalsHistoryHtml(phase)}
+                ${lcPhaseScheduleHtml(phase, pp)}
+            </div>`;
+        }
+
+        function lcMetadataBarHtml() {
+            const cr = lcState.clientReport;
+            const g1Pass = (lcState.gateDecisions['G1'] || []).find(d => d.decision === 'pass');
+            const plannedStart = lcState.phases.length ? lcState.projectPhases[lcState.phases[0].code]?.planned_start : null;
+            const plannedEnd = cr?.contract_end_date || null;
+            const forecastEnd = cr?.forecast_completion_date || null;
+            const todayIso = new Date().toISOString().slice(0, 10);
+            const durDays = (a, b) => (a && b) ? Math.round((new Date(b) - new Date(a)) / 86400000) : null;
+            const plannedDuration = durDays(plannedStart, plannedEnd);
+            const elapsed = plannedStart ? durDays(plannedStart, todayIso) : null;
+            const remaining = forecastEnd ? durDays(todayIso, forecastEnd) : null;
+
+            const cells = [
+                ['تاریخ ابلاغ پروژه', g1Pass ? formatJalali(g1Pass.decided_at) : '—'],
+                ['شماره نامه / مصوبه', '—'],
+                ['تاریخ تصویب / ابلاغ', g1Pass ? formatJalali(g1Pass.decided_at) : '—'],
+                ['تاریخ شروع برنامه‌ای', plannedStart ? formatJalali(plannedStart) : '—'],
+                ['تاریخ پایان برنامه‌ای', plannedEnd ? formatJalali(plannedEnd) : '—'],
+                ['تاریخ پیش‌بینی پایان واقعی', forecastEnd ? formatJalali(forecastEnd) : '—'],
+                ['مدت برنامه‌ای', plannedDuration != null ? toPersianDigits(plannedDuration) + ' روز' : '—'],
+                ['مدت سپری‌شده', elapsed != null ? toPersianDigits(Math.max(0, elapsed)) + ' روز' : '—'],
+                ['مدت باقی‌مانده', remaining != null ? toPersianDigits(remaining) + ' روز' : '—'],
+            ];
+            return `<div class="bg-white rounded-2xl shadow-sm border p-4">
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-3">
+                    ${cells.map(([clabel, cvalue]) => `<div class="text-center"><p class="text-[9px] text-slate-400 mb-0.5">${esc(clabel)}</p><p class="text-[11px] font-extrabold text-slate-700">${cvalue}</p></div>`).join('')}
+                </div>
+            </div>`;
+        }
+
+        // ---------------- Mutations ----------------
+        async function lcSaveItemFromRow(rowEl) {
+            if (!rowEl) return;
+            const kind = rowEl.dataset.kind, itemId = Number(rowEl.dataset.itemId), phaseCode = rowEl.dataset.phase;
+            const status = rowEl.querySelector('[data-lc-action="set-status"]').value;
+            const evidence = rowEl.querySelector('[data-lc-field="evidence"]').value.trim();
+            const patch = {
+                project_name: lcState.projectName, phase_code: phaseCode, kind, item_id: itemId,
+                status, evidence: evidence || null, updated_at: new Date().toISOString(), updated_by: currentUser.email,
+            };
+            const todayIso = new Date().toISOString().slice(0, 10);
+            if (status === 'completed' && kind === 'objective') patch.completion_date = todayIso;
+            if (status === 'submitted' && kind === 'output') patch.submitted_by = currentUser.email;
+            if (status === 'verified') { patch.verified_by = currentUser.email; patch.verification_date = todayIso; }
+            const { data, error } = await _supabase.from('project_phase_items')
+                .upsert(patch, { onConflict: 'project_name,phase_code,kind,item_id' })
+                .select().single();
+            if (error) { alert('خطا در ذخیره: ' + error.message); return; }
+            lcState.items[phaseCode] = lcState.items[phaseCode] || { objective: {}, output: {}, criterion: {} };
+            lcState.items[phaseCode][kind][itemId] = data;
+            lcRenderAll();
+        }
+
+        async function lcRequestGateReview(phaseCode) {
+            const { data, error } = await _supabase.from('project_lifecycle_phases')
+                .upsert({ project_name: lcState.projectName, phase_code: phaseCode, gate_status: 'ready_for_review', gate_requested_at: new Date().toISOString(), gate_requested_by: currentUser.email }, { onConflict: 'project_name,phase_code' })
+                .select().single();
+            if (error) { alert('خطا: ' + error.message); return; }
+            lcState.projectPhases[phaseCode] = data;
+            lcRenderAll();
+        }
+
+        async function lcDecideGate(phaseCode, decision) {
+            let reason = null, condition_text = null, condition_owner = null, condition_due_date = null;
+            if (decision === 'return') {
+                reason = prompt('دلیل بازگشت جهت اقدام را وارد کنید:');
+                if (!reason) return;
+            } else if (decision === 'conditional') {
+                condition_text = prompt('شرط عبور را وارد کنید:');
+                if (!condition_text) return;
+                condition_owner = prompt('مسئول پیگیری شرط:') || null;
+                const dueJalali = prompt('مهلت پیگیری شرط (YYYY/MM/DD شمسی، اختیاری):');
+                condition_due_date = dueJalali ? jalaliInputToIso(dueJalali) : null;
+            }
+            const { error: decErr } = await _supabase.from('lifecycle_gate_decisions').insert({
+                project_name: lcState.projectName, phase_code: phaseCode, decision, reason, condition_text, condition_owner, condition_due_date, decided_by: currentUser.email,
+            });
+            if (decErr) { alert('خطا در ثبت تصمیم: ' + decErr.message); return; }
+            const newStatus = decision === 'pass' ? 'passed' : decision === 'conditional' ? 'conditional' : 'not_ready';
+            const { data, error } = await _supabase.from('project_lifecycle_phases')
+                .upsert({ project_name: lcState.projectName, phase_code: phaseCode, gate_status: newStatus }, { onConflict: 'project_name,phase_code' })
+                .select().single();
+            if (error) { alert('خطا در به‌روزرسانی وضعیت گیت: ' + error.message); return; }
+            lcState.projectPhases[phaseCode] = data;
+            lcState.gateDecisions[phaseCode] = lcState.gateDecisions[phaseCode] || [];
+            lcState.gateDecisions[phaseCode].unshift({ project_name: lcState.projectName, phase_code: phaseCode, decision, reason, condition_text, condition_owner, condition_due_date, decided_by: currentUser.email, decided_at: new Date().toISOString() });
+            lcRenderAll();
+        }
+
+        async function lcRecordBasicDesignProgress(phaseCode) {
+            const period = document.querySelector('[data-lc-field="bd-period"]')?.value.trim() || null;
+            const pctRaw = document.querySelector('[data-lc-field="bd-pct"]')?.value;
+            const pct = Number(pctRaw);
+            if (pctRaw === '' || pctRaw == null || isNaN(pct) || pct < 0 || pct > 100) { alert('درصد پیشرفت باید عددی بین ۰ تا ۱۰۰ باشد.'); return; }
+            const previous = lcState.projectPhases[phaseCode]?.manual_actual_pct ?? null;
+            const { error: histErr } = await _supabase.from('lifecycle_progress_history').insert({
+                project_name: lcState.projectName, phase_code: phaseCode, period_label: period, previous_pct: previous, new_pct: pct, recorded_by: currentUser.email,
+            });
+            if (histErr) { alert('خطا در ثبت تاریخچه: ' + histErr.message); return; }
+            const { data, error } = await _supabase.from('project_lifecycle_phases')
+                .upsert({ project_name: lcState.projectName, phase_code: phaseCode, manual_actual_pct: pct, updated_at: new Date().toISOString(), updated_by: currentUser.email }, { onConflict: 'project_name,phase_code' })
+                .select().single();
+            if (error) { alert('خطا در به‌روزرسانی پیشرفت: ' + error.message); return; }
+            lcState.projectPhases[phaseCode] = data;
+            lcState.progressHistory[phaseCode] = lcState.progressHistory[phaseCode] || [];
+            lcState.progressHistory[phaseCode].push({ project_name: lcState.projectName, phase_code: phaseCode, period_label: period, previous_pct: previous, new_pct: pct, recorded_by: currentUser.email, recorded_at: new Date().toISOString() });
+            lcRenderAll();
+        }
+
+        async function lcSavePhaseWeight(phaseCode, valueStr) {
+            const value = Number(valueStr);
+            if (valueStr === '' || valueStr == null || isNaN(value) || value < 0 || value > 100) { alert('وزن باید عددی بین ۰ تا ۱۰۰ باشد.'); return; }
+            const before = lcState.projectPhases[phaseCode]?.weight_pct ?? null;
+            const { data, error } = await _supabase.from('project_lifecycle_phases')
+                .upsert({ project_name: lcState.projectName, phase_code: phaseCode, weight_pct: value }, { onConflict: 'project_name,phase_code' })
+                .select().single();
+            if (error) { alert('خطا: ' + error.message); return; }
+            lcState.projectPhases[phaseCode] = data;
+            await _supabase.from('lifecycle_audit_log').insert({
+                project_name: lcState.projectName, phase_code: phaseCode, action: 'update_weight', field: 'weight_pct',
+                old_value: before != null ? String(before) : null, new_value: String(value), changed_by: currentUser.email,
+            });
+            lcRenderAll();
+        }
+
+        function lcSelectPhase(code) {
+            lcState.selectedPhase = code;
+            lcRenderAll();
+            const detail = document.getElementById('lcDetailPanel');
+            if (detail && window.innerWidth < 1280) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function lcBindEvents() {
+            const root = document.getElementById('lcBody');
+            root.querySelectorAll('[data-lc-phase]').forEach(el => el.addEventListener('click', () => lcSelectPhase(el.dataset.lcPhase)));
+            const closeBtn = root.querySelector('[data-lc-close-detail]');
+            if (closeBtn) closeBtn.addEventListener('click', () => { lcState.selectedPhase = null; lcRenderAll(); });
+            root.querySelectorAll('[data-lc-action="save-item"]').forEach(btn => btn.addEventListener('click', () => lcSaveItemFromRow(btn.closest('[data-lc-item-row]'))));
+            root.querySelectorAll('[data-lc-action="request-gate"]').forEach(btn => btn.addEventListener('click', () => lcRequestGateReview(btn.dataset.phase)));
+            root.querySelectorAll('[data-lc-action="gate-pass"]').forEach(btn => btn.addEventListener('click', () => lcDecideGate(btn.dataset.phase, 'pass')));
+            root.querySelectorAll('[data-lc-action="gate-conditional"]').forEach(btn => btn.addEventListener('click', () => lcDecideGate(btn.dataset.phase, 'conditional')));
+            root.querySelectorAll('[data-lc-action="gate-return"]').forEach(btn => btn.addEventListener('click', () => lcDecideGate(btn.dataset.phase, 'return')));
+            root.querySelectorAll('[data-lc-action="record-bd-progress"]').forEach(btn => btn.addEventListener('click', () => lcRecordBasicDesignProgress(btn.dataset.phase)));
+            root.querySelectorAll('[data-lc-action="save-phase-weight"]').forEach(btn => btn.addEventListener('click', () => lcSavePhaseWeight(btn.dataset.phase, btn.previousElementSibling.value)));
+            root.querySelectorAll('[data-lc-action="goto-client-report"]').forEach(btn => btn.addEventListener('click', () => switchView('clientReport')));
         }
 
         initApp();
