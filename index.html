@@ -3987,40 +3987,45 @@
             return v >= 90 ? '#10b981' : v >= 60 ? '#3b82f6' : v >= 30 ? '#f59e0b' : '#ef4444';
         }
 
-        // Needle/pointer gauge plugin (گیج عقربه‌ای) — draws a needle from
-        // the arc's own center out to an angle interpolated between the
-        // doughnut arc element's actual startAngle/endAngle (whatever
-        // rotation/circumference the chart was built with), so the needle
-        // always lines up with the visible arc without hand-deriving its
-        // angle convention. Registered once and reused by every gauge below.
+        // Needle/pointer gauge plugin (گیج عقربه‌ای) — same proven angle
+        // formula as renderExecSpHealthGauge's own needle (value 0 -> π,
+        // value 100 -> 2π, sweeping through the bottom at 50), generalized
+        // into one reusable plugin instead of a per-call closure. The
+        // earlier version derived the needle's angle from
+        // getDatasetMeta(0).data[0]'s startAngle/endAngle, but data[0] is
+        // only the FIRST of the gauge's 4 colored band segments — its
+        // endAngle sits at just 30% through the sweep, not the gauge's real
+        // end, so the needle only ever swung across a fraction of the dial
+        // regardless of value. Deriving the angle straight from a fixed
+        // formula (matching this exact chart's own circumference/rotation)
+        // sidesteps that entirely. Registered once and reused by every
+        // gauge below.
         const needleGaugePlugin = {
             id: 'needleGauge',
             afterDatasetsDraw(chart) {
                 const opts = chart.config.options.plugins && chart.config.options.plugins.needleGauge;
                 if (!opts) return;
-                const arc = chart.getDatasetMeta(0).data[0];
-                if (!arc) return;
-                const { x: cx, y: cy, startAngle, endAngle, outerRadius } = arc;
+                const { ctx, chartArea } = chart;
+                const cx = chartArea.left + chartArea.width / 2;
+                const cy = chartArea.top + chartArea.height / 2;
+                const radius = Math.min(chartArea.width / 2, chartArea.height) * 0.86;
                 const v = Math.max(0, Math.min(100, Number(opts.value) || 0));
-                const angle = startAngle + (v / 100) * (endAngle - startAngle);
-                const ctx = chart.ctx;
+                const angle = Math.PI + (v / 100) * Math.PI;
                 ctx.save();
                 ctx.translate(cx, cy);
                 ctx.rotate(angle);
                 ctx.beginPath();
-                ctx.moveTo(-outerRadius * 0.12, 0);
-                ctx.lineTo(outerRadius * 0.86, 0);
+                ctx.moveTo(-radius * 0.12, 0);
+                ctx.lineTo(radius, 0);
                 ctx.lineWidth = 3;
                 ctx.lineCap = 'round';
                 ctx.strokeStyle = opts.color || '#1e293b';
                 ctx.stroke();
                 ctx.restore();
-                ctx.save();
                 ctx.beginPath();
-                ctx.arc(cx, cy, Math.max(3, outerRadius * 0.07), 0, Math.PI * 2);
+                ctx.arc(cx, cy, Math.max(3, radius * 0.08), 0, Math.PI * 2);
                 ctx.fillStyle = opts.color || '#1e293b';
                 ctx.fill();
-                ctx.restore();
             },
         };
         Chart.register(needleGaugePlugin);
@@ -4171,6 +4176,9 @@
         let arDisplayedRequest = null; // the one actually shown in view mode; the archive can point this at an older one while arLatestRequest stays the real latest
         let arMode = 'view'; // 'view' | 'compose'
         let arDraftResolutions = [];
+        let arCachedAnalysis = null; // this project's latest تحلیل هوشمند (admin-only data — null for anyone else, RLS just returns nothing)
+        let arEditingRequestId = null; // non-null while admin is editing an existing (latest or archived) request's مصوبات in place
+        let arEditDraftResolutions = [];
         const AR_ORG_FIELD = { 'کارفرما': 'signed_by_client', 'مشاور': 'signed_by_consultant', 'پیمانکار': 'signed_by_contractor' };
 
         async function prefillApprovalRequestView() {
@@ -4203,38 +4211,136 @@
             document.getElementById('arProjectName').textContent = displayProjectName(project_name);
             arProjectContext = { project_name };
             arMode = 'view';
+            arEditingRequestId = null;
 
-            const { data } = await _supabase.from('approval_requests').select('*')
-                .eq('project_name', project_name)
-                .order('created_at', { ascending: true });
+            const [{ data }, { data: cachedAi }] = await Promise.all([
+                _supabase.from('approval_requests').select('*')
+                    .eq('project_name', project_name)
+                    .order('created_at', { ascending: true }),
+                _supabase.from('ai_analyses').select('analysis_json, created_at, provider')
+                    .eq('project_name', project_name).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+            ]);
             arRequestHistory = data || [];
             arLatestRequest = arRequestHistory.length ? arRequestHistory[arRequestHistory.length - 1] : null;
             arDisplayedRequest = arLatestRequest;
-            if (!arLatestRequest) arDraftResolutions = [{ resolution: '', contractor_commitment: '', expected_result: '' }];
+
+            arCachedAnalysis = null;
+            if (cachedAi && cachedAi.analysis_json) {
+                arCachedAnalysis = cachedAi.analysis_json;
+                if (typeof arCachedAnalysis === 'string') { try { arCachedAnalysis = JSON.parse(arCachedAnalysis); } catch (e) { arCachedAnalysis = null; } }
+            }
+
+            if (!arLatestRequest) {
+                // First-ever request for this project — seed the مصوبات
+                // table straight from تحلیل هوشمند's own «تصمیمات مورد نیاز
+                // مدیریت ارشد» instead of one blank row, when available.
+                arDraftResolutions = arDecisionsToRows(arCachedAnalysis);
+                if (!arDraftResolutions.length) arDraftResolutions = [{ resolution: '', contractor_commitment: '', expected_result: '' }];
+            }
             renderApprovalRequestBody();
         }
 
-        // Centered company logo, reused for both the formal letter and (once
-        // signed) the standing record of that project's مصوبه/صورتجلسه.
-        function arLetterheadHtml() {
-            return `<div class="text-center space-y-1 pb-3 border-b-2 border-slate-200">
-                <img src="logo.png" alt="لوگوی شرکت" class="h-14 w-14 object-contain mx-auto" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
-                <p class="text-sm font-extrabold text-slate-800">شرکت مهندسی و توسعه گاز ایران</p>
+        // executive_decisions_needed -> مصوبات rows: decision becomes the
+        // مصوبه itself, impact becomes the expected result; there's no AI
+        // field that maps onto «تعهد پیمانکار» (a decision from senior
+        // management isn't a contractor commitment), so that column is left
+        // for whoever composes the request to fill in themselves.
+        function arDecisionsToRows(analysis) {
+            if (!analysis || !Array.isArray(analysis.executive_decisions_needed)) return [];
+            return analysis.executive_decisions_needed
+                .map(d => ({ resolution: execDecisionText(d), contractor_commitment: '', expected_result: (d && typeof d === 'object' && d.impact) || '' }))
+                .filter(r => r.resolution);
+        }
+
+        // Used when starting a follow-up request: keep every carried-over
+        // row from the prior request (see startNewApprovalRequest), and
+        // append any AI-decision row not already present by its resolution
+        // text — so a تحلیل هوشمند refreshed since the last مصوبه still
+        // surfaces its new decisions without duplicating ones already there.
+        function arMergeAiDecisions(existingRows, analysis) {
+            const aiRows = arDecisionsToRows(analysis);
+            if (!aiRows.length) return existingRows;
+            const existingTexts = new Set(existingRows.map(r => (r.resolution || '').trim()).filter(Boolean));
+            return [...existingRows, ...aiRows.filter(r => !existingTexts.has(r.resolution.trim()))];
+        }
+
+        // «جمع‌بندی هوش مصنوعی»/«حوزه‌ها و جبهه‌های کاری مسئله‌ساز»/«برنامه
+        // اقدام ۳۰ روزه»/«توصیه پایانی» از گزارش تحلیلی هوشمند پروژه — reuses
+        // the exact same content helpers as renderAiAnalysisSections
+        // (aiSevBadge/AI_AREA_FRONT_LABELS/execDecisionText) so the numbers
+        // and labels always match that report, laid out in this page's own
+        // card style. Renders nothing (not even empty cards) when there's no
+        // cached analysis, e.g. for a non-admin (تحلیل هوشمند stays
+        // admin-only, so this section only ever appears for admin).
+        function arAiSectionsHtml(analysis) {
+            if (!analysis || typeof analysis !== 'object') return '';
+            const parts = [];
+
+            if (analysis.overall && analysis.overall.status_summary) {
+                parts.push(`<div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-1.5">
+                    <h3 class="text-sm font-bold text-slate-800">${esc(analysis.overall.status_color || '')} جمع‌بندی هوش مصنوعی</h3>
+                    <p class="text-xs leading-relaxed text-slate-700">${esc(analysis.overall.status_summary)}</p>
+                </div>`);
+            }
+
+            if (Array.isArray(analysis.problem_areas) && analysis.problem_areas.length) {
+                const sorted = [...analysis.problem_areas].sort((a, b) => (AI_SEVERITY_RANK[a.severity] ?? 9) - (AI_SEVERITY_RANK[b.severity] ?? 9));
+                parts.push(`<div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-2">
+                    <h3 class="text-sm font-bold text-slate-800">حوزه‌ها و جبهه‌های کاری مسئله‌ساز</h3>
+                    <div class="space-y-1.5">
+                        ${sorted.map(p => `<div class="bg-red-50 rounded-lg p-2.5 border border-red-100 flex flex-wrap items-center gap-2 justify-between">
+                            <span class="text-xs font-bold">${esc(AI_AREA_FRONT_LABELS[p.key] || p.key)}</span>
+                            ${aiSevBadge(p.severity)}
+                            ${p.synthesis ? `<span class="text-[11px] text-slate-600 w-full">${esc(p.synthesis)}</span>` : ''}
+                        </div>`).join('')}
+                    </div>
+                </div>`);
+            }
+
+            if (Array.isArray(analysis.action_plan_30_days) && analysis.action_plan_30_days.length) {
+                parts.push(`<div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-2">
+                    <h3 class="text-sm font-bold text-slate-800">برنامه اقدام ۳۰ روزه</h3>
+                    <div class="space-y-1.5">
+                        ${analysis.action_plan_30_days.map((a, i) => `<div class="flex items-start gap-2 text-xs">
+                            <span class="shrink-0 h-5 w-5 rounded-full bg-blue-900 text-white text-[10px] font-extrabold flex items-center justify-center mt-0.5">${toPersianDigits(i + 1)}</span>
+                            <p class="min-w-0"><b class="text-blue-900">${esc(a.week || '-')}:</b> ${esc(a.action || '-')} <span class="text-slate-400">(مسئول: ${esc(a.owner || '-')})</span></p>
+                        </div>`).join('')}
+                    </div>
+                </div>`);
+            }
+
+            if (analysis.final_recommendation) {
+                parts.push(`<div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-1.5">
+                    <h3 class="text-sm font-bold text-slate-800">توصیه پایانی</h3>
+                    <p class="text-xs leading-relaxed text-slate-800">${esc(analysis.final_recommendation)}</p>
+                </div>`);
+            }
+
+            return parts.join('');
+        }
+
+        // Company logo centered top, with تاریخ گزارش and شماره مصوبه beside
+        // it — reused for both the formal letter and (once signed) the
+        // standing record of that project's مصوبه/صورتجلسه. requestNumber
+        // is this project's own sequential شماره مصوبه (its 1-based
+        // position in arRequestHistory); request is null only for an
+        // unsaved compose-mode draft, where the created_at date isn't known
+        // yet and today's date is shown instead.
+        function arLetterheadHtml(requestNumber, request) {
+            return `<div class="flex items-center justify-between gap-3 pb-3 border-b-2 border-slate-200">
+                <span class="text-[11px] text-slate-400 shrink-0" dir="ltr">${request ? formatJalali(request.created_at) : todayJalali()}</span>
+                <div class="text-center space-y-1">
+                    <img src="logo.png" alt="لوگوی شرکت" class="h-14 w-14 object-contain mx-auto" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
+                    <p class="text-sm font-extrabold text-slate-800">شرکت مهندسی و توسعه گاز ایران</p>
+                </div>
+                <span class="text-[11px] text-slate-400 shrink-0">شماره مصوبه: <b class="text-slate-600">${toPersianDigits(String(requestNumber))}</b></span>
             </div>`;
         }
 
-        // requestNumber is this project's own sequential شماره مصوبه (its
-        // 1-based position in arRequestHistory) — request is null only for
-        // an unsaved compose-mode draft, where the created_at date isn't
-        // known yet and today's date is shown instead.
         function arFormalLetterHtml(projectName, requestNumber, request) {
             const displayName = displayProjectName(projectName);
             return `<div class="print-card bg-white rounded-2xl shadow-sm border p-6 md:p-8 space-y-4" style="line-height: 2;">
-                ${arLetterheadHtml()}
-                <div class="flex items-center justify-between text-[11px] text-slate-400">
-                    <span>شماره مصوبه: <b class="text-slate-600">${toPersianDigits(String(requestNumber))}</b></span>
-                    <span dir="ltr">${request ? formatJalali(request.created_at) : todayJalali()}</span>
-                </div>
+                ${arLetterheadHtml(requestNumber, request)}
                 <p class="text-sm font-bold text-slate-800">مدیرعامل محترم شرکت مهندسی و توسعه گاز ایران</p>
                 <p class="text-sm font-bold text-slate-600">موضوع: درخواست اخذ مصوبه در خصوص پروژه «${esc(displayName)}»</p>
                 <p class="text-sm text-slate-700">با سلام و احترام؛<br>
@@ -4281,6 +4387,7 @@
         // from the archive — re-signing history isn't a thing, so only the
         // latest request ever shows a «امضای من» button.
         function arSignatureSectionHtml(request, allowSign) {
+            const isAdmin = currentProfile.role === 'admin';
             return `<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                 ${['کارفرما', 'مشاور', 'پیمانکار'].map(org => {
                     const sig = request[AR_ORG_FIELD[org]];
@@ -4292,9 +4399,10 @@
                             <p class="text-[10px] text-slate-500">${formatJalali(sig.signed_at)}</p>
                         </div>`;
                     }
-                    // Only that project's real org PM may sign — not even
-                    // admin (کاربر می‌خواهد صرفاً مدیران پروژه هر رکن امضا کنند).
-                    const canSign = allowSign && myProjectAccess.some(a => a.project_name === request.project_name && a.organization === org);
+                    // Each org's own real project PM can sign their org's
+                    // slot; admin can additionally sign for any org on any
+                    // project (restored — see sign_approval_request).
+                    const canSign = allowSign && (isAdmin || myProjectAccess.some(a => a.project_name === request.project_name && a.organization === org));
                     return `<div class="border-2 border-dashed border-slate-200 rounded-xl p-3 text-center space-y-1.5">
                         <p class="text-[11px] font-extrabold text-slate-400">⏳ در انتظار امضای ${esc(org)}</p>
                         ${canSign ? `<button type="button" data-ar-sign="${esc(org)}" class="no-print text-xs font-bold bg-blue-900 hover:bg-blue-800 text-white px-3 py-1.5 rounded-lg">🖋 امضای من</button>` : '<p class="text-[10px] text-slate-400">—</p>'}
@@ -4327,6 +4435,7 @@
             if (arMode === 'compose' || !arLatestRequest) {
                 body.innerHTML = `
                     ${arFormalLetterHtml(projectName, arRequestHistory.length + 1, null)}
+                    ${arAiSectionsHtml(arCachedAnalysis)}
                     <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                         <div class="flex items-center justify-between flex-wrap gap-2">
                             <h3 class="text-sm font-bold text-slate-800">مصوبات، تعهدات پیمانکار و نتایج مورد انتظار</h3>
@@ -4341,6 +4450,7 @@
                 const shownNumber = arRequestHistory.findIndex(r => r.id === shown.id) + 1;
                 const isLatest = shown.id === arLatestRequest.id;
                 const isAdmin = currentProfile.role === 'admin';
+                const isEditingThis = arEditingRequestId === shown.id;
                 // «پس از امضا فقط ادمین اجازه ویرایش را داشته باشد»: once any
                 // org has signed the latest request, starting a fresh one
                 // (which effectively supersedes it) is admin-only.
@@ -4348,18 +4458,32 @@
                 const canStartNew = isLatest && (isAdmin || !hasAnySignature);
                 body.innerHTML = `
                     ${arFormalLetterHtml(projectName, shownNumber, shown)}
+                    ${arAiSectionsHtml(arCachedAnalysis)}
                     <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
-                        <h3 class="text-sm font-bold text-slate-800">مصوبات، تعهدات پیمانکار و نتایج مورد انتظار</h3>
-                        ${arResolutionsTableHtml(shown.resolutions || [], false)}
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <h3 class="text-sm font-bold text-slate-800">مصوبات، تعهدات پیمانکار و نتایج مورد انتظار</h3>
+                            ${isAdmin && !isEditingThis ? `<div class="no-print flex gap-3">
+                                <button type="button" id="arEditBtn" class="text-xs font-bold text-blue-900 underline">✏️ ویرایش</button>
+                                <button type="button" id="arDeleteBtn" class="text-xs font-bold text-red-600 underline">🗑 حذف این درخواست</button>
+                            </div>` : ''}
+                        </div>
+                        ${isEditingThis ? `
+                            ${arResolutionsTableHtml(arEditDraftResolutions, true)}
+                            <div class="no-print flex gap-2">
+                                <button type="button" id="arSaveEditBtn" class="flex-1 bg-blue-900 hover:bg-blue-800 text-white font-bold py-2 rounded-xl">ذخیره ویرایش</button>
+                                <button type="button" id="arCancelEditBtn" class="flex-1 bg-slate-200 hover:bg-slate-300 font-bold py-2 rounded-xl">انصراف</button>
+                            </div>`
+                            : arResolutionsTableHtml(shown.resolutions || [], false)}
                     </div>
-                    <div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+                    ${!isEditingThis ? `<div class="print-card bg-white rounded-2xl shadow-sm border p-5 space-y-3">
                         <h3 class="text-sm font-bold text-slate-800">امضای دیجیتال ارکان پروژه</h3>
                         <p class="text-[11px] text-slate-500">هرکدام از ارکان زیر با اکانت خود این درخواست را امضا می‌کند تا رسمیت و تعهد بیشتری ایجاد شود.</p>
                         ${arSignatureSectionHtml(shown, isLatest)}
-                    </div>
-                    ${canStartNew ? '<button type="button" id="arNewRequestBtn" class="no-print text-xs font-bold text-blue-900 underline">✏️ ثبت درخواست مصوبه جدید</button>' : ''}
-                    ${arArchiveListHtml()}`;
-                wireArViewEvents();
+                    </div>` : ''}
+                    ${!isEditingThis && canStartNew ? '<button type="button" id="arNewRequestBtn" class="no-print text-xs font-bold text-blue-900 underline">✏️ ثبت درخواست مصوبه جدید</button>' : ''}
+                    ${!isEditingThis ? arArchiveListHtml() : ''}`;
+                wireArViewEvents(shown);
+                if (isEditingThis) wireArEditEvents(shown.id);
             }
         }
 
@@ -4381,13 +4505,17 @@
             document.getElementById('arSubmitBtn').addEventListener('click', submitApprovalRequest);
         }
 
-        function wireArViewEvents() {
+        function wireArViewEvents(shown) {
             const body = document.getElementById('approvalRequestBody');
             body.querySelectorAll('[data-ar-sign]').forEach(el => {
                 el.addEventListener('click', () => signApprovalRequestAs(el.dataset.arSign));
             });
             const newBtn = document.getElementById('arNewRequestBtn');
             if (newBtn) newBtn.addEventListener('click', startNewApprovalRequest);
+            const editBtn = document.getElementById('arEditBtn');
+            if (editBtn) editBtn.addEventListener('click', () => arStartEditRequest(shown));
+            const deleteBtn = document.getElementById('arDeleteBtn');
+            if (deleteBtn) deleteBtn.addEventListener('click', () => arDeleteRequest(shown.id));
             body.querySelectorAll('[data-ar-archive-id]').forEach(el => {
                 el.addEventListener('click', () => {
                     const id = Number(el.dataset.arArchiveId);
@@ -4397,17 +4525,64 @@
             });
         }
 
+        function wireArEditEvents(requestId) {
+            const body = document.getElementById('approvalRequestBody');
+            body.querySelectorAll('[data-ar-field]').forEach(el => {
+                el.addEventListener('input', () => { arEditDraftResolutions[+el.dataset.idx][el.dataset.arField] = el.value; });
+            });
+            body.querySelectorAll('[data-ar-remove-row]').forEach(el => {
+                el.addEventListener('click', () => { arEditDraftResolutions.splice(+el.dataset.arRemoveRow, 1); renderApprovalRequestBody(); });
+            });
+            const addBtn = document.getElementById('arAddRowBtn');
+            if (addBtn) addBtn.addEventListener('click', () => {
+                arEditDraftResolutions.push({ resolution: '', contractor_commitment: '', expected_result: '' });
+                renderApprovalRequestBody();
+            });
+            document.getElementById('arSaveEditBtn').addEventListener('click', () => arSaveEditedRequest(requestId));
+            document.getElementById('arCancelEditBtn').addEventListener('click', arCancelEditRequest);
+        }
+
+        function arStartEditRequest(request) {
+            arEditingRequestId = request.id;
+            arEditDraftResolutions = (request.resolutions || []).map(r => ({ ...r }));
+            renderApprovalRequestBody();
+        }
+
+        function arCancelEditRequest() {
+            arEditingRequestId = null;
+            renderApprovalRequestBody();
+        }
+
+        async function arSaveEditedRequest(requestId) {
+            const cleaned = arEditDraftResolutions
+                .map(r => ({ resolution: (r.resolution || '').trim(), contractor_commitment: (r.contractor_commitment || '').trim(), expected_result: (r.expected_result || '').trim() }))
+                .filter(r => r.resolution || r.contractor_commitment || r.expected_result);
+            const { error } = await _supabase.from('approval_requests').update({ resolutions: cleaned }).eq('id', requestId);
+            if (error) { alert('خطا در ذخیره ویرایش: ' + error.message); return; }
+            arEditingRequestId = null;
+            await openApprovalRequestPreview(arProjectContext.project_name);
+        }
+
+        async function arDeleteRequest(requestId) {
+            if (!confirm('آیا از حذف این درخواست مصوبه مطمئنید؟ این عمل قابل بازگشت نیست.')) return;
+            const { error } = await _supabase.from('approval_requests').delete().eq('id', requestId);
+            if (error) { alert('خطا در حذف درخواست: ' + error.message); return; }
+            await openApprovalRequestPreview(arProjectContext.project_name);
+        }
+
         // «ثبت درخواست مصوبه جدید ظاهرا مصوبات قدیم رو پاک میکنه» — carry the
         // latest request's own resolutions into the new draft (deep-copied,
         // so editing/removing a draft row never mutates the stored latest
-        // request) instead of resetting to one blank row; still falls back
-        // to a single blank row the very first time, when there's nothing
-        // to carry over yet.
+        // request) instead of resetting to one blank row, then fold in any
+        // new AI-decision rows not already present. Falls back to one
+        // blank row only when there's truly nothing to carry over or import.
         function startNewApprovalRequest() {
             arMode = 'compose';
-            arDraftResolutions = (arLatestRequest && arLatestRequest.resolutions && arLatestRequest.resolutions.length)
+            const carried = (arLatestRequest && arLatestRequest.resolutions && arLatestRequest.resolutions.length)
                 ? arLatestRequest.resolutions.map(r => ({ ...r }))
-                : [{ resolution: '', contractor_commitment: '', expected_result: '' }];
+                : [];
+            const merged = arMergeAiDecisions(carried, arCachedAnalysis);
+            arDraftResolutions = merged.length ? merged : [{ resolution: '', contractor_commitment: '', expected_result: '' }];
             renderApprovalRequestBody();
         }
 
@@ -5928,7 +6103,7 @@
             refreshTasksView();
         }
 
-        async function addQuickWinTask(caseId, title, responsibleName, responsibleEmail, startDateJalali, dueDateJalali, extra) {
+        async function addQuickWinTask(caseId, projectName, title, responsibleName, responsibleEmail, startDateJalali, dueDateJalali, extra) {
             const startDateIso = jalaliInputToIso(startDateJalali);
             const dueDateIso = jalaliInputToIso(dueDateJalali);
             if (!title || !responsibleName || !responsibleEmail || !startDateIso || !dueDateIso) {
@@ -5937,7 +6112,7 @@
             }
             if (startDateIso > dueDateIso) { alert('تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد.'); return; }
             const { error } = await _supabase.from('case_updates').insert([{
-                case_id: caseId, kind: 'task', title, responsible_name: responsibleName, responsible_email: responsibleEmail,
+                case_id: caseId, project_name: projectName, kind: 'task', title, responsible_name: responsibleName, responsible_email: responsibleEmail,
                 start_date: startDateIso, due_date: dueDateIso, task_status: 'باز', created_by: currentUser.email,
                 severity: (extra && extra.severity) || 'متوسط', responsible_unit: (extra && extra.responsibleUnit) || null,
             }]);
@@ -6949,7 +7124,11 @@
             taskCasesCache = casesData || [];
             const caseById = {};
             taskCasesCache.forEach(c => { caseById[c.id] = c; });
-            allTasksRaw = (updatesData || []).map(t => ({ ...t, project_name: (caseById[t.case_id] || {}).project_name, case_title: (caseById[t.case_id] || {}).title }));
+            // A task's own project_name column (migration 035) is now the
+            // source of truth — it's set directly for a caseless "تسک عمومی
+            // پروژه" and mirrored from the case otherwise; the case lookup
+            // only ever still supplies case_title.
+            allTasksRaw = (updatesData || []).map(t => ({ ...t, project_name: t.project_name || (caseById[t.case_id] || {}).project_name, case_title: (caseById[t.case_id] || {}).title || null }));
             // Auto-sync cases.status from each case's rolled-up task
             // progress (see syncCaseStatusesFromTasks) — the write path
             // that used to be the manual progress-update form. Admin-only
@@ -7585,11 +7764,12 @@
             const respSel = document.getElementById('newTaskResponsible');
             const users = taskUsersByProject[pn] || [];
             respSel.innerHTML = '<option value="">-- انتخاب مسئول --</option>' + users.map(u => `<option value="${esc(personDisplayName(u))}|||${esc(u.email)}">${esc(personDisplayName(u))} — ${esc(u.organization)}</option>`).join('');
+            // Attaching to an اقدام زودبازده/میان‌مدت is optional — a project
+            // with none yet (or a task that just isn't part of one) still
+            // gets a real تسک عمومی پروژه instead of being blocked entirely.
             const caseSel = document.getElementById('newTaskCase');
             const cases = taskCasesCache.filter(c => c.project_name === pn);
-            caseSel.innerHTML = cases.length
-                ? '<option value="">-- انتخاب --</option>' + cases.map(c => `<option value="${c.id}">${esc(c.title)}</option>`).join('')
-                : '<option value="">-- هیچ اقدام زودبازده/میان‌مدتی برای این پروژه نیست --</option>';
+            caseSel.innerHTML = '<option value="">-- بدون اقدام مشخص (تسک عمومی پروژه) --</option>' + cases.map(c => `<option value="${c.id}">${esc(c.title)}</option>`).join('');
         }
 
         function openNewTaskModal(prefillProjectName, prefillCaseId) {
@@ -7606,13 +7786,14 @@
 
         async function submitNewTask() {
             const caseIdRaw = document.getElementById('newTaskCase').value;
+            const projectName = document.getElementById('newTaskProject').value;
             const title = document.getElementById('newTaskTitle').value.trim();
             const unit = document.getElementById('newTaskUnit').value;
-            if (!caseIdRaw || !title) { alert('انتخاب اقدام زودبازده/میان‌مدت و عنوان تسک الزامی است.'); return; }
+            if (!projectName || !title) { alert('انتخاب پروژه و عنوان تسک الزامی است.'); return; }
             if (!unit) { alert('انتخاب «واحد مسئول» الزامی است تا تسک‌ها همیشه قابل دسته‌بندی باشند.'); return; }
             const [respName, respEmail] = (document.getElementById('newTaskResponsible').value || '').split('|||');
             await addQuickWinTask(
-                Number(caseIdRaw), title, respName || '', respEmail || '',
+                caseIdRaw ? Number(caseIdRaw) : null, projectName, title, respName || '', respEmail || '',
                 document.getElementById('newTaskStartDate').value.trim(),
                 document.getElementById('newTaskDueDate').value.trim(),
                 { severity: document.getElementById('newTaskSeverity').value, responsibleUnit: unit },
