@@ -8053,12 +8053,12 @@
             blocked: { label: 'مسدود', color: 'red' },
         };
         const LC_NODE_STATUS_META = {
-            completed: { label: 'گیت گذشته‌شده', color: '#10b981' },
-            conditional: { label: 'عبور مشروط', color: '#a855f7' },
-            ready: { label: 'آماده بررسی گیت', color: '#3b82f6' },
-            active: { label: 'در حال اجرا', color: '#f59e0b' },
-            upcoming: { label: 'پیش رو', color: '#64748b' },
-            blocked: { label: 'مسدود', color: '#ef4444' },
+            completed: { label: 'گیت گذشته‌شده', color: '#10b981', dark: '#065f46', glyph: 'checkCircle' },
+            conditional: { label: 'عبور مشروط', color: '#a855f7', dark: '#6b21a8', glyph: 'shield' },
+            ready: { label: 'آماده بررسی گیت', color: '#3b82f6', dark: '#1e3a8a', glyph: 'target' },
+            active: { label: 'در حال اجرا', color: '#f59e0b', dark: '#b45309', glyph: 'zap' },
+            upcoming: { label: 'پیش رو', color: '#64748b', dark: '#334155', glyph: 'clock' },
+            blocked: { label: 'مسدود', color: '#ef4444', dark: '#991b1b', glyph: 'alertTriangle' },
         };
         const LC_GROUP_COLOR = { fel: '#3b82f6', execution: '#10b981', commissioning: '#f59e0b' };
 
@@ -8154,7 +8154,10 @@
             lcState.clientReportHistory = clientReports || [];
             lcState.clientReport = lcState.clientReportHistory.length ? lcState.clientReportHistory[lcState.clientReportHistory.length - 1] : null;
             lcState.canEdit = isAdminUser() || myProjectAccess.some(a => a.project_name === projectName);
-            lcState.selectedPhase = null;
+            // Open on the project's current phase by default (matching the
+            // "at a glance" executive view) rather than an empty placeholder
+            // — a user can still click any other node to inspect it.
+            lcState.selectedPhase = lcCurrentActivePhase()?.code || null;
 
             lcRenderAll();
         }
@@ -8281,15 +8284,23 @@
             }
             document.getElementById('lcBody').innerHTML = `
                 <style>
-                    .lc-node { transition: transform .15s ease; transform-box: fill-box; transform-origin: center; cursor: pointer; }
-                    .lc-node:hover { transform: scale(1.07); }
+                    /* Positioning (translate to the node's spot on the orbit) stays a
+                       plain SVG "transform" ATTRIBUTE on the outer <g>, never touched
+                       by CSS — mixing the two on the SAME element is what used to make
+                       every node visibly jump to the canvas corner on hover (a CSS
+                       "transform" replaces the attribute instead of composing with it).
+                       The hover scale below only ever applies to the inner <g class="lc-node">,
+                       which carries no positioning attribute of its own. Nothing here
+                       animates on its own — scale only ever changes on :hover. */
+                    .lc-node { transition: transform .15s ease; transform-box: fill-box; transform-origin: center; }
+                    .lc-node:hover { transform: scale(1.08); }
                 </style>
                 ${lcExecStripHtml()}
-                <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_400px] gap-5 items-start">
-                    <div class="bg-white rounded-2xl shadow-sm border p-4 md:p-8">
-                        <div class="relative flex items-center justify-center" id="lcOrbitStage">
+                <div class="grid grid-cols-1 xl:grid-cols-[260px_minmax(0,1fr)_380px] gap-5 items-start">
+                    ${lcIdentityCardHtml()}
+                    <div class="rounded-2xl p-4 md:p-8" style="background: radial-gradient(ellipse 90% 70% at 50% 12%, #123159 0%, #060f22 70%); border: 1px solid rgba(255,255,255,.07);">
+                        <div class="relative" id="lcOrbitStage">
                             ${lcOrbitSvg()}
-                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">${lcCoreOverlayHtml()}</div>
                         </div>
                         ${lcLegendHtml()}
                     </div>
@@ -8302,13 +8313,25 @@
 
         function lcArcPath(cx, cy, r, a1, a2) {
             const toXY = (a) => { const rad = a * Math.PI / 180; return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)]; };
-            const [x1, y1] = toXY(a1 + 4), [x2, y2] = toXY(a2 - 4);
+            const [x1, y1] = toXY(a1 + 3), [x2, y2] = toXY(a2 - 3);
             const large = (a2 - a1) > 180 ? 1 : 0;
             return `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`;
         }
 
-        function lcOrbitSvg() {
+        // Node positions are computed once here and reused by both the SVG
+        // (icon badges + progress rings) and the HTML label overlay below it
+        // (phase name + %) — so a label always lines up with its own node.
+        function lcNodeLayout() {
             const N = lcState.phases.length;
+            const cx = 320, cy = 320, nodeOrbitR = 250, nodeR = 38;
+            return lcState.phases.map((p, i) => {
+                const angle = -90 + (360 / N) * i;
+                const rad = angle * Math.PI / 180;
+                return { phase: p, index: i, angle, nx: cx + nodeOrbitR * Math.cos(rad), ny: cy + nodeOrbitR * Math.sin(rad) };
+            });
+        }
+
+        function lcOrbitSvg() {
             const cx = 320, cy = 320, coreR = 150, plannedR = 142, actualR = 122, nodeOrbitR = 250, nodeR = 38;
             const overall = lcOverallProgress();
             const variance = Math.round(overall.actual) - Math.round(overall.planned);
@@ -8319,43 +8342,74 @@
                 return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke-linecap="round" stroke-dasharray="${dash} ${len - dash}" transform="rotate(-90 ${cx} ${cy})" style="${style}"/>`;
             };
             const varianceColor = variance < -5 ? '#ef4444' : variance > 2 ? '#10b981' : '#3b82f6';
+            const layout = lcNodeLayout();
+            const N = layout.length;
+
+            const gradDefs = Object.entries(LC_NODE_STATUS_META).map(([key, m]) => `
+                <radialGradient id="lcGrad-${key}" cx="35%" cy="30%" r="75%">
+                    <stop offset="0%" stop-color="${m.color}"/><stop offset="100%" stop-color="${m.dark}"/>
+                </radialGradient>`).join('');
 
             let nodesHtml = '', connectorsHtml = '';
-            lcState.phases.forEach((p, i) => {
-                const angle = -90 + (360 / N) * i;
+            layout.forEach(({ phase: p, index: i, angle, nx, ny }) => {
                 const nextAngle = -90 + (360 / N) * (i + 1);
-                const rad = angle * Math.PI / 180;
-                const nx = cx + nodeOrbitR * Math.cos(rad), ny = cy + nodeOrbitR * Math.sin(rad);
+                const midRad = (angle + nextAngle) / 2 * Math.PI / 180;
                 const status = lcNodeStatus(p);
                 const meta = LC_NODE_STATUS_META[status];
                 const { actual } = lcPhaseProgress(p);
                 const isSelected = lcState.selectedPhase === p.code;
                 const nodeRingLen = 2 * Math.PI * nodeR;
                 const nodeDash = nodeRingLen * Math.max(0, Math.min(100, actual)) / 100;
+                const groupColor = LC_GROUP_COLOR[p.phase_group];
 
-                connectorsHtml += `<path d="${lcArcPath(cx, cy, nodeOrbitR, angle, nextAngle)}" fill="none" stroke="${LC_GROUP_COLOR[p.phase_group]}" stroke-opacity="0.18" stroke-width="10"/>`;
+                connectorsHtml += `
+                    <path d="${lcArcPath(cx, cy, nodeOrbitR, angle, nextAngle)}" fill="none" stroke="${groupColor}" stroke-opacity="0.45" stroke-width="2" stroke-dasharray="1 7" stroke-linecap="round"/>
+                    <circle cx="${cx + nodeOrbitR * Math.cos(midRad)}" cy="${cy + nodeOrbitR * Math.sin(midRad)}" r="2.5" fill="${groupColor}" opacity="0.55"/>`;
 
+                const iconKey = status === 'completed' ? 'checkCircle' : p.icon_key;
                 nodesHtml += `
-                <g class="lc-node" data-lc-phase="${p.code}" transform="translate(${nx} ${ny})">
-                    ${isSelected ? `<circle r="${nodeR + 9}" fill="none" stroke="${meta.color}" stroke-width="2" stroke-dasharray="3 5" opacity="0.7"/>` : ''}
-                    <circle r="${nodeR}" fill="var(--c-white)" stroke="${meta.color}" stroke-width="${isSelected ? 4 : 2.5}" opacity="${status === 'upcoming' ? 0.6 : 1}"/>
-                    <circle r="${nodeR}" fill="none" stroke="${meta.color}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${nodeDash} ${nodeRingLen - nodeDash}" transform="rotate(-90)" opacity="0.9"/>
-                    <g transform="translate(-9,-32) scale(0.75)" stroke="${meta.color}" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[p.icon_key] || ''}</g>
-                    <text text-anchor="middle" dy="8" font-size="14" font-weight="800" fill="${meta.color}">${esc(p.code)}</text>
-                    <text text-anchor="middle" dy="21" font-size="9" font-weight="700" fill="var(--c-slate-500)">${toPersianDigits(Math.round(actual))}٪</text>
+                <g data-lc-phase="${p.code}" transform="translate(${nx} ${ny})" style="cursor:pointer;">
+                    <g class="lc-node">
+                        <circle r="${nodeR + 13}" fill="${meta.color}" opacity="${isSelected ? 0.28 : 0.14}" filter="url(#lcNodeBlur)"/>
+                        <circle r="${nodeR}" fill="url(#lcGrad-${status})" stroke="${isSelected ? '#ffffff' : meta.color}" stroke-width="${isSelected ? 3 : 1.5}" stroke-opacity="${isSelected ? 0.95 : 0.5}"/>
+                        <circle r="${nodeR}" fill="none" stroke="${meta.color}" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="${nodeDash} ${nodeRingLen - nodeDash}" transform="rotate(-90)" opacity="0.95"/>
+                        <g transform="translate(-12,-12)" stroke="#ffffff" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.95">${ICON_PATHS[iconKey] || ''}</g>
+                    </g>
                 </g>`;
             });
 
+            const labelsHtml = layout.map(({ phase: p, index: i, nx, ny }) => {
+                const status = lcNodeStatus(p);
+                const meta = LC_NODE_STATUS_META[status];
+                const { actual } = lcPhaseProgress(p);
+                const isSelected = lcState.selectedPhase === p.code;
+                const leftPct = (nx / 640) * 100, topPct = (ny / 640) * 100;
+                return `
+                <div data-lc-phase="${p.code}" style="position:absolute; right:${100 - leftPct}%; top:${topPct}%; width:118px; transform:translate(50%, ${nodeR + 10}px); pointer-events:auto; cursor:pointer;" class="text-center">
+                    <p class="text-[11px] font-extrabold leading-tight" style="color:${isSelected ? '#ffffff' : '#cbd5e1'};">${toPersianDigits(i + 1)}. ${esc(p.title)}</p>
+                    <p class="text-[10px] font-bold mt-1 inline-flex items-center gap-1" style="color:${meta.color};">
+                        <span>${toPersianDigits(Math.round(actual))}٪</span>
+                        <span>${iconSvg(meta.glyph, 'w-3 h-3')}</span>
+                    </p>
+                </div>`;
+            }).join('');
+
             return `
             <svg viewBox="0 0 640 640" class="w-full h-auto select-none" style="max-height:640px; overflow: visible;">
-                <defs><radialGradient id="lcCoreGrad" cx="50%" cy="35%" r="75%"><stop offset="0%" stop-color="#123159"/><stop offset="100%" stop-color="#08152c"/></radialGradient></defs>
-                <circle cx="${cx}" cy="${cy}" r="${nodeOrbitR}" fill="none" stroke="currentColor" stroke-opacity="0.08" stroke-width="1" stroke-dasharray="2 6"/>
+                <defs>
+                    <radialGradient id="lcCoreGrad" cx="50%" cy="35%" r="75%"><stop offset="0%" stop-color="#123159"/><stop offset="100%" stop-color="#08152c"/></radialGradient>
+                    <filter id="lcNodeBlur" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="7"/></filter>
+                    ${gradDefs}
+                </defs>
+                <circle cx="${cx}" cy="${cy}" r="${nodeOrbitR}" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="1" stroke-dasharray="2 6"/>
                 ${connectorsHtml}
                 <circle cx="${cx}" cy="${cy}" r="${coreR}" fill="url(#lcCoreGrad)"/>
                 ${arc(plannedR, overall.planned, 'stroke:#94a3b8;stroke-width:7;opacity:.55;')}
                 ${arc(actualR, overall.actual, `stroke:${varianceColor};stroke-width:12;filter:drop-shadow(0 0 5px ${varianceColor}88);`)}
                 ${nodesHtml}
-            </svg>`;
+            </svg>
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">${lcCoreOverlayHtml()}</div>
+            <div class="absolute inset-0 pointer-events-none">${labelsHtml}</div>`;
         }
 
         function lcCoreOverlayHtml() {
@@ -8365,19 +8419,65 @@
             const statusColor = variance < -5 ? 'text-red-400' : variance > 2 ? 'text-emerald-400' : 'text-blue-300';
             const activePhase = lcCurrentActivePhase();
             return `
-            <div class="text-center px-4" style="max-width:210px;">
+            <div class="text-center px-4" style="max-width:200px;">
                 <p class="text-[10px] font-bold tracking-wide" style="color:#93c5fd;">پیشرفت کلی پروژه</p>
                 <p class="text-4xl font-extrabold text-white leading-none mt-1">${toPersianDigits(Math.round(overall.actual))}<span class="text-lg">٪</span></p>
                 <p class="text-[10px] mt-0.5" style="color:#cbd5e1;">واقعی</p>
                 <p class="text-[11px] mt-2" style="color:#94a3b8;">برنامه‌ای: <b style="color:#e2e8f0;">${toPersianDigits(Math.round(overall.planned))}٪</b></p>
                 <p class="text-[11px] font-bold mt-1 ${statusColor}">${variance >= 0 ? '+' : ''}${toPersianDigits(Math.round(variance))}٪ — ${status}</p>
-                ${activePhase ? `<p class="text-[10px] mt-2 pt-2 border-t" style="border-color:rgba(255,255,255,.12); color:#93c5fd;">فاز جاری: <b style="color:#fff;">${esc(activePhase.code)} — ${esc(activePhase.title)}</b></p>` : ''}
+                ${activePhase ? `<p class="text-[10px] mt-2 pt-2 border-t" style="border-color:rgba(255,255,255,.12); color:#93c5fd;">فاز جاری: <b style="color:#fff;">${esc(activePhase.title)}</b></p>` : ''}
             </div>`;
         }
 
         function lcLegendHtml() {
-            return `<div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 mt-3 pt-3 border-t border-slate-100">
-                ${Object.values(LC_NODE_STATUS_META).map(m => `<span class="inline-flex items-center gap-1.5 text-[10px] font-semibold text-slate-500"><span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${m.color}"></span>${esc(m.label)}</span>`).join('')}
+            return `<div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 mt-4 pt-3" style="border-top: 1px solid rgba(255,255,255,.08);">
+                ${Object.values(LC_NODE_STATUS_META).map(m => `<span class="inline-flex items-center gap-1.5 text-[10px] font-semibold" style="color:#94a3b8;"><span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${m.color}"></span>${esc(m.label)}</span>`).join('')}
+            </div>`;
+        }
+
+        // شناسنامه پروژه — real fields only (from «اطلاعات پایه پروژه»); no
+        // photo/location/quality/HSE fields exist anywhere in this app yet,
+        // so those are left out rather than faked. The one gauge shown
+        // (schedule health) is a direct, labeled transform of the real
+        // planned/actual variance already computed above — not a separate
+        // untracked metric.
+        function lcIdentityCardHtml() {
+            const cr = lcState.clientReport;
+            const overall = lcOverallProgress();
+            const variance = Math.round(overall.actual) - Math.round(overall.planned);
+            const scheduleHealth = Math.max(0, Math.min(100, 100 + Math.min(0, variance)));
+            const healthColor = variance < -5 ? '#ef4444' : variance < 0 ? '#f59e0b' : '#10b981';
+            const rows = [
+                ['نوع قرارداد', cr?.contract_type === 'سایر' ? cr?.contract_type_other : cr?.contract_type],
+                ['پیمانکار', cr?.contractor_name],
+                ['مشاور', cr?.consultant_name],
+                ['مدیر پروژه کارفرما', cr?.client_pm_name],
+            ].filter(([, v]) => v);
+            const gaugeR = 32, gaugeLen = 2 * Math.PI * gaugeR;
+            const gaugeDash = gaugeLen * scheduleHealth / 100;
+
+            return `
+            <div class="rounded-2xl overflow-hidden border bg-white shadow-sm">
+                <div class="h-20 relative flex items-end p-3" style="background: linear-gradient(135deg, #0e2a5e, #0f766e);">
+                    <div class="absolute inset-0 flex items-center justify-center opacity-15">${iconSvg('gauge', 'w-14 h-14 text-white')}</div>
+                    <p class="relative text-white font-extrabold text-xs leading-snug" style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${esc(lcState.projectName)}</p>
+                </div>
+                <div class="p-3.5 space-y-3">
+                    ${rows.length ? `<div class="space-y-1.5">
+                        ${rows.map(([label, value]) => `<div class="flex items-center justify-between gap-2 text-[11px]"><span class="text-slate-400 shrink-0">${esc(label)}</span><span class="font-bold text-slate-700 truncate" title="${esc(value)}">${esc(value)}</span></div>`).join('')}
+                    </div>` : `<p class="text-[11px] text-slate-400">اطلاعات پایه پروژه هنوز ثبت نشده — «اطلاعات پایه پروژه» را تکمیل کنید.</p>`}
+                    <div class="pt-3 border-t flex items-center gap-3">
+                        <svg viewBox="0 0 76 76" class="w-14 h-14 shrink-0">
+                            <circle cx="38" cy="38" r="${gaugeR}" fill="none" stroke="#e2e8f0" stroke-width="7"/>
+                            <circle cx="38" cy="38" r="${gaugeR}" fill="none" stroke="${healthColor}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${gaugeDash} ${gaugeLen - gaugeDash}" transform="rotate(-90 38 38)"/>
+                            <text x="38" y="38" text-anchor="middle" dominant-baseline="central" font-size="16" font-weight="800" fill="${healthColor}">${toPersianDigits(Math.round(scheduleHealth))}</text>
+                        </svg>
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-500">شاخص انطباق زمانی</p>
+                            <p class="text-[10px] text-slate-400">بر اساس انحراف ${variance >= 0 ? '+' : ''}${toPersianDigits(variance)}٪ برنامه/واقعی</p>
+                        </div>
+                    </div>
+                </div>
             </div>`;
         }
 
@@ -8627,7 +8727,7 @@
             <div class="space-y-4">
                 <div class="flex items-start justify-between gap-2">
                     <div>
-                        <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-900/10 text-blue-900 mb-1">${esc(phase.code)}</span>
+                        <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-900/10 text-blue-900 mb-1">مرحله ${toPersianDigits(phase.sort_order)} از ${toPersianDigits(lcState.phases.length)}</span>
                         <h3 class="text-base font-extrabold text-slate-800">${esc(phase.title)}</h3>
                         <p class="text-[11px] text-slate-500 mt-0.5">مسئول: ${esc(phase.responsible)}</p>
                         <p class="text-[11px] text-slate-400 mt-0.5">گیت: ${esc(gateName.clean)}${gateName.needsReview ? ' ⚠' : ''}</p>
