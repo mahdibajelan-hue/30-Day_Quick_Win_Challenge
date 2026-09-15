@@ -196,6 +196,13 @@
                 --c-border: #e2e8f0;
             }
             body { background: #fff !important; }
+            /* Chromium does not print background colors/gradients by
+               default (the "Background graphics" print-dialog checkbox is
+               off unless a page opts in) — without this, every colored
+               .print-card-accent gradient below silently renders as plain
+               white instead of its intended navy/purple, regardless of
+               any !important CSS rule for background-color. */
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
             body * { visibility: hidden; }
             /* The app shell (sidebar, mobile bottom nav, sticky topbar,
                profile modal) is `position: sticky`/`fixed` with an h-screen
@@ -223,6 +230,17 @@
             #projectsReportModal h1, #projectsReportModal h2, #projectsReportModal h3, #projectsReportModal p, #projectsReportModal span, #projectsReportModal td, #projectsReportModal th, #projectsReportModal b,
             #projectsStatusView h1, #projectsStatusView h2, #projectsStatusView h3, #projectsStatusView p, #projectsStatusView span, #projectsStatusView td, #projectsStatusView th, #projectsStatusView b,
             #approvalRequestView h1, #approvalRequestView h2, #approvalRequestView h3, #approvalRequestView p, #approvalRequestView span, #approvalRequestView td, #approvalRequestView th, #approvalRequestView b { color: #111 !important; }
+            /* Belt-and-suspenders on top of the tag list just above: this
+               app's whole color system is CSS custom properties (--c-slate-700
+               etc.) that Tailwind classes read via var(), redefined for print
+               near the top of this block — normally enough on its own. This
+               universal-selector backstop means print text stays legible even
+               for a tag this rule's own list doesn't enumerate, or if a color
+               variable's print redefinition doesn't win the cascade for some
+               reason — cheap insurance against exactly the "text present but
+               invisible" failure mode, at the cost of also flattening colored
+               badges/labels to plain dark text here (already true above). */
+            #aiReportView *, #execReportView *, #tasksView *, #projectsReportModal *, #lifecycleView *, #projectsStatusView *, #approvalRequestView * { color: #111 !important; }
             /* چرخه عمر پروژه's exec strip + orbit panel are deliberately dark
                "control room" UI on screen, but a dark-navy PDF wastes toner
                and reads poorly on paper — same reasoning as print-card-accent
