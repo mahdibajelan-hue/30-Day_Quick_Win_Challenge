@@ -8081,12 +8081,12 @@
             blocked: { label: 'مسدود', color: 'red' },
         };
         const LC_NODE_STATUS_META = {
-            completed: { label: 'گیت گذشته‌شده', color: '#10b981', dark: '#065f46', glyph: 'checkCircle' },
-            conditional: { label: 'عبور مشروط', color: '#a855f7', dark: '#6b21a8', glyph: 'shield' },
-            ready: { label: 'آماده بررسی گیت', color: '#3b82f6', dark: '#1e3a8a', glyph: 'target' },
-            active: { label: 'در حال اجرا', color: '#f59e0b', dark: '#b45309', glyph: 'zap' },
-            upcoming: { label: 'پیش رو', color: '#64748b', dark: '#334155', glyph: 'clock' },
-            blocked: { label: 'مسدود', color: '#ef4444', dark: '#991b1b', glyph: 'alertTriangle' },
+            completed: { label: 'گیت گذشته‌شده', color: '#10b981', dark: '#065f46' },
+            conditional: { label: 'عبور مشروط', color: '#a855f7', dark: '#6b21a8' },
+            ready: { label: 'آماده بررسی گیت', color: '#3b82f6', dark: '#1e3a8a' },
+            active: { label: 'در حال اجرا', color: '#f59e0b', dark: '#b45309' },
+            upcoming: { label: 'پیش رو', color: '#64748b', dark: '#334155' },
+            blocked: { label: 'مسدود', color: '#ef4444', dark: '#991b1b' },
         };
         const LC_GROUP_COLOR = { fel: '#3b82f6', execution: '#10b981', commissioning: '#f59e0b' };
 
@@ -8322,9 +8322,16 @@
                        animates on its own — scale only ever changes on :hover. */
                     .lc-node { transition: transform .15s ease; transform-box: fill-box; transform-origin: center; }
                     .lc-node:hover { transform: scale(1.08); }
+                    /* Full phase names collide if shown permanently on every node at
+                       once (9 nodes, some names run 30+ characters) — instead only the
+                       always-on node label is a short "N · %"; the full name/status
+                       lives in a transparent callout that appears beside the node on
+                       hover, and stays pinned open for whichever node is selected. */
+                    .lc-callout { opacity: 0; transition: opacity .15s ease; }
+                    .lc-node-hit:hover .lc-callout, .lc-callout.lc-callout-pinned { opacity: 1; }
                 </style>
                 ${lcExecStripHtml()}
-                <div class="grid grid-cols-1 xl:grid-cols-[260px_minmax(0,1fr)_380px] gap-5 items-start">
+                <div class="grid grid-cols-1 xl:grid-cols-[230px_minmax(0,1fr)_360px] gap-5 items-start">
                     ${lcIdentityCardHtml()}
                     <div class="lc-dark-panel rounded-2xl p-4 md:p-8" style="background: radial-gradient(ellipse 90% 70% at 50% 12%, #123159 0%, #060f22 70%); border: 1px solid rgba(255,255,255,.07);">
                         <div class="relative" id="lcOrbitStage">
@@ -8347,11 +8354,14 @@
         }
 
         // Node positions are computed once here and reused by both the SVG
-        // (icon badges + progress rings) and the HTML label overlay below it
-        // (phase name + %) — so a label always lines up with its own node.
+        // (icon badges + progress rings) and the HTML overlay below it
+        // (compact label + hover callout) — so everything lines up with its
+        // own node. The viewBox carries deliberate extra margin (nodeOrbitR +
+        // nodeR leaves ~90 units to the edge) so a callout box can float
+        // outside the ring itself without being clipped by the panel.
         function lcNodeLayout() {
             const N = lcState.phases.length;
-            const cx = 320, cy = 320, nodeOrbitR = 250, nodeR = 38;
+            const cx = 380, cy = 380, nodeOrbitR = 270, nodeR = 42;
             return lcState.phases.map((p, i) => {
                 const angle = -90 + (360 / N) * i;
                 const rad = angle * Math.PI / 180;
@@ -8360,7 +8370,7 @@
         }
 
         function lcOrbitSvg() {
-            const cx = 320, cy = 320, coreR = 150, plannedR = 142, actualR = 122, nodeOrbitR = 250, nodeR = 38;
+            const cx = 380, cy = 380, coreR = 165, plannedR = 155, actualR = 133, nodeOrbitR = 270, nodeR = 42;
             const overall = lcOverallProgress();
             const variance = Math.round(overall.actual) - Math.round(overall.planned);
             const ringLen = (r) => 2 * Math.PI * r;
@@ -8406,24 +8416,33 @@
                 </g>`;
             });
 
-            const labelsHtml = layout.map(({ phase: p, index: i, nx, ny }) => {
+            const VB = 760; // keep in sync with the <svg viewBox> below
+            const labelsHtml = layout.map(({ phase: p, index: i, angle, nx, ny }) => {
                 const status = lcNodeStatus(p);
                 const meta = LC_NODE_STATUS_META[status];
                 const { actual } = lcPhaseProgress(p);
                 const isSelected = lcState.selectedPhase === p.code;
-                const leftPct = (nx / 640) * 100, topPct = (ny / 640) * 100;
+                const leftPct = (nx / VB) * 100, topPct = (ny / VB) * 100;
+                const rad = angle * Math.PI / 180;
+                const pushLeft = Math.cos(rad) < 0; // which side of the node the callout opens toward
+
                 return `
-                <div data-lc-phase="${p.code}" style="position:absolute; right:${100 - leftPct}%; top:${topPct}%; width:118px; transform:translate(50%, ${nodeR + 10}px); pointer-events:auto; cursor:pointer;" class="text-center">
-                    <p class="text-[11px] font-extrabold leading-tight" style="color:${isSelected ? '#ffffff' : '#cbd5e1'};">${toPersianDigits(i + 1)}. ${esc(p.title)}</p>
-                    <p class="text-[10px] font-bold mt-1 inline-flex items-center gap-1" style="color:${meta.color};">
-                        <span>${toPersianDigits(Math.round(actual))}٪</span>
-                        <span>${iconSvg(meta.glyph, 'w-3 h-3')}</span>
-                    </p>
+                <div data-lc-phase="${p.code}" class="lc-node-hit" style="position:absolute; right:${100 - leftPct}%; top:${topPct}%; width:${nodeR * 2}px; height:${nodeR * 2}px; transform:translate(50%, -50%); pointer-events:auto; cursor:pointer;">
+                    <div class="text-center pointer-events-none" style="position:absolute; right:50%; top:100%; transform:translate(50%, 6px); white-space:nowrap;">
+                        <span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full" style="color:${meta.color}; background:rgba(15,23,42,.55);">${toPersianDigits(i + 1)} · ${toPersianDigits(Math.round(actual))}٪</span>
+                    </div>
+                    <div class="lc-callout${isSelected ? ' lc-callout-pinned' : ''} pointer-events-none" style="position:absolute; ${pushLeft ? 'right' : 'left'}:calc(100% + 10px); top:50%; transform:translateY(-50%); width:180px; z-index:5;">
+                        <div class="rounded-xl px-3 py-2.5 text-center" style="background:rgba(8,15,30,.88); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.14); box-shadow:0 8px 24px rgba(0,0,0,.35);">
+                            <p class="text-[10px] font-bold" style="color:${meta.color};">${toPersianDigits(i + 1)} · ${esc(meta.label)}</p>
+                            <p class="text-[12px] font-extrabold text-white leading-snug mt-1">${esc(p.title)}</p>
+                            <p class="text-[11px] font-bold mt-1" style="color:${meta.color};">${toPersianDigits(Math.round(actual))}٪ تکمیل</p>
+                        </div>
+                    </div>
                 </div>`;
             }).join('');
 
             return `
-            <svg viewBox="0 0 640 640" class="w-full h-auto select-none" style="max-height:640px; overflow: visible;">
+            <svg viewBox="0 0 ${VB} ${VB}" class="w-full h-auto select-none" style="overflow: visible;">
                 <defs>
                     <radialGradient id="lcCoreGrad" cx="50%" cy="35%" r="75%"><stop offset="0%" stop-color="#123159"/><stop offset="100%" stop-color="#08152c"/></radialGradient>
                     <filter id="lcNodeBlur" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="7"/></filter>
@@ -8447,13 +8466,13 @@
             const statusColor = variance < -5 ? 'text-red-400' : variance > 2 ? 'text-emerald-400' : 'text-blue-300';
             const activePhase = lcCurrentActivePhase();
             return `
-            <div class="text-center px-4" style="max-width:200px;">
-                <p class="text-[10px] font-bold tracking-wide" style="color:#93c5fd;">پیشرفت کلی پروژه</p>
-                <p class="text-4xl font-extrabold text-white leading-none mt-1">${toPersianDigits(Math.round(overall.actual))}<span class="text-lg">٪</span></p>
-                <p class="text-[10px] mt-0.5" style="color:#cbd5e1;">واقعی</p>
-                <p class="text-[11px] mt-2" style="color:#94a3b8;">برنامه‌ای: <b style="color:#e2e8f0;">${toPersianDigits(Math.round(overall.planned))}٪</b></p>
-                <p class="text-[11px] font-bold mt-1 ${statusColor}">${variance >= 0 ? '+' : ''}${toPersianDigits(Math.round(variance))}٪ — ${status}</p>
-                ${activePhase ? `<p class="text-[10px] mt-2 pt-2 border-t" style="border-color:rgba(255,255,255,.12); color:#93c5fd;">فاز جاری: <b style="color:#fff;">${esc(activePhase.title)}</b></p>` : ''}
+            <div class="text-center px-4" style="max-width:230px;">
+                <p class="text-[11px] font-bold tracking-wide" style="color:#93c5fd;">پیشرفت کلی پروژه</p>
+                <p class="text-5xl font-extrabold text-white leading-none mt-1.5">${toPersianDigits(Math.round(overall.actual))}<span class="text-xl">٪</span></p>
+                <p class="text-[11px] mt-1" style="color:#cbd5e1;">واقعی</p>
+                <p class="text-xs mt-2" style="color:#94a3b8;">برنامه‌ای: <b style="color:#e2e8f0;">${toPersianDigits(Math.round(overall.planned))}٪</b></p>
+                <p class="text-xs font-bold mt-1 ${statusColor}">${variance >= 0 ? '+' : ''}${toPersianDigits(Math.round(variance))}٪ — ${status}</p>
+                ${activePhase ? `<p class="text-[11px] mt-2 pt-2 border-t" style="border-color:rgba(255,255,255,.12); color:#93c5fd;">فاز جاری: <b style="color:#fff;">${esc(activePhase.title)}</b></p>` : ''}
             </div>`;
         }
 
