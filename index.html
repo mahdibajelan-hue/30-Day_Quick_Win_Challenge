@@ -6099,6 +6099,17 @@
             refreshTasksView();
         }
 
+        // Undo «انجام شد» — back to «باز» so it re-enters the normal
+        // open -> در حال انجام -> در انتظار تایید -> انجام‌شده flow.
+        async function reopenQuickWinTask(taskId) {
+            if (!confirm('این تسک به حالت «انجام‌نشده» بازگردانده شود؟')) return;
+            const { error } = await _supabase.from('case_updates')
+                .update({ task_status: 'باز', completed_at: null })
+                .eq('id', taskId);
+            if (error) { alert('خطا در بازگردانی تسک: ' + error.message); return; }
+            refreshTasksView();
+        }
+
         // The task's responsible person reports their work is done; this
         // only ever moves status to «در انتظار تایید» (enforced by RLS too),
         // never straight to «انجام‌شده» — that final call stays admin's.
@@ -7100,10 +7111,9 @@
         // generator beyond print-card + window.print() plus a CSV export,
         // no Saved Views/role-based dashboard variants, no attachments (no
         // file-storage infra exists anywhere in this app). There's also no
-        // separate comment/timeline table for tasks — CAPA/latest_update/
-        // next_action are plain editable fields on the task row itself,
-        // and "escalate" logs into latest_update rather than a routed
-        // notification or a new table.
+        // separate comment/timeline table for tasks — description is a
+        // plain editable field on the task row itself, and "escalate" logs
+        // into it rather than a routed notification or a new table.
         const TASK_UNITS = ['مهندسی', 'تأمین', 'اجرا', 'برنامه‌ریزی', 'قرارداد', 'کنترل کیفیت', 'HSE', 'سایر'];
         const TASK_SEVERITIES = ['بحرانی', 'زیاد', 'متوسط', 'کم'];
         const TASK_STATUSES = ['باز', 'در حال انجام', 'در انتظار تایید', 'انجام‌شده'];
@@ -7891,6 +7901,7 @@
             if (isOwner && !isDone && !isPending) actionButtons.push(['drawerSubmitBtn', 'bg-blue-900 hover:bg-blue-800', '📤 ثبت اقدام']);
             if (isAdmin && isPending) { actionButtons.push(['drawerApproveBtn', 'bg-emerald-600 hover:bg-emerald-500', '✅ تایید نهایی']); actionButtons.push(['drawerRejectBtn', 'bg-amber-600 hover:bg-amber-500', '↩️ بازگشت']); }
             if (isAdmin && !isDone && !isPending) actionButtons.push(['drawerDoneBtn', 'bg-emerald-600 hover:bg-emerald-500', 'انجام شد']);
+            if (isAdmin && isDone) actionButtons.push(['drawerReopenBtn', 'bg-amber-600 hover:bg-amber-500', '↩️ بازگشت به انجام‌نشده']);
             if (isAdmin) actionButtons.push(['drawerDeleteBtn', 'bg-red-100 hover:bg-red-200 text-red-700', '🗑 حذف تسک']);
 
             document.getElementById('taskDrawerContent').innerHTML = `
@@ -7929,12 +7940,9 @@
                     <div><label class="block text-[10px] font-bold text-slate-500 mb-1">مهلت انجام</label><input id="drawerTaskDueDate" data-jalali-picker type="text" dir="ltr" value="${esc(task.due_date ? formatJalali(task.due_date) : '')}" placeholder="۱۴۰۵/۰۶/۳۰" class="w-full border rounded-lg p-2 text-center"></div>
                 </div>` : ''}
 
-                <div class="grid grid-cols-1 gap-2 text-xs">
-                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1">علت ریشه‌ای (Root Cause)</label><textarea id="drawerRootCause" rows="2" class="w-full border rounded-lg p-2" ${canEditCapa ? '' : 'readonly'}>${esc(task.root_cause || '')}</textarea></div>
-                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1">اقدام اصلاحی (Corrective Action)</label><textarea id="drawerCorrectiveAction" rows="2" class="w-full border rounded-lg p-2" ${canEditCapa ? '' : 'readonly'}>${esc(task.corrective_action || '')}</textarea></div>
-                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1">اقدام پیشگیرانه (Preventive Action)</label><textarea id="drawerPreventiveAction" rows="2" class="w-full border rounded-lg p-2" ${canEditCapa ? '' : 'readonly'}>${esc(task.preventive_action || '')}</textarea></div>
-                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1">آخرین بروزرسانی (Latest Update)</label><textarea id="drawerLatestUpdate" rows="2" class="w-full border rounded-lg p-2" ${canEditCapa ? '' : 'readonly'}>${esc(task.latest_update || '')}</textarea></div>
-                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1">اقدام بعدی (Next Action)</label><textarea id="drawerNextAction" rows="2" class="w-full border rounded-lg p-2" ${canEditCapa ? '' : 'readonly'}>${esc(task.next_action || '')}</textarea></div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1">توضیحات</label>
+                    <textarea id="drawerDescription" rows="4" class="w-full border rounded-lg p-2 text-xs" ${canEditCapa ? '' : 'readonly'}>${esc(task.description || '')}</textarea>
                 </div>
 
                 ${(canEditCapa || isAdmin) ? `
@@ -7957,6 +7965,7 @@
             wire('drawerApproveBtn', completeQuickWinTask);
             wire('drawerDoneBtn', completeQuickWinTask);
             wire('drawerRejectBtn', rejectQuickWinTask);
+            wire('drawerReopenBtn', reopenQuickWinTask);
             const deleteBtn = document.getElementById('drawerDeleteBtn');
             if (deleteBtn) deleteBtn.addEventListener('click', () => { if (confirm(`آیا از حذف تسک «${task.title}» مطمئنید؟`)) deleteQuickWinTask(task.id).then(closeTaskDrawer); });
         }
@@ -7965,11 +7974,7 @@
             const task = allTasksRaw.find(t => t.id === taskId);
             const isAdmin = currentProfile.role === 'admin';
             const patch = {
-                root_cause: document.getElementById('drawerRootCause').value.trim() || null,
-                corrective_action: document.getElementById('drawerCorrectiveAction').value.trim() || null,
-                preventive_action: document.getElementById('drawerPreventiveAction').value.trim() || null,
-                latest_update: document.getElementById('drawerLatestUpdate').value.trim() || null,
-                next_action: document.getElementById('drawerNextAction').value.trim() || null,
+                description: document.getElementById('drawerDescription').value.trim() || null,
             };
             if (isAdmin) {
                 patch.responsible_unit = document.getElementById('drawerTaskUnit').value || null;
@@ -7998,10 +8003,10 @@
             const target = prompt('ارجاع به چه سطحی؟ (مثال: مدیر پروژه / PMO / مدیر طرح / کمیته راهبری)', 'PMO');
             if (!target) return;
             const task = allTasksRaw.find(t => t.id === taskId);
-            const newNote = [`🚩 ارجاع به ${target} — ${todayJalali()}`, task.latest_update || ''].filter(Boolean).join('\n');
-            const { error } = await _supabase.from('case_updates').update({ latest_update: newNote }).eq('id', taskId);
+            const newNote = [`🚩 ارجاع به ${target} — ${todayJalali()}`, task.description || ''].filter(Boolean).join('\n');
+            const { error } = await _supabase.from('case_updates').update({ description: newNote }).eq('id', taskId);
             if (error) { alert('خطا در ثبت ارجاع: ' + error.message); return; }
-            task.latest_update = newNote;
+            task.description = newNote;
             renderTaskDrawerContent(task);
             loadTasksView();
         }
