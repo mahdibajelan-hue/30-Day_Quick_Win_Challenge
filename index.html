@@ -8395,54 +8395,79 @@
                        hover, and stays pinned open for whichever node is selected. */
                     .lc-callout { opacity: 0; transition: opacity .15s ease; }
                     .lc-node-hit:hover .lc-callout, .lc-callout.lc-callout-pinned { opacity: 1; }
-                    /* Clicking a node opens its full detail as a floating glass card
-                       OVER the orbit itself (near that node's side) instead of a
-                       permanent side column — this is what lets the orbit use the
-                       entire stage width all the time. Its contents are the same
-                       markup as any other light-theme panel in this app; the rules
-                       below re-skin it dark/translucent without touching that markup. */
-                    .lc-float-panel { background: rgba(8,15,30,.9); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 1px solid rgba(255,255,255,.14); box-shadow: 0 24px 70px rgba(0,0,0,.55); animation: lcPanelIn .18s ease; }
-                    @keyframes lcPanelIn { from { opacity: 0; transform: translateY(-50%) scale(.97); } to { opacity: 1; transform: translateY(-50%) scale(1); } }
-                    .lc-float-panel, .lc-float-panel p, .lc-float-panel span, .lc-float-panel b, .lc-float-panel h3, .lc-float-panel label { color: #e2e8f0; }
-                    .lc-float-panel .bg-white { background: rgba(255,255,255,.05) !important; }
-                    .lc-float-panel .bg-slate-50, .lc-float-panel .bg-slate-100 { background: rgba(255,255,255,.05) !important; }
-                    .lc-float-panel .bg-emerald-50 { background: rgba(16,185,129,.16) !important; }
-                    .lc-float-panel .bg-red-50 { background: rgba(239,68,68,.16) !important; }
-                    .lc-float-panel .bg-amber-50 { background: rgba(245,158,11,.16) !important; }
-                    .lc-float-panel .bg-purple-50 { background: rgba(168,85,247,.16) !important; }
-                    .lc-float-panel .bg-blue-900\\/10 { background: rgba(59,130,246,.16) !important; }
-                    .lc-float-panel .border, .lc-float-panel [class*="border-slate"] { border-color: rgba(255,255,255,.14) !important; }
-                    .lc-float-panel .text-slate-400 { color: #94a3b8 !important; }
-                    .lc-float-panel .text-slate-500 { color: #a8b3c4 !important; }
-                    .lc-float-panel .text-slate-600, .lc-float-panel .text-slate-700, .lc-float-panel .text-slate-800 { color: #f1f5f9 !important; }
-                    .lc-float-panel input, .lc-float-panel select, .lc-float-panel textarea { background: rgba(255,255,255,.07); color: #e2e8f0; border-color: rgba(255,255,255,.2) !important; }
-                    .lc-float-panel input::placeholder, .lc-float-panel textarea::placeholder { color: #94a3b8; }
                 </style>
                 ${lcTabBarHtml()}
                 ${lcExecStripHtml()}
-                ${lcState.activeTab === 'plan' ? lcMasterPlanHtml() : `
-                <div class="lc-dark-panel rounded-2xl p-4 md:p-8 flex flex-col" style="background: radial-gradient(ellipse 90% 70% at 50% 10%, #123159 0%, #04070f 78%); border: 1px solid rgba(255,255,255,.07); min-height: 80vh;">
-                    ${lcIdentityStripHtml()}
-                    <div class="relative flex-1 flex items-center justify-center" id="lcOrbitStage" style="min-height: 62vh;">
-                        <div style="width:100%; max-width:1000px; margin:0 auto; position:relative;">
-                            ${lcOrbitSvg()}
-                        </div>
-                        ${lcState.selectedPhase ? lcFloatingDetailHtml() : ''}
-                    </div>
-                    ${lcLegendHtml()}
-                </div>`}
+                ${lcState.activeTab === 'plan' ? lcMasterPlanHtml()
+                    : lcState.selectedPhase ? lcPhaseDetailPageHtml(lcState.phases.find(p => p.code === lcState.selectedPhase))
+                    : lcOrbitPageHtml()}
                 ${lcMetadataBarHtml()}
             `;
             lcBindEvents();
         }
 
-        function lcFloatingDetailHtml() {
-            const layout = lcNodeLayout();
-            const sel = layout.find(l => l.phase.code === lcState.selectedPhase);
-            const anchorRight = sel ? Math.cos(sel.angle * Math.PI / 180) >= 0 : true;
+        // The orbit is deliberately sized to fit on screen without scrolling
+        // (≈60% of its first full-page-redesign size) rather than maximizing
+        // its own footprint — legibility of the whole cycle at a glance
+        // matters more here than making any single node bigger.
+        function lcOrbitPageHtml() {
             return `
-            <div id="lcDetailPanel" class="lc-float-panel absolute rounded-2xl p-5 overflow-y-auto scroll-thin" style="${anchorRight ? 'right' : 'left'}: 12px; top: 50%; transform: translateY(-50%); width: min(420px, 92vw); max-height: calc(100% - 24px); z-index: 20;">
-                ${lcDetailPanelHtml()}
+            <div class="lc-dark-panel rounded-2xl p-4 md:p-6 flex flex-col" style="background: radial-gradient(ellipse 90% 70% at 50% 10%, #123159 0%, #04070f 78%); border: 1px solid rgba(255,255,255,.07); min-height: 48vh;">
+                ${lcIdentityStripHtml()}
+                <div class="relative flex-1 flex items-center justify-center" id="lcOrbitStage" style="min-height: 37vh;">
+                    <div style="width:100%; max-width:600px; margin:0 auto; position:relative;">
+                        ${lcOrbitSvg()}
+                    </div>
+                </div>
+                ${lcLegendHtml()}
+            </div>`;
+        }
+
+        // Clicking a node used to open a floating card over the orbit; now it
+        // navigates to a dedicated page instead — a dark header with the
+        // phase's headline numbers, this phase's OWN slice of the Master
+        // Plan timeline (same renderer as the "برنامه زمان‌بندی" tab, just
+        // scoped to one phase's schedule tree), and the full checklist/gate/
+        // approval detail as plain text/cards underneath.
+        function lcPhaseDetailPageHtml(phase) {
+            if (!phase) { lcState.selectedPhase = null; return lcOrbitPageHtml(); }
+            const { actual, planned } = lcPhaseProgress(phase);
+            const variance = Math.round(actual) - Math.round(planned);
+            const gate = lcGateReadiness(phase);
+            const gateMeta = LC_GATE_STATUS_META[gate.effective];
+            const gateName = lcTitleWithReviewFlag(phase.gate_name);
+            return `
+            <div class="space-y-5">
+                <div class="lc-dark-panel rounded-2xl p-5" style="background: linear-gradient(135deg, #0b1830, #10243f);">
+                    <button type="button" data-lc-back-to-orbit class="no-print text-[11px] font-bold mb-3 inline-flex items-center gap-1 hover:underline" style="color:#93c5fd;">→ بازگشت به چرخه عمر</button>
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mb-1" style="background:rgba(255,255,255,.1); color:#93c5fd;">مرحله ${toPersianDigits(phase.sort_order)} از ${toPersianDigits(lcState.phases.length)}</span>
+                            <h3 class="text-lg font-extrabold text-white">${esc(phase.title)}</h3>
+                            <p class="text-[11px] mt-0.5" style="color:#93c5fd;">مسئول: ${esc(phase.responsible)} · گیت: ${esc(gateName.clean)}${gateName.needsReview ? ' ⚠' : ''}</p>
+                        </div>
+                        <span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-${gateMeta.color}-100 text-${gateMeta.color}-700">وضعیت گیت: ${esc(gateMeta.label)}${!gate.readyForGate ? ` (${toPersianDigits(gate.pendingMandatory.length)} معیار الزامی باقی‌مانده)` : ''}</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3 mt-4">
+                        <div class="rounded-xl p-2.5 text-center" style="background:rgba(255,255,255,.06);"><p class="text-[10px]" style="color:#93c5fd;">واقعی</p><p class="text-lg font-extrabold text-white">${toPersianDigits(Math.round(actual))}٪</p></div>
+                        <div class="rounded-xl p-2.5 text-center" style="background:rgba(255,255,255,.06);"><p class="text-[10px]" style="color:#93c5fd;">برنامه‌ای</p><p class="text-lg font-extrabold text-white">${toPersianDigits(Math.round(planned))}٪</p></div>
+                        <div class="rounded-xl p-2.5 text-center" style="background:rgba(255,255,255,.06);"><p class="text-[10px]" style="color:#93c5fd;">انحراف</p><p class="text-lg font-extrabold ${variance < -5 ? 'text-red-400' : variance > 2 ? 'text-emerald-400' : 'text-blue-300'}">${variance >= 0 ? '+' : ''}${toPersianDigits(Math.round(variance))}٪</p></div>
+                    </div>
+                </div>
+                ${lcPhaseTimelineSectionHtml(phase)}
+                <div class="bg-white rounded-2xl shadow-sm border p-5">
+                    ${lcDetailPanelHtml()}
+                </div>
+            </div>`;
+        }
+
+        function lcPhaseTimelineSectionHtml(phase) {
+            const rows = lcBuildScheduleRows(phase.code);
+            const range = lcScheduleDateRange(phase.code);
+            return `
+            <div class="lc-dark-panel rounded-2xl p-4 md:p-6" style="background: radial-gradient(ellipse 90% 70% at 50% 10%, #123159 0%, #04070f 78%); border: 1px solid rgba(255,255,255,.07);">
+                <h4 class="text-white font-extrabold text-xs mb-3">جدول زمانی این مرحله</h4>
+                ${lcGanttGridHtml(rows, range)}
             </div>`;
         }
 
@@ -8471,6 +8496,7 @@
 
         const LC_NEON_GREEN = '#39ff8a';
         const LC_PLANNED_COLOR = '#7dd3fc';
+        const LC_NODE_PLANNED_COLOR = '#fb923c';
 
         function lcOrbitSvg() {
             const cx = 380, cy = 380, coreR = 165, plannedR = 158, actualR = 149, nodeOrbitR = 270, nodeR = 42;
@@ -8502,10 +8528,18 @@
                 const midRad = midAngle * Math.PI / 180;
                 const status = lcNodeStatus(p);
                 const meta = LC_NODE_STATUS_META[status];
-                const { actual } = lcPhaseProgress(p);
+                const { actual, planned } = lcPhaseProgress(p);
                 const isSelected = lcState.selectedPhase === p.code;
-                const nodeRingLen = 2 * Math.PI * nodeR;
-                const nodeDash = nodeRingLen * Math.max(0, Math.min(100, actual)) / 100;
+                // Same dual planned/actual ring idea as the Project Core, just
+                // drawn as two thin bands just outside each node's own circle
+                // (rather than hugging the inside of a much bigger circle) —
+                // orange for planned, the same neon green used for "actual"
+                // everywhere else in this module (core ring, connectors,
+                // Gantt bars), which reads as a clear contrast against orange.
+                const nodePlannedR = nodeR + 11, nodeActualR = nodeR + 6;
+                const nodePlannedRingLen = 2 * Math.PI * nodePlannedR, nodeActualRingLen = 2 * Math.PI * nodeActualR;
+                const nodePlannedDash = nodePlannedRingLen * Math.max(0, Math.min(100, planned)) / 100;
+                const nodeActualDash = nodeActualRingLen * Math.max(0, Math.min(100, actual)) / 100;
                 const isPassed = lcState.projectPhases[p.code]?.gate_status === 'passed';
                 const segColor = isPassed ? LC_NEON_GREEN : 'rgba(255,255,255,.28)';
                 const midX = cx + nodeOrbitR * Math.cos(midRad), midY = cy + nodeOrbitR * Math.sin(midRad);
@@ -8519,9 +8553,12 @@
                 nodesHtml += `
                 <g data-lc-phase="${p.code}" transform="translate(${nx} ${ny})" style="cursor:pointer;">
                     <g class="lc-node">
-                        <circle r="${nodeR + 13}" fill="${meta.color}" opacity="${isSelected ? 0.28 : 0.14}" filter="url(#lcNodeBlur)"/>
+                        <circle r="${nodeR + 15}" fill="${meta.color}" opacity="${isSelected ? 0.28 : 0.14}" filter="url(#lcNodeBlur)"/>
+                        <circle r="${nodePlannedR}" fill="none" stroke="#020617" stroke-opacity="0.55" stroke-width="3"/>
+                        <circle r="${nodeActualR}" fill="none" stroke="#020617" stroke-opacity="0.55" stroke-width="3.5"/>
+                        <circle r="${nodePlannedR}" fill="none" stroke="${LC_NODE_PLANNED_COLOR}" stroke-width="2" stroke-linecap="round" stroke-dasharray="${nodePlannedDash} ${nodePlannedRingLen - nodePlannedDash}" transform="rotate(-90)" opacity="0.95"/>
+                        <circle r="${nodeActualR}" fill="none" stroke="${LC_NEON_GREEN}" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="${nodeActualDash} ${nodeActualRingLen - nodeActualDash}" transform="rotate(-90)" opacity="0.95" filter="drop-shadow(0 0 3px ${LC_NEON_GREEN})"/>
                         <circle r="${nodeR}" fill="url(#lcGrad-${status})" stroke="${isSelected ? '#ffffff' : meta.color}" stroke-width="${isSelected ? 3 : 1.5}" stroke-opacity="${isSelected ? 0.95 : 0.5}"/>
-                        <circle r="${nodeR}" fill="none" stroke="${meta.color}" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="${nodeDash} ${nodeRingLen - nodeDash}" transform="rotate(-90)" opacity="0.95"/>
                         <g transform="translate(-12,-12)" stroke="#ffffff" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.95">${ICON_PATHS[iconKey] || ''}</g>
                     </g>
                 </g>`;
@@ -8849,36 +8886,16 @@
             }
             const phase = lcState.phases.find(p => p.code === lcState.selectedPhase);
             if (!phase) return lcEmptyStateHtml('فاز یافت نشد.');
-            const { actual, planned } = lcPhaseProgress(phase);
-            const variance = Math.round(actual) - Math.round(planned);
             const gate = lcGateReadiness(phase);
-            const gateMeta = LC_GATE_STATUS_META[gate.effective];
             const pp = lcState.projectPhases[phase.code] || {};
-            const gateName = lcTitleWithReviewFlag(phase.gate_name);
 
+            // The header (title/responsible/gate name), the actual/planned/
+            // variance stat tiles and the gate-status badge are all already
+            // shown in the phase detail page's dark hero above this card —
+            // this body starts straight from the drilldown/checklists so
+            // nothing is duplicated.
             return `
             <div class="space-y-4">
-                <div class="flex items-start justify-between gap-2">
-                    <div>
-                        <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-900/10 text-blue-900 mb-1">مرحله ${toPersianDigits(phase.sort_order)} از ${toPersianDigits(lcState.phases.length)}</span>
-                        <h3 class="text-base font-extrabold text-slate-800">${esc(phase.title)}</h3>
-                        <p class="text-[11px] text-slate-500 mt-0.5">مسئول: ${esc(phase.responsible)}</p>
-                        <p class="text-[11px] text-slate-400 mt-0.5">گیت: ${esc(gateName.clean)}${gateName.needsReview ? ' ⚠' : ''}</p>
-                    </div>
-                    <button type="button" data-lc-close-detail class="text-slate-400 hover:text-slate-600 text-lg leading-none">×</button>
-                </div>
-
-                <div class="grid grid-cols-3 gap-2 text-center">
-                    <div class="bg-slate-50 rounded-xl p-2.5"><p class="text-[10px] text-slate-500">واقعی</p><p class="text-lg font-extrabold text-slate-800">${toPersianDigits(Math.round(actual))}٪</p></div>
-                    <div class="bg-slate-50 rounded-xl p-2.5"><p class="text-[10px] text-slate-500">برنامه‌ای</p><p class="text-lg font-extrabold text-slate-600">${toPersianDigits(Math.round(planned))}٪</p></div>
-                    <div class="bg-slate-50 rounded-xl p-2.5"><p class="text-[10px] text-slate-500">انحراف</p><p class="text-lg font-extrabold ${variance < -5 ? 'text-red-600' : variance > 2 ? 'text-emerald-600' : 'text-slate-700'}">${variance >= 0 ? '+' : ''}${toPersianDigits(Math.round(variance))}٪</p></div>
-                </div>
-
-                <div class="flex items-center justify-between bg-${gateMeta.color}-50 border border-${gateMeta.color}-200 rounded-xl px-3 py-2">
-                    <span class="text-xs font-bold text-${gateMeta.color}-700">وضعیت گیت: ${esc(gateMeta.label)}</span>
-                    ${!gate.readyForGate ? `<span class="text-[10px] text-slate-400">${toPersianDigits(gate.pendingMandatory.length)} معیار الزامی باقی‌مانده</span>` : ''}
-                </div>
-
                 ${phase.progress_engine === 'epc' ? lcEpcDrilldownHtml() : ''}
                 ${phase.progress_engine === 'basic_design' ? lcBasicDesignHtml(phase, pp) : ''}
 
@@ -8959,9 +8976,13 @@
             });
         }
 
-        function lcBuildScheduleRows() {
+        // phaseFilter, when given, scopes rows to just that one phase — used
+        // by the phase detail page's own timeline section; omitted, it
+        // builds the whole-project Master Plan tab.
+        function lcBuildScheduleRows(phaseFilter) {
             const rows = [];
-            lcState.phases.forEach(phase => {
+            const phasesToShow = phaseFilter ? lcState.phases.filter(p => p.code === phaseFilter) : lcState.phases;
+            phasesToShow.forEach(phase => {
                 const pp = lcState.projectPhases[phase.code] || {};
                 const rowId = 'phase:' + phase.code;
                 const topChildren = lcScheduleChildren(phase.code, null);
@@ -8978,14 +8999,18 @@
         // Deliberately computed from ALL phases/items regardless of what's
         // currently expanded — collapsing a branch narrows which rows are
         // drawn but must not rescale the timeline underneath the rest of
-        // the chart.
-        function lcScheduleDateRange() {
+        // the chart. Same phaseFilter as lcBuildScheduleRows, kept as a
+        // separate parameter (rather than deriving the range from the rows
+        // themselves) precisely so collapsing doesn't rescale it either.
+        function lcScheduleDateRange(phaseFilter) {
             const dates = [];
-            lcState.phases.forEach(phase => {
+            const phasesToScan = phaseFilter ? lcState.phases.filter(p => p.code === phaseFilter) : lcState.phases;
+            phasesToScan.forEach(phase => {
                 const pp = lcState.projectPhases[phase.code];
                 if (pp) dates.push(pp.planned_start, pp.planned_finish, pp.actual_start, pp.actual_finish);
             });
-            lcState.scheduleItems.forEach(si => dates.push(si.planned_start, si.planned_finish));
+            const itemsToScan = phaseFilter ? lcState.scheduleItems.filter(si => si.phase_code === phaseFilter) : lcState.scheduleItems;
+            itemsToScan.forEach(si => dates.push(si.planned_start, si.planned_finish));
             let min = null, max = null;
             dates.forEach(d => {
                 if (!d) return;
@@ -9089,14 +9114,12 @@
             </svg>`;
         }
 
-        function lcMasterPlanHtml() {
-            const rows = lcBuildScheduleRows();
-            const range = lcScheduleDateRange();
-            const panelStyle = 'background: radial-gradient(ellipse 90% 70% at 50% 10%, #123159 0%, #04070f 78%); border: 1px solid rgba(255,255,255,.07); min-height: 80vh;';
+        // The actual label+timeline grid — shared by the whole-project Master
+        // Plan tab and each phase detail page's own scoped timeline section,
+        // so improvements to one (editing, validation, ...) land in both.
+        function lcGanttGridHtml(rows, range) {
             if (!range) {
-                return `<div class="lc-dark-panel rounded-2xl p-10 flex items-center justify-center text-center" style="${panelStyle}">
-                    <p class="text-sm" style="color:#93c5fd;">هنوز هیچ تاریخ برنامه‌ای برای فازها یا فعالیت‌های زیرمجموعه ثبت نشده — با ثبت شروع/پایان برنامه‌ای هر فاز یا افزودن فعالیت، برنامه زمان‌بندی این‌جا نمایش داده می‌شود.</p>
-                </div>`;
+                return `<p class="text-sm text-center py-6" style="color:#93c5fd;">هنوز هیچ تاریخ برنامه‌ای برای این بخش ثبت نشده — با ثبت شروع/پایان برنامه‌ای فاز یا افزودن فعالیت، برنامه زمان‌بندی این‌جا نمایش داده می‌شود.</p>`;
             }
             const ticks = lcJalaliMonthTicks(range);
             const todayIso = new Date().toISOString().slice(0, 10);
@@ -9104,37 +9127,42 @@
             const bodyH = rows.length * LC_GANTT_ROW_H;
 
             return `
-            <div class="lc-dark-panel rounded-2xl p-4 md:p-6" style="${panelStyle}">
-                <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
-                    <h3 class="text-white font-extrabold text-sm">برنامه زمان‌بندی چرخه عمر پروژه</h3>
-                    <p class="text-[10px]" style="color:#93c5fd;">از ${formatJalali(range.minIso)} تا ${formatJalali(range.maxIso)}</p>
-                </div>
-                <div class="overflow-x-auto scroll-thin">
-                    <div style="width:${LC_GANTT_LABEL_W + LC_GANTT_TIMELINE_W}px;">
-                        <div class="flex items-end" style="height:${LC_GANTT_HEADER_H}px;">
-                            <div style="width:${LC_GANTT_LABEL_W}px; flex-shrink:0;"></div>
-                            <div class="relative" style="width:${LC_GANTT_TIMELINE_W}px; height:${LC_GANTT_HEADER_H}px; border-bottom:1px solid rgba(255,255,255,.1);">
-                                ${ticks.map(t => `<div class="absolute text-[9px] whitespace-nowrap" style="left:${lcPctForDate(t.iso, range)}%; bottom:4px; color:#64748b; padding-left:4px; border-left:1px solid rgba(255,255,255,.15);">${esc(t.label)}</div>`).join('')}
-                            </div>
+            <p class="text-[10px] mb-3" style="color:#93c5fd;">از ${formatJalali(range.minIso)} تا ${formatJalali(range.maxIso)}</p>
+            <div class="overflow-x-auto scroll-thin">
+                <div style="width:${LC_GANTT_LABEL_W + LC_GANTT_TIMELINE_W}px;">
+                    <div class="flex items-end" style="height:${LC_GANTT_HEADER_H}px;">
+                        <div style="width:${LC_GANTT_LABEL_W}px; flex-shrink:0;"></div>
+                        <div class="relative" style="width:${LC_GANTT_TIMELINE_W}px; height:${LC_GANTT_HEADER_H}px; border-bottom:1px solid rgba(255,255,255,.1);">
+                            ${ticks.map(t => `<div class="absolute text-[9px] whitespace-nowrap" style="left:${lcPctForDate(t.iso, range)}%; bottom:4px; color:#64748b; padding-left:4px; border-left:1px solid rgba(255,255,255,.15);">${esc(t.label)}</div>`).join('')}
                         </div>
-                        <div class="flex">
-                            <div style="width:${LC_GANTT_LABEL_W}px; flex-shrink:0;">
-                                ${rows.map(row => `<div class="flex items-center border-b" style="height:${LC_GANTT_ROW_H}px; border-color:rgba(255,255,255,.05);">${lcGanttLabelHtml(row)}</div>`).join('')}
-                            </div>
-                            <div class="relative" style="width:${LC_GANTT_TIMELINE_W}px; height:${bodyH}px;">
-                                ${rows.map((row, i) => `<div class="absolute w-full border-b" style="top:${i * LC_GANTT_ROW_H}px; height:${LC_GANTT_ROW_H}px; border-color:rgba(255,255,255,.05);"></div>`).join('')}
-                                ${todayPct != null ? `<div class="absolute top-0 bottom-0" style="left:${todayPct}%; width:1px; background:#fbbf24; opacity:.7;"></div>` : ''}
-                                ${rows.map((row, i) => lcGanttBarHtml(row, i, range)).join('')}
-                                ${lcDependencyConnectorsSvg(rows, range)}
-                            </div>
+                    </div>
+                    <div class="flex">
+                        <div style="width:${LC_GANTT_LABEL_W}px; flex-shrink:0;">
+                            ${rows.map(row => `<div class="flex items-center border-b" style="height:${LC_GANTT_ROW_H}px; border-color:rgba(255,255,255,.05);">${lcGanttLabelHtml(row)}</div>`).join('')}
+                        </div>
+                        <div class="relative" style="width:${LC_GANTT_TIMELINE_W}px; height:${bodyH}px;">
+                            ${rows.map((row, i) => `<div class="absolute w-full border-b" style="top:${i * LC_GANTT_ROW_H}px; height:${LC_GANTT_ROW_H}px; border-color:rgba(255,255,255,.05);"></div>`).join('')}
+                            ${todayPct != null ? `<div class="absolute top-0 bottom-0" style="left:${todayPct}%; width:1px; background:#fbbf24; opacity:.7;"></div>` : ''}
+                            ${rows.map((row, i) => lcGanttBarHtml(row, i, range)).join('')}
+                            ${lcDependencyConnectorsSvg(rows, range)}
                         </div>
                     </div>
                 </div>
-                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-4 pt-3 text-[10px]" style="border-top:1px solid rgba(255,255,255,.08); color:#94a3b8;">
-                    <span class="inline-flex items-center gap-1.5"><span class="inline-block w-3 h-1.5 rounded-sm" style="background:${LC_PLANNED_COLOR}55; border:1px solid ${LC_PLANNED_COLOR};"></span>بازه برنامه‌ای</span>
-                    <span class="inline-flex items-center gap-1.5"><span class="inline-block w-3 h-1.5 rounded-sm" style="background:${LC_NEON_GREEN};"></span>پیشرفت واقعی</span>
-                    <span class="inline-flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5" style="background:#fbbf24;"></span>امروز</span>
-                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-4 pt-3 text-[10px]" style="border-top:1px solid rgba(255,255,255,.08); color:#94a3b8;">
+                <span class="inline-flex items-center gap-1.5"><span class="inline-block w-3 h-1.5 rounded-sm" style="background:${LC_PLANNED_COLOR}55; border:1px solid ${LC_PLANNED_COLOR};"></span>بازه برنامه‌ای</span>
+                <span class="inline-flex items-center gap-1.5"><span class="inline-block w-3 h-1.5 rounded-sm" style="background:${LC_NEON_GREEN};"></span>پیشرفت واقعی</span>
+                <span class="inline-flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5" style="background:#fbbf24;"></span>امروز</span>
+            </div>`;
+        }
+
+        function lcMasterPlanHtml() {
+            const rows = lcBuildScheduleRows();
+            const range = lcScheduleDateRange();
+            return `
+            <div class="lc-dark-panel rounded-2xl p-4 md:p-6" style="background: radial-gradient(ellipse 90% 70% at 50% 10%, #123159 0%, #04070f 78%); border: 1px solid rgba(255,255,255,.07); min-height: 60vh;">
+                <h3 class="text-white font-extrabold text-sm mb-1">برنامه زمان‌بندی چرخه عمر پروژه</h3>
+                ${lcGanttGridHtml(rows, range)}
             </div>`;
         }
 
@@ -9242,8 +9270,7 @@
         function lcSelectPhase(code) {
             lcState.selectedPhase = code;
             lcRenderAll();
-            const detail = document.getElementById('lcDetailPanel');
-            if (detail && window.innerWidth < 1280) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            document.getElementById('lifecycleView')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function lcBindEvents() {
@@ -9251,8 +9278,8 @@
             root.querySelectorAll('[data-lc-tab]').forEach(btn => btn.addEventListener('click', () => { lcState.activeTab = btn.dataset.lcTab; lcRenderAll(); }));
             root.querySelectorAll('[data-lc-toggle-row]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcToggleScheduleRow(btn.dataset.lcToggleRow); }));
             root.querySelectorAll('[data-lc-phase]').forEach(el => el.addEventListener('click', () => lcSelectPhase(el.dataset.lcPhase)));
-            const closeBtn = root.querySelector('[data-lc-close-detail]');
-            if (closeBtn) closeBtn.addEventListener('click', () => { lcState.selectedPhase = null; lcRenderAll(); });
+            const backBtn = root.querySelector('[data-lc-back-to-orbit]');
+            if (backBtn) backBtn.addEventListener('click', () => { lcState.selectedPhase = null; lcRenderAll(); });
             root.querySelectorAll('[data-lc-action="save-item"]').forEach(btn => btn.addEventListener('click', () => lcSaveItemFromRow(btn.closest('[data-lc-item-row]'))));
             root.querySelectorAll('[data-lc-action="request-gate"]').forEach(btn => btn.addEventListener('click', () => lcRequestGateReview(btn.dataset.phase)));
             root.querySelectorAll('[data-lc-action="gate-pass"]').forEach(btn => btn.addEventListener('click', () => lcDecideGate(btn.dataset.phase, 'pass')));
