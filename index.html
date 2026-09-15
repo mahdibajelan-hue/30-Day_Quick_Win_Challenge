@@ -197,14 +197,31 @@
             }
             body { background: #fff !important; }
             body * { visibility: hidden; }
-            #aiReportView, #aiReportView *, #execReportView, #execReportView *, #tasksView, #tasksView *, #projectsReportModal, #projectsReportModal * { visibility: visible; }
-            #aiReportView, #execReportView, #tasksView, #projectsReportModal { position: absolute; inset: 0; padding: 0; margin: 0; background: #fff; }
+            /* Every view with its own "🖨 چاپ / PDF" button must be listed
+               here, or its print output is a blank page: body * is hidden
+               above, and only the view IDs named in THIS rule get restored.
+               (چرخه عمر پروژه, آخرین وضعیت پروژه‌ها and متن درخواست مصوبه were
+               each shipped with a print button but never added here — that
+               silent blank-page gap is why print/PDF "didn't work" on them.) */
+            #aiReportView, #aiReportView *, #execReportView, #execReportView *, #tasksView, #tasksView *, #projectsReportModal, #projectsReportModal *,
+            #lifecycleView, #lifecycleView *, #projectsStatusView, #projectsStatusView *, #approvalRequestView, #approvalRequestView * { visibility: visible; }
+            #aiReportView, #execReportView, #tasksView, #projectsReportModal, #lifecycleView, #projectsStatusView, #approvalRequestView { position: absolute; inset: 0; padding: 0; margin: 0; background: #fff; }
             .no-print { display: none !important; }
-            #aiReportView, #execReportView, #tasksView, #projectsReportModal, .print-card:not(.print-card-accent) { background: #fff !important; color: #111 !important; border-color: #ccc !important; }
+            #aiReportView, #execReportView, #tasksView, #projectsReportModal, #lifecycleView, #projectsStatusView, #approvalRequestView, .print-card:not(.print-card-accent) { background: #fff !important; color: #111 !important; border-color: #ccc !important; }
             #aiReportView h1, #aiReportView h2, #aiReportView h3, #aiReportView p, #aiReportView span, #aiReportView td, #aiReportView th, #aiReportView b,
             #execReportView h1, #execReportView h2, #execReportView h3, #execReportView p, #execReportView span, #execReportView td, #execReportView th, #execReportView b,
             #tasksView h1, #tasksView h2, #tasksView h3, #tasksView p, #tasksView span, #tasksView td, #tasksView th, #tasksView b,
-            #projectsReportModal h1, #projectsReportModal h2, #projectsReportModal h3, #projectsReportModal p, #projectsReportModal span, #projectsReportModal td, #projectsReportModal th, #projectsReportModal b { color: #111 !important; }
+            #projectsReportModal h1, #projectsReportModal h2, #projectsReportModal h3, #projectsReportModal p, #projectsReportModal span, #projectsReportModal td, #projectsReportModal th, #projectsReportModal b,
+            #projectsStatusView h1, #projectsStatusView h2, #projectsStatusView h3, #projectsStatusView p, #projectsStatusView span, #projectsStatusView td, #projectsStatusView th, #projectsStatusView b,
+            #approvalRequestView h1, #approvalRequestView h2, #approvalRequestView h3, #approvalRequestView p, #approvalRequestView span, #approvalRequestView td, #approvalRequestView th, #approvalRequestView b { color: #111 !important; }
+            /* چرخه عمر پروژه's exec strip + orbit panel are deliberately dark
+               "control room" UI on screen, but a dark-navy PDF wastes toner
+               and reads poorly on paper — same reasoning as print-card-accent
+               above, just inverted (these fall back to light instead of
+               staying dark). Their own inline gradient background loses to
+               this !important rule same as any other. */
+            #lifecycleView .lc-dark-panel, #lifecycleView .lc-dark-panel * { background: #fff !important; color: #111 !important; border-color: #ccc !important; }
+            #lifecycleView h1, #lifecycleView h2, #lifecycleView h3, #lifecycleView p, #lifecycleView span, #lifecycleView td, #lifecycleView th, #lifecycleView b { color: #111 !important; }
             /* .print-card-accent marks a handful of deliberately dark,
                colored "poster" cards (report cover/hero, AI insight
                banners) whose navy/purple gradient + white text is the
@@ -4046,10 +4063,17 @@
             afterDatasetsDraw(chart) {
                 const opts = chart.config.options.plugins && chart.config.options.plugins.needleGauge;
                 if (!opts) return;
-                const { ctx, chartArea } = chart;
-                const cx = chartArea.left + chartArea.width / 2;
-                const cy = chartArea.top + chartArea.height / 2;
-                const radius = Math.min(chartArea.width / 2, chartArea.height) * 0.86;
+                // The needle's pivot MUST come from the arc's own computed x/y —
+                // not from chartArea's rectangular midpoint. For a half-circle
+                // doughnut (circumference: 180) Chart.js centers the visible arc
+                // to best fill the canvas, which is generally NOT the same point
+                // as chartArea's center; using chartArea math here is exactly why
+                // the needle used to sit off-center from the dial it points at.
+                const arc = chart.getDatasetMeta(0)?.data?.[0];
+                if (!arc) return;
+                const { ctx } = chart;
+                const cx = arc.x, cy = arc.y;
+                const radius = arc.outerRadius * 0.86;
                 const v = Math.max(0, Math.min(100, Number(opts.value) || 0));
                 const angle = Math.PI + (v / 100) * Math.PI;
                 ctx.save();
@@ -6453,10 +6477,14 @@
             const needlePlugin = {
                 id: 'execSpGaugeNeedle',
                 afterDatasetsDraw(chart) {
-                    const { ctx, chartArea } = chart;
-                    const cx = chartArea.left + chartArea.width / 2;
-                    const cy = chartArea.top + chartArea.height / 2;
-                    const radius = Math.min(chartArea.width / 2, chartArea.height) * 0.72;
+                    // Same fix as needleGaugePlugin above: pivot on the arc's own
+                    // computed center, not chartArea's rectangular midpoint — a
+                    // half-circle doughnut isn't centered there.
+                    const arc = chart.getDatasetMeta(0)?.data?.[0];
+                    if (!arc) return;
+                    const { ctx } = chart;
+                    const cx = arc.x, cy = arc.y;
+                    const radius = arc.outerRadius * 0.72;
                     const angle = Math.PI + (value / 100) * Math.PI;
                     ctx.save();
                     ctx.translate(cx, cy);
@@ -8298,7 +8326,7 @@
                 ${lcExecStripHtml()}
                 <div class="grid grid-cols-1 xl:grid-cols-[260px_minmax(0,1fr)_380px] gap-5 items-start">
                     ${lcIdentityCardHtml()}
-                    <div class="rounded-2xl p-4 md:p-8" style="background: radial-gradient(ellipse 90% 70% at 50% 12%, #123159 0%, #060f22 70%); border: 1px solid rgba(255,255,255,.07);">
+                    <div class="lc-dark-panel rounded-2xl p-4 md:p-8" style="background: radial-gradient(ellipse 90% 70% at 50% 12%, #123159 0%, #060f22 70%); border: 1px solid rgba(255,255,255,.07);">
                         <div class="relative" id="lcOrbitStage">
                             ${lcOrbitSvg()}
                         </div>
@@ -8501,7 +8529,7 @@
             });
 
             return `
-            <div class="rounded-2xl p-5" style="background: linear-gradient(135deg, #0b1830, #10243f);">
+            <div class="lc-dark-panel rounded-2xl p-5" style="background: linear-gradient(135deg, #0b1830, #10243f);">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div><p class="text-[11px]" style="color:#93c5fd;">پیشرفت واقعی کل</p><p class="text-2xl font-extrabold text-white">${toPersianDigits(Math.round(overall.actual))}٪</p></div>
                     <div><p class="text-[11px]" style="color:#93c5fd;">پیشرفت برنامه‌ای کل</p><p class="text-2xl font-extrabold text-white">${toPersianDigits(Math.round(overall.planned))}٪</p></div>
