@@ -8102,6 +8102,10 @@
             clientReportHistory: [],
             selectedPhase: null,
             canEdit: false,
+            activeTab: 'orbit',
+            scheduleItems: [],
+            scheduleDeps: [],
+            collapsedScheduleRows: new Set(),
         };
 
         const LC_OBJECTIVE_STATUSES = [['not_started', 'شروع نشده', 'slate'], ['in_progress', 'در حال انجام', 'amber'], ['completed', 'تکمیل‌شده', 'emerald'], ['blocked', 'مسدود', 'red']];
@@ -8186,13 +8190,15 @@
             document.getElementById('lcProjectNameLabel').textContent = projectName;
             document.getElementById('lcBody').innerHTML = '<p class="text-center text-slate-400 p-10">در حال بارگذاری چرخه عمر پروژه...</p>';
 
-            const [{ data: phases, error: phasesErr }, { data: projectPhases }, { data: items }, { data: gateDecisions }, { data: progressHistory }, { data: clientReports }] = await Promise.all([
+            const [{ data: phases, error: phasesErr }, { data: projectPhases }, { data: items }, { data: gateDecisions }, { data: progressHistory }, { data: clientReports }, { data: scheduleItems }, { data: scheduleDeps }] = await Promise.all([
                 _supabase.from('lifecycle_phases').select('*, lifecycle_objectives(*), lifecycle_outputs(*), lifecycle_criteria(*)').eq('is_active', true).order('sort_order'),
                 _supabase.from('project_lifecycle_phases').select('*').eq('project_name', projectName),
                 _supabase.from('project_phase_items').select('*').eq('project_name', projectName),
                 _supabase.from('lifecycle_gate_decisions').select('*').eq('project_name', projectName).order('decided_at', { ascending: false }),
                 _supabase.from('lifecycle_progress_history').select('*').eq('project_name', projectName).order('recorded_at', { ascending: true }),
                 _supabase.from('client_reports').select('*').eq('project_name', projectName).order('created_at', { ascending: true }),
+                _supabase.from('lifecycle_schedule_items').select('*').eq('project_name', projectName),
+                _supabase.from('lifecycle_schedule_dependencies').select('*').eq('project_name', projectName),
             ]);
 
             if (phasesErr) {
@@ -8220,6 +8226,8 @@
             });
             lcState.clientReportHistory = clientReports || [];
             lcState.clientReport = lcState.clientReportHistory.length ? lcState.clientReportHistory[lcState.clientReportHistory.length - 1] : null;
+            lcState.scheduleItems = (scheduleItems || []).slice().sort((a, b) => (a.seq - b.seq) || (a.id - b.id));
+            lcState.scheduleDeps = scheduleDeps || [];
             lcState.canEdit = isAdminUser() || myProjectAccess.some(a => a.project_name === projectName);
             // Open on the project's current phase by default (matching the
             // "at a glance" executive view) rather than an empty placeholder
@@ -8392,7 +8400,9 @@
                     .lc-float-panel input, .lc-float-panel select, .lc-float-panel textarea { background: rgba(255,255,255,.07); color: #e2e8f0; border-color: rgba(255,255,255,.2) !important; }
                     .lc-float-panel input::placeholder, .lc-float-panel textarea::placeholder { color: #94a3b8; }
                 </style>
+                ${lcTabBarHtml()}
                 ${lcExecStripHtml()}
+                ${lcState.activeTab === 'plan' ? lcMasterPlanHtml() : `
                 <div class="lc-dark-panel rounded-2xl p-4 md:p-8 flex flex-col" style="background: radial-gradient(ellipse 90% 70% at 50% 10%, #123159 0%, #04070f 78%); border: 1px solid rgba(255,255,255,.07); min-height: 80vh;">
                     ${lcIdentityStripHtml()}
                     <div class="relative flex-1 flex items-center justify-center" id="lcOrbitStage" style="min-height: 62vh;">
@@ -8402,7 +8412,7 @@
                         ${lcState.selectedPhase ? lcFloatingDetailHtml() : ''}
                     </div>
                     ${lcLegendHtml()}
-                </div>
+                </div>`}
                 ${lcMetadataBarHtml()}
             `;
             lcBindEvents();
@@ -8895,6 +8905,227 @@
             </div>`;
         }
 
+        // ---------------- Lifecycle Master Plan (Gantt) — Phase 1: ----------------
+        // read-only. Renders every phase as a top-level Gantt row (using the
+        // planned/actual dates already on project_lifecycle_phases — no new
+        // table needed for the phase level itself) and, under each phase,
+        // its lifecycle_schedule_items tree of sub-phases/activities,
+        // expand/collapse per node, plus FS/SS/FF/SF dependency lines drawn
+        // between whichever nodes are currently visible. Editing (drag-and-
+        // drop, add/remove nodes and dependencies), the "effective timeline
+        // coverage" validator, the bottom-up progress rollup and baselines
+        // are later phases of this same feature, not this one.
+        const LC_JALALI_MONTHS = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
+        const LC_GANTT_ROW_H = 30;
+        const LC_GANTT_HEADER_H = 26;
+        const LC_GANTT_LABEL_W = 260;
+        const LC_GANTT_TIMELINE_W = 760;
+
+        function lcTabBarHtml() {
+            const tabs = [['orbit', 'نمای مداری'], ['plan', 'برنامه زمان‌بندی (Gantt)']];
+            return `<div class="no-print flex items-center gap-2">
+                ${tabs.map(([key, label]) => `<button type="button" data-lc-tab="${key}" class="text-xs font-bold px-4 py-2 rounded-xl border transition ${lcState.activeTab === key ? 'bg-blue-900 text-white border-blue-900' : 'bg-white text-slate-500 hover:bg-slate-50'}">${esc(label)}</button>`).join('')}
+            </div>`;
+        }
+
+        function lcScheduleChildren(phaseCode, parentId) {
+            return lcState.scheduleItems.filter(si => si.phase_code === phaseCode && (si.parent_id ?? null) === parentId);
+        }
+
+        function lcAppendScheduleChildRows(rows, phaseCode, parentId, depth) {
+            lcScheduleChildren(phaseCode, parentId).forEach(item => {
+                const rowId = 'item:' + item.id;
+                const children = lcScheduleChildren(phaseCode, item.id);
+                rows.push({ id: rowId, depth, title: item.title, isPhase: false, phaseCode, item, start: item.planned_start, finish: item.planned_finish, hasChildren: children.length > 0 });
+                if (children.length && !lcState.collapsedScheduleRows.has(rowId)) lcAppendScheduleChildRows(rows, phaseCode, item.id, depth + 1);
+            });
+        }
+
+        function lcBuildScheduleRows() {
+            const rows = [];
+            lcState.phases.forEach(phase => {
+                const pp = lcState.projectPhases[phase.code] || {};
+                const rowId = 'phase:' + phase.code;
+                const topChildren = lcScheduleChildren(phase.code, null);
+                rows.push({
+                    id: rowId, depth: 0, title: phase.title, isPhase: true, phaseCode: phase.code,
+                    start: pp.planned_start, finish: pp.planned_finish, actualStart: pp.actual_start, actualFinish: pp.actual_finish,
+                    gateStatus: pp.gate_status || 'not_ready', hasChildren: topChildren.length > 0,
+                });
+                if (topChildren.length && !lcState.collapsedScheduleRows.has(rowId)) lcAppendScheduleChildRows(rows, phase.code, null, 1);
+            });
+            return rows;
+        }
+
+        // Deliberately computed from ALL phases/items regardless of what's
+        // currently expanded — collapsing a branch narrows which rows are
+        // drawn but must not rescale the timeline underneath the rest of
+        // the chart.
+        function lcScheduleDateRange() {
+            const dates = [];
+            lcState.phases.forEach(phase => {
+                const pp = lcState.projectPhases[phase.code];
+                if (pp) dates.push(pp.planned_start, pp.planned_finish, pp.actual_start, pp.actual_finish);
+            });
+            lcState.scheduleItems.forEach(si => dates.push(si.planned_start, si.planned_finish));
+            let min = null, max = null;
+            dates.forEach(d => {
+                if (!d) return;
+                const t = new Date(d).getTime();
+                if (isNaN(t)) return;
+                if (min == null || t < min) min = t;
+                if (max == null || t > max) max = t;
+            });
+            if (min == null) return null;
+            const spanDays = Math.max(1, (max - min) / 86400000);
+            const padDays = Math.max(3, Math.round(spanDays * 0.04));
+            const minD = new Date(min); minD.setDate(minD.getDate() - padDays);
+            const maxD = new Date(max); maxD.setDate(maxD.getDate() + padDays);
+            return { minIso: minD.toISOString().slice(0, 10), maxIso: maxD.toISOString().slice(0, 10), totalDays: Math.max(1, (maxD - minD) / 86400000) };
+        }
+
+        function lcPctForDate(iso, range) {
+            if (!iso || !range) return null;
+            const days = (new Date(iso) - new Date(range.minIso)) / 86400000;
+            return Math.max(0, Math.min(100, (days / range.totalDays) * 100));
+        }
+
+        function lcJalaliMonthTicks(range) {
+            const ticks = [];
+            const d = new Date(range.minIso);
+            const end = new Date(range.maxIso);
+            let guard = 0;
+            while (d <= end && guard < 3000) {
+                const [jy, jm, jd] = gregorianToJalali(d.getFullYear(), d.getMonth() + 1, d.getDate());
+                if (jd === 1) ticks.push({ iso: d.toISOString().slice(0, 10), label: LC_JALALI_MONTHS[jm - 1] + ' ' + toPersianDigits(jy) });
+                d.setDate(d.getDate() + 1);
+                guard++;
+            }
+            return ticks;
+        }
+
+        function lcGanttLabelHtml(row) {
+            const caret = row.hasChildren
+                ? `<button type="button" data-lc-toggle-row="${esc(row.id)}" class="w-4 h-4 shrink-0 inline-flex items-center justify-center text-[9px] rounded hover:bg-white/10" style="color:#93c5fd;">${lcState.collapsedScheduleRows.has(row.id) ? '▸' : '▾'}</button>`
+                : `<span class="inline-block w-4 shrink-0"></span>`;
+            const titleCls = row.isPhase ? 'text-white font-extrabold' : (row.depth === 1 ? 'text-slate-200 font-bold' : 'text-slate-400');
+            const gateDot = row.isPhase ? `<span class="inline-block w-1.5 h-1.5 rounded-full shrink-0 bg-${LC_GATE_STATUS_META[row.gateStatus].color}-500"></span>` : '';
+            const weightTag = (!row.isPhase && row.item?.weight_pct != null) ? `<span class="text-[9px] shrink-0" style="color:#64748b;">${toPersianDigits(row.item.weight_pct)}٪</span>` : '';
+            return `<div class="flex items-center gap-1.5 w-full px-1 overflow-hidden" style="padding-right:${row.depth * 14}px;">
+                ${caret}${gateDot}
+                <span class="text-[10.5px] ${titleCls} truncate" title="${esc(row.title)}">${esc(row.title)}</span>
+                ${weightTag}
+            </div>`;
+        }
+
+        function lcGanttBarHtml(row, index, range) {
+            const top = index * LC_GANTT_ROW_H;
+            if (!row.start || !row.finish) {
+                return `<div class="absolute text-[9px]" style="top:${top}px; left:8px; height:${LC_GANTT_ROW_H}px; line-height:${LC_GANTT_ROW_H}px; color:#475569;">بدون تاریخ برنامه‌ای</div>`;
+            }
+            const startPct = lcPctForDate(row.start, range), finishPct = lcPctForDate(row.finish, range);
+            const left = Math.min(startPct, finishPct), width = Math.max(0.8, Math.abs(finishPct - startPct));
+            const barTop = top + (LC_GANTT_ROW_H - 14) / 2;
+
+            let inlineFill = '', actualBar = '';
+            if (row.isPhase) {
+                if (row.actualStart) {
+                    const aStartPct = lcPctForDate(row.actualStart, range);
+                    const aFinishPct = lcPctForDate(row.actualFinish || new Date().toISOString().slice(0, 10), range);
+                    const aLeft = Math.min(aStartPct, aFinishPct), aWidth = Math.max(0.8, Math.abs(aFinishPct - aStartPct));
+                    actualBar = `<div class="absolute rounded" style="left:${aLeft}%; width:${aWidth}%; top:${barTop + 15}px; height:5px; background:${LC_NEON_GREEN}; box-shadow:0 0 6px ${LC_NEON_GREEN}aa;"></div>`;
+                }
+            } else if (!row.hasChildren && row.item?.manual_actual_pct != null) {
+                const fillPct = Math.max(0, Math.min(100, row.item.manual_actual_pct));
+                inlineFill = `<div class="absolute inset-y-0 left-0 rounded" style="width:${fillPct}%; background:${LC_NEON_GREEN}; opacity:.85;"></div>`;
+            }
+
+            return `
+            <div class="absolute rounded" style="left:${left}%; width:${width}%; top:${barTop}px; height:14px; background:${LC_PLANNED_COLOR}33; border:1px solid ${LC_PLANNED_COLOR}aa; overflow:hidden;">${inlineFill}</div>
+            ${actualBar}`;
+        }
+
+        function lcDependencyConnectorsSvg(rows, range) {
+            if (!lcState.scheduleDeps.length) return '';
+            const rowIndexByItemId = new Map();
+            rows.forEach((row, i) => { if (!row.isPhase) rowIndexByItemId.set(row.item.id, i); });
+            const itemsById = new Map(lcState.scheduleItems.map(si => [si.id, si]));
+            const paths = [];
+            lcState.scheduleDeps.forEach(dep => {
+                const predRow = rowIndexByItemId.get(dep.predecessor_id), succRow = rowIndexByItemId.get(dep.successor_id);
+                const pred = itemsById.get(dep.predecessor_id), succ = itemsById.get(dep.successor_id);
+                if (predRow == null || succRow == null || !pred || !succ || !pred.planned_start || !pred.planned_finish || !succ.planned_start || !succ.planned_finish) return;
+                const fromIso = (dep.dep_type === 'SS' || dep.dep_type === 'SF') ? pred.planned_start : pred.planned_finish;
+                const toIso = (dep.dep_type === 'FS' || dep.dep_type === 'SS') ? succ.planned_start : succ.planned_finish;
+                const fromX = lcPctForDate(fromIso, range) / 100 * LC_GANTT_TIMELINE_W;
+                const toX = lcPctForDate(toIso, range) / 100 * LC_GANTT_TIMELINE_W;
+                const fromY = predRow * LC_GANTT_ROW_H + LC_GANTT_ROW_H / 2;
+                const toY = succRow * LC_GANTT_ROW_H + LC_GANTT_ROW_H / 2;
+                paths.push(`<path d="M ${fromX},${fromY} C ${fromX + 24},${fromY} ${toX - 24},${toY} ${toX},${toY}" fill="none" stroke="#7dd3fc" stroke-width="1.25" stroke-opacity="0.55" marker-end="url(#lcGanttArrow)"/>`);
+            });
+            if (!paths.length) return '';
+            const bodyH = rows.length * LC_GANTT_ROW_H;
+            return `<svg class="absolute inset-0 pointer-events-none" width="${LC_GANTT_TIMELINE_W}" height="${bodyH}" style="overflow:visible;">
+                <defs><marker id="lcGanttArrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#7dd3fc" opacity="0.7"/></marker></defs>
+                ${paths.join('')}
+            </svg>`;
+        }
+
+        function lcMasterPlanHtml() {
+            const rows = lcBuildScheduleRows();
+            const range = lcScheduleDateRange();
+            const panelStyle = 'background: radial-gradient(ellipse 90% 70% at 50% 10%, #123159 0%, #04070f 78%); border: 1px solid rgba(255,255,255,.07); min-height: 80vh;';
+            if (!range) {
+                return `<div class="lc-dark-panel rounded-2xl p-10 flex items-center justify-center text-center" style="${panelStyle}">
+                    <p class="text-sm" style="color:#93c5fd;">هنوز هیچ تاریخ برنامه‌ای برای فازها یا فعالیت‌های زیرمجموعه ثبت نشده — با ثبت شروع/پایان برنامه‌ای هر فاز یا افزودن فعالیت، برنامه زمان‌بندی این‌جا نمایش داده می‌شود.</p>
+                </div>`;
+            }
+            const ticks = lcJalaliMonthTicks(range);
+            const todayIso = new Date().toISOString().slice(0, 10);
+            const todayPct = (todayIso >= range.minIso && todayIso <= range.maxIso) ? lcPctForDate(todayIso, range) : null;
+            const bodyH = rows.length * LC_GANTT_ROW_H;
+
+            return `
+            <div class="lc-dark-panel rounded-2xl p-4 md:p-6" style="${panelStyle}">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                    <h3 class="text-white font-extrabold text-sm">برنامه زمان‌بندی چرخه عمر پروژه</h3>
+                    <p class="text-[10px]" style="color:#93c5fd;">از ${formatJalali(range.minIso)} تا ${formatJalali(range.maxIso)}</p>
+                </div>
+                <div class="overflow-x-auto scroll-thin">
+                    <div style="width:${LC_GANTT_LABEL_W + LC_GANTT_TIMELINE_W}px;">
+                        <div class="flex items-end" style="height:${LC_GANTT_HEADER_H}px;">
+                            <div style="width:${LC_GANTT_LABEL_W}px; flex-shrink:0;"></div>
+                            <div class="relative" style="width:${LC_GANTT_TIMELINE_W}px; height:${LC_GANTT_HEADER_H}px; border-bottom:1px solid rgba(255,255,255,.1);">
+                                ${ticks.map(t => `<div class="absolute text-[9px] whitespace-nowrap" style="left:${lcPctForDate(t.iso, range)}%; bottom:4px; color:#64748b; padding-left:4px; border-left:1px solid rgba(255,255,255,.15);">${esc(t.label)}</div>`).join('')}
+                            </div>
+                        </div>
+                        <div class="flex">
+                            <div style="width:${LC_GANTT_LABEL_W}px; flex-shrink:0;">
+                                ${rows.map(row => `<div class="flex items-center border-b" style="height:${LC_GANTT_ROW_H}px; border-color:rgba(255,255,255,.05);">${lcGanttLabelHtml(row)}</div>`).join('')}
+                            </div>
+                            <div class="relative" style="width:${LC_GANTT_TIMELINE_W}px; height:${bodyH}px;">
+                                ${rows.map((row, i) => `<div class="absolute w-full border-b" style="top:${i * LC_GANTT_ROW_H}px; height:${LC_GANTT_ROW_H}px; border-color:rgba(255,255,255,.05);"></div>`).join('')}
+                                ${todayPct != null ? `<div class="absolute top-0 bottom-0" style="left:${todayPct}%; width:1px; background:#fbbf24; opacity:.7;"></div>` : ''}
+                                ${rows.map((row, i) => lcGanttBarHtml(row, i, range)).join('')}
+                                ${lcDependencyConnectorsSvg(rows, range)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-4 pt-3 text-[10px]" style="border-top:1px solid rgba(255,255,255,.08); color:#94a3b8;">
+                    <span class="inline-flex items-center gap-1.5"><span class="inline-block w-3 h-1.5 rounded-sm" style="background:${LC_PLANNED_COLOR}55; border:1px solid ${LC_PLANNED_COLOR};"></span>بازه برنامه‌ای</span>
+                    <span class="inline-flex items-center gap-1.5"><span class="inline-block w-3 h-1.5 rounded-sm" style="background:${LC_NEON_GREEN};"></span>پیشرفت واقعی</span>
+                    <span class="inline-flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5" style="background:#fbbf24;"></span>امروز</span>
+                </div>
+            </div>`;
+        }
+
+        function lcToggleScheduleRow(rowId) {
+            if (lcState.collapsedScheduleRows.has(rowId)) lcState.collapsedScheduleRows.delete(rowId);
+            else lcState.collapsedScheduleRows.add(rowId);
+            lcRenderAll();
+        }
+
         // ---------------- Mutations ----------------
         async function lcSaveItemFromRow(rowEl) {
             if (!rowEl) return;
@@ -8999,6 +9230,8 @@
 
         function lcBindEvents() {
             const root = document.getElementById('lcBody');
+            root.querySelectorAll('[data-lc-tab]').forEach(btn => btn.addEventListener('click', () => { lcState.activeTab = btn.dataset.lcTab; lcRenderAll(); }));
+            root.querySelectorAll('[data-lc-toggle-row]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcToggleScheduleRow(btn.dataset.lcToggleRow); }));
             root.querySelectorAll('[data-lc-phase]').forEach(el => el.addEventListener('click', () => lcSelectPhase(el.dataset.lcPhase)));
             const closeBtn = root.querySelector('[data-lc-close-detail]');
             if (closeBtn) closeBtn.addEventListener('click', () => { lcState.selectedPhase = null; lcRenderAll(); });
