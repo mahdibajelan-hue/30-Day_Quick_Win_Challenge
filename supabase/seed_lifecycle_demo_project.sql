@@ -100,39 +100,39 @@ begin
 
     -- 6. Item-level completion — G1..G3, G5: everything done (gates passed)
     insert into project_phase_items (project_name, phase_code, kind, item_id, status, completion_date, verified_by, verification_date)
-    select v_project, phase_code, 'objective', id, 'completed', '2024-04-05', v_email, '2024-04-08' from lifecycle_objectives where phase_code = 'G1'
+    select v_project, phase_code, 'objective', id, 'completed', '2024-04-05'::date, v_email, '2024-04-08'::date from lifecycle_objectives where phase_code = 'G1'
     union all
-    select v_project, phase_code, 'output', id, 'verified', '2024-04-05', v_email, '2024-04-08' from lifecycle_outputs where phase_code = 'G1'
+    select v_project, phase_code, 'output', id, 'verified', '2024-04-05'::date, v_email, '2024-04-08'::date from lifecycle_outputs where phase_code = 'G1'
     union all
-    select v_project, phase_code, 'criterion', id, 'verified', '2024-04-08', v_email, '2024-04-09' from lifecycle_criteria where phase_code = 'G1';
+    select v_project, phase_code, 'criterion', id, 'verified', '2024-04-08'::date, v_email, '2024-04-09'::date from lifecycle_criteria where phase_code = 'G1';
 
     insert into project_phase_items (project_name, phase_code, kind, item_id, status, completion_date, verified_by, verification_date)
-    select v_project, phase_code, 'objective', id, 'completed', '2024-06-15', v_email, '2024-06-20' from lifecycle_objectives where phase_code = 'G2'
+    select v_project, phase_code, 'objective', id, 'completed', '2024-06-15'::date, v_email, '2024-06-20'::date from lifecycle_objectives where phase_code = 'G2'
     union all
-    select v_project, phase_code, 'output', id, 'verified', '2024-06-15', v_email, '2024-06-20' from lifecycle_outputs where phase_code = 'G2'
+    select v_project, phase_code, 'output', id, 'verified', '2024-06-15'::date, v_email, '2024-06-20'::date from lifecycle_outputs where phase_code = 'G2'
     union all
-    select v_project, phase_code, 'criterion', id, 'verified', '2024-06-22', v_email, '2024-06-24' from lifecycle_criteria where phase_code = 'G2';
+    select v_project, phase_code, 'criterion', id, 'verified', '2024-06-22'::date, v_email, '2024-06-24'::date from lifecycle_criteria where phase_code = 'G2';
 
     insert into project_phase_items (project_name, phase_code, kind, item_id, status, completion_date, verified_by, verification_date)
-    select v_project, phase_code, 'objective', id, 'completed', '2024-09-01', v_email, '2024-09-05' from lifecycle_objectives where phase_code = 'G3'
+    select v_project, phase_code, 'objective', id, 'completed', '2024-09-01'::date, v_email, '2024-09-05'::date from lifecycle_objectives where phase_code = 'G3'
     union all
-    select v_project, phase_code, 'output', id, 'verified', '2024-09-01', v_email, '2024-09-05' from lifecycle_outputs where phase_code = 'G3'
+    select v_project, phase_code, 'output', id, 'verified', '2024-09-01'::date, v_email, '2024-09-05'::date from lifecycle_outputs where phase_code = 'G3'
     union all
-    select v_project, phase_code, 'criterion', id, 'verified', '2024-09-08', v_email, '2024-09-09' from lifecycle_criteria where phase_code = 'G3';
+    select v_project, phase_code, 'criterion', id, 'verified', '2024-09-08'::date, v_email, '2024-09-09'::date from lifecycle_criteria where phase_code = 'G3';
 
     insert into project_phase_items (project_name, phase_code, kind, item_id, status, completion_date, verified_by, verification_date)
-    select v_project, phase_code, 'objective', id, 'completed', '2025-04-15', v_email, '2025-04-20' from lifecycle_objectives where phase_code = 'G4'
+    select v_project, phase_code, 'objective', id, 'completed', '2025-04-15'::date, v_email, '2025-04-20'::date from lifecycle_objectives where phase_code = 'G4'
     union all
-    select v_project, phase_code, 'output', id, 'verified', '2025-04-15', v_email, '2025-04-20' from lifecycle_outputs where phase_code = 'G4'
+    select v_project, phase_code, 'output', id, 'verified', '2025-04-15'::date, v_email, '2025-04-20'::date from lifecycle_outputs where phase_code = 'G4'
     union all
-    select v_project, phase_code, 'criterion', id, 'verified', '2025-04-22', v_email, '2025-04-24' from lifecycle_criteria where phase_code = 'G4';
+    select v_project, phase_code, 'criterion', id, 'verified', '2025-04-22'::date, v_email, '2025-04-24'::date from lifecycle_criteria where phase_code = 'G4';
 
     insert into project_phase_items (project_name, phase_code, kind, item_id, status, completion_date, verified_by, verification_date)
-    select v_project, phase_code, 'objective', id, 'completed', '2025-07-20', v_email, '2025-07-25' from lifecycle_objectives where phase_code = 'G5'
+    select v_project, phase_code, 'objective', id, 'completed', '2025-07-20'::date, v_email, '2025-07-25'::date from lifecycle_objectives where phase_code = 'G5'
     union all
-    select v_project, phase_code, 'output', id, 'verified', '2025-07-20', v_email, '2025-07-25' from lifecycle_outputs where phase_code = 'G5'
+    select v_project, phase_code, 'output', id, 'verified', '2025-07-20'::date, v_email, '2025-07-25'::date from lifecycle_outputs where phase_code = 'G5'
     union all
-    select v_project, phase_code, 'criterion', id, 'verified', '2025-07-27', v_email, '2025-07-28' from lifecycle_criteria where phase_code = 'G5';
+    select v_project, phase_code, 'criterion', id, 'verified', '2025-07-27'::date, v_email, '2025-07-28'::date from lifecycle_criteria where phase_code = 'G5';
 
     -- 7. G6 (اجرای پروژه / EPC) — deliberately partial: high activity,
     -- gate NOT ready (both mandatory criteria still pending).
