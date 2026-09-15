@@ -197,6 +197,15 @@
             }
             body { background: #fff !important; }
             body * { visibility: hidden; }
+            /* The app shell (sidebar, mobile bottom nav, sticky topbar,
+               profile modal) is `position: sticky`/`fixed` with an h-screen
+               sidebar — `visibility: hidden` above hides it visually but
+               does NOT remove it from layout, and leftover sticky/fixed
+               boxes are a known category of Chromium print-pagination
+               hazard. display:none actually drops them from layout, unlike
+               visibility, so this closes that hazard for every printable
+               view at once instead of per-view. */
+            #sidebar, #mobileNav, header, #profileModal, #profileModal * { display: none !important; }
             /* Every view with its own "🖨 چاپ / PDF" button must be listed
                here, or its print output is a blank page: body * is hidden
                above, and only the view IDs named in THIS rule get restored.
@@ -1010,7 +1019,7 @@
                                 <p class="text-xs text-slate-500 mt-0.5">مدل ۹ گیتی چرخه عمر پروژه: تعریف تا تسویه حساب. پروژه: <b id="lcProjectNameLabel" class="text-slate-700">—</b></p>
                             </div>
                         </div>
-                        <button type="button" onclick="window.print()" class="no-print text-xs font-bold px-4 py-2 rounded-xl border text-slate-600 hover:bg-slate-50">🖨 چاپ / PDF</button>
+                        <button type="button" onclick="printPage()" class="no-print text-xs font-bold px-4 py-2 rounded-xl border text-slate-600 hover:bg-slate-50">🖨 چاپ / PDF</button>
                     </div>
                 </div>
 
@@ -1124,7 +1133,7 @@
                     <button type="button" onclick="closeAiReport()" class="text-xs text-blue-700 hover:underline font-bold">→ بازگشت</button>
                     <div class="flex items-center gap-2">
                         <button type="button" id="aiRegenerateBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-2 rounded-lg font-bold">🔄 تولید مجدد بدون کش</button>
-                        <button type="button" onclick="window.print()" class="bg-blue-900 hover:bg-blue-800 text-white text-xs px-4 py-2 rounded-lg font-bold">🖨 چاپ / ذخیره PDF</button>
+                        <button type="button" onclick="printPage()" class="bg-blue-900 hover:bg-blue-800 text-white text-xs px-4 py-2 rounded-lg font-bold">🖨 چاپ / ذخیره PDF</button>
                     </div>
                 </div>
 
@@ -1220,7 +1229,7 @@
             <div id="execReportView" class="hidden space-y-6">
                 <div class="no-print flex justify-between items-center flex-wrap gap-2">
                     <h2 class="text-lg font-bold text-blue-900">📄 گزارش تحلیلی مدیریتی پورتفولیو</h2>
-                    <button type="button" onclick="window.print()" class="bg-blue-900 hover:bg-blue-800 text-white text-xs px-4 py-2 rounded-lg font-bold">🖨 چاپ / ذخیره PDF</button>
+                    <button type="button" onclick="printPage()" class="bg-blue-900 hover:bg-blue-800 text-white text-xs px-4 py-2 rounded-lg font-bold">🖨 چاپ / ذخیره PDF</button>
                 </div>
 
                 <div class="no-print bg-white rounded-2xl shadow-sm border p-4 space-y-2">
@@ -1261,7 +1270,7 @@
                                 <p class="text-xs text-slate-500 mt-0.5">پیشرفت، جذب بودجه و زمان‌بندی هر پروژه، بر اساس آخرین «اطلاعات پایه و پیشرفت پروژه» ثبت‌شده</p>
                             </div>
                         </div>
-                        <button type="button" onclick="window.print()" class="no-print text-xs font-bold px-4 py-2 rounded-xl border text-slate-600 hover:bg-slate-50">🖨 چاپ / PDF</button>
+                        <button type="button" onclick="printPage()" class="no-print text-xs font-bold px-4 py-2 rounded-xl border text-slate-600 hover:bg-slate-50">🖨 چاپ / PDF</button>
                     </div>
                 </div>
 
@@ -1288,7 +1297,7 @@
                                 <p class="text-xs" style="color: rgba(219,234,254,.9);">درخواست رسمی مصوبه از مدیرعامل، به همراه امضای دیجیتال هر سه رکن پروژه. پروژه: <b id="arProjectName" class="text-[#ffffff]"></b></p>
                             </div>
                         </div>
-                        <button type="button" onclick="window.print()" class="shrink-0 flex items-center gap-2 bg-[#ffffff] hover:bg-[#f8fafc] text-[#1e3a8a] text-xs font-bold px-4 py-2.5 rounded-xl shadow transition">
+                        <button type="button" onclick="printPage()" class="shrink-0 flex items-center gap-2 bg-[#ffffff] hover:bg-[#f8fafc] text-[#1e3a8a] text-xs font-bold px-4 py-2.5 rounded-xl shadow transition">
                             <span>🖨</span><span>چاپ / PDF</span>
                         </button>
                     </div>
@@ -1552,6 +1561,26 @@
             const d = document.createElement('div');
             d.textContent = str ?? '';
             return d.innerHTML;
+        }
+
+        // Every "🖨 چاپ / PDF" button in the app calls this instead of
+        // window.print() directly. window.print() is synchronous — if it
+        // fires before an <img> in the printed view (the letterhead logo,
+        // a digital signature) has actually finished loading, Chromium
+        // takes its print snapshot with that image still at its unresolved
+        // (often zero) size and never retakes it once the image lands a
+        // moment later, which can throw off that page's whole layout. This
+        // waits for every still-loading image on the page first, so the
+        // print snapshot always sees final, settled layout.
+        async function printPage() {
+            const pending = [...document.images].filter(img => !img.complete);
+            if (pending.length) {
+                await Promise.all(pending.map(img => new Promise(resolve => {
+                    img.addEventListener('load', resolve, { once: true });
+                    img.addEventListener('error', resolve, { once: true });
+                })));
+            }
+            window.print();
         }
 
         // --------------------------------------------------
@@ -3983,12 +4012,12 @@
         // tasksView) are fine as-is — so the landscape page size is
         // injected only for the moment of THIS print call, then removed,
         // instead of being set globally for every print in the app.
-        function printProjectsReport() {
+        async function printProjectsReport() {
             const style = document.createElement('style');
             style.id = 'projectsReportPrintStyle';
             style.textContent = '@page { size: A4 landscape; margin: 10mm; }';
             document.head.appendChild(style);
-            window.print();
+            await printPage();
             setTimeout(() => style.remove(), 1000);
         }
 
@@ -7813,7 +7842,7 @@
             document.getElementById('tasksClearFiltersBtn').addEventListener('click', clearAllTaskFilters);
             document.getElementById('tasksRefreshBtn').addEventListener('click', loadTasksView);
             document.getElementById('tasksFilterToggleBtn').addEventListener('click', () => document.getElementById('taskFilterBox').classList.toggle('hidden'));
-            document.getElementById('tasksPrintBtn').addEventListener('click', () => window.print());
+            document.getElementById('tasksPrintBtn').addEventListener('click', () => printPage());
             document.getElementById('tasksExportCsvBtn').addEventListener('click', () => exportTasksCsv(computeFilteredTasks()));
             document.getElementById('tasksNewBtn').addEventListener('click', () => openNewTaskModal());
             document.getElementById('newTaskCloseBtn').addEventListener('click', closeNewTaskModal);
