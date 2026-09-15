@@ -8128,7 +8128,6 @@
             upcoming: { label: 'پیش رو', color: '#64748b', dark: '#334155' },
             blocked: { label: 'مسدود', color: '#ef4444', dark: '#991b1b' },
         };
-        const LC_GROUP_COLOR = { fel: '#3b82f6', execution: '#10b981', commissioning: '#f59e0b' };
 
         function isAdminUser() { return currentProfile.role === 'admin'; }
 
@@ -8359,7 +8358,8 @@
                        "transform" replaces the attribute instead of composing with it).
                        The hover scale below only ever applies to the inner <g class="lc-node">,
                        which carries no positioning attribute of its own. Nothing here
-                       animates on its own — scale only ever changes on :hover. */
+                       animates on its own — scale only ever changes on :hover, and the
+                       float-panel entrance below runs once (180ms) and then stops. */
                     .lc-node { transition: transform .15s ease; transform-box: fill-box; transform-origin: center; }
                     .lc-node:hover { transform: scale(1.08); }
                     /* Full phase names collide if shown permanently on every node at
@@ -8369,21 +8369,53 @@
                        hover, and stays pinned open for whichever node is selected. */
                     .lc-callout { opacity: 0; transition: opacity .15s ease; }
                     .lc-node-hit:hover .lc-callout, .lc-callout.lc-callout-pinned { opacity: 1; }
+                    /* Clicking a node opens its full detail as a floating glass card
+                       OVER the orbit itself (near that node's side) instead of a
+                       permanent side column — this is what lets the orbit use the
+                       entire stage width all the time. Its contents are the same
+                       markup as any other light-theme panel in this app; the rules
+                       below re-skin it dark/translucent without touching that markup. */
+                    .lc-float-panel { background: rgba(8,15,30,.9); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 1px solid rgba(255,255,255,.14); box-shadow: 0 24px 70px rgba(0,0,0,.55); animation: lcPanelIn .18s ease; }
+                    @keyframes lcPanelIn { from { opacity: 0; transform: translateY(-50%) scale(.97); } to { opacity: 1; transform: translateY(-50%) scale(1); } }
+                    .lc-float-panel, .lc-float-panel p, .lc-float-panel span, .lc-float-panel b, .lc-float-panel h3, .lc-float-panel label { color: #e2e8f0; }
+                    .lc-float-panel .bg-white { background: rgba(255,255,255,.05) !important; }
+                    .lc-float-panel .bg-slate-50, .lc-float-panel .bg-slate-100 { background: rgba(255,255,255,.05) !important; }
+                    .lc-float-panel .bg-emerald-50 { background: rgba(16,185,129,.16) !important; }
+                    .lc-float-panel .bg-red-50 { background: rgba(239,68,68,.16) !important; }
+                    .lc-float-panel .bg-amber-50 { background: rgba(245,158,11,.16) !important; }
+                    .lc-float-panel .bg-purple-50 { background: rgba(168,85,247,.16) !important; }
+                    .lc-float-panel .bg-blue-900\\/10 { background: rgba(59,130,246,.16) !important; }
+                    .lc-float-panel .border, .lc-float-panel [class*="border-slate"] { border-color: rgba(255,255,255,.14) !important; }
+                    .lc-float-panel .text-slate-400 { color: #94a3b8 !important; }
+                    .lc-float-panel .text-slate-500 { color: #a8b3c4 !important; }
+                    .lc-float-panel .text-slate-600, .lc-float-panel .text-slate-700, .lc-float-panel .text-slate-800 { color: #f1f5f9 !important; }
+                    .lc-float-panel input, .lc-float-panel select, .lc-float-panel textarea { background: rgba(255,255,255,.07); color: #e2e8f0; border-color: rgba(255,255,255,.2) !important; }
+                    .lc-float-panel input::placeholder, .lc-float-panel textarea::placeholder { color: #94a3b8; }
                 </style>
                 ${lcExecStripHtml()}
-                <div class="grid grid-cols-1 xl:grid-cols-[230px_minmax(0,1fr)_360px] gap-5 items-start">
-                    ${lcIdentityCardHtml()}
-                    <div class="lc-dark-panel rounded-2xl p-4 md:p-8" style="background: radial-gradient(ellipse 90% 70% at 50% 12%, #123159 0%, #060f22 70%); border: 1px solid rgba(255,255,255,.07);">
-                        <div class="relative" id="lcOrbitStage">
+                <div class="lc-dark-panel rounded-2xl p-4 md:p-8 flex flex-col" style="background: radial-gradient(ellipse 90% 70% at 50% 10%, #123159 0%, #04070f 78%); border: 1px solid rgba(255,255,255,.07); min-height: 80vh;">
+                    ${lcIdentityStripHtml()}
+                    <div class="relative flex-1 flex items-center justify-center" id="lcOrbitStage" style="min-height: 62vh;">
+                        <div style="width:100%; max-width:1000px; margin:0 auto; position:relative;">
                             ${lcOrbitSvg()}
                         </div>
-                        ${lcLegendHtml()}
+                        ${lcState.selectedPhase ? lcFloatingDetailHtml() : ''}
                     </div>
-                    <div id="lcDetailPanel" class="bg-white rounded-2xl shadow-sm border p-5 min-h-[200px]">${lcDetailPanelHtml()}</div>
+                    ${lcLegendHtml()}
                 </div>
                 ${lcMetadataBarHtml()}
             `;
             lcBindEvents();
+        }
+
+        function lcFloatingDetailHtml() {
+            const layout = lcNodeLayout();
+            const sel = layout.find(l => l.phase.code === lcState.selectedPhase);
+            const anchorRight = sel ? Math.cos(sel.angle * Math.PI / 180) >= 0 : true;
+            return `
+            <div id="lcDetailPanel" class="lc-float-panel absolute rounded-2xl p-5 overflow-y-auto scroll-thin" style="${anchorRight ? 'right' : 'left'}: 12px; top: 50%; transform: translateY(-50%); width: min(420px, 92vw); max-height: calc(100% - 24px); z-index: 20;">
+                ${lcDetailPanelHtml()}
+            </div>`;
         }
 
         function lcArcPath(cx, cy, r, a1, a2) {
@@ -8409,17 +8441,18 @@
             });
         }
 
+        const LC_NEON_GREEN = '#39ff8a';
+        const LC_PLANNED_COLOR = '#7dd3fc';
+
         function lcOrbitSvg() {
-            const cx = 380, cy = 380, coreR = 165, plannedR = 155, actualR = 133, nodeOrbitR = 270, nodeR = 42;
+            const cx = 380, cy = 380, coreR = 165, plannedR = 158, actualR = 149, nodeOrbitR = 270, nodeR = 42;
             const overall = lcOverallProgress();
-            const variance = Math.round(overall.actual) - Math.round(overall.planned);
             const ringLen = (r) => 2 * Math.PI * r;
             const arc = (r, pct, style) => {
                 const len = ringLen(r);
                 const dash = len * Math.max(0, Math.min(100, pct)) / 100;
                 return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke-linecap="round" stroke-dasharray="${dash} ${len - dash}" transform="rotate(-90 ${cx} ${cy})" style="${style}"/>`;
             };
-            const varianceColor = variance < -5 ? '#ef4444' : variance > 2 ? '#10b981' : '#3b82f6';
             const layout = lcNodeLayout();
             const N = layout.length;
 
@@ -8428,21 +8461,31 @@
                     <stop offset="0%" stop-color="${m.color}"/><stop offset="100%" stop-color="${m.dark}"/>
                 </radialGradient>`).join('');
 
+            // The connector between each pair of nodes doubles as a "how far
+            // around the loop have we come, and which way are we going"
+            // indicator: the stretch behind an already-passed gate glows
+            // neon green, the stretch still ahead stays a dim dotted line,
+            // and a small chevron on each stretch points in the direction
+            // of travel (clockwise, G1 -> G2 -> ... -> G9).
             let nodesHtml = '', connectorsHtml = '';
             layout.forEach(({ phase: p, index: i, angle, nx, ny }) => {
                 const nextAngle = -90 + (360 / N) * (i + 1);
-                const midRad = (angle + nextAngle) / 2 * Math.PI / 180;
+                const midAngle = (angle + nextAngle) / 2;
+                const midRad = midAngle * Math.PI / 180;
                 const status = lcNodeStatus(p);
                 const meta = LC_NODE_STATUS_META[status];
                 const { actual } = lcPhaseProgress(p);
                 const isSelected = lcState.selectedPhase === p.code;
                 const nodeRingLen = 2 * Math.PI * nodeR;
                 const nodeDash = nodeRingLen * Math.max(0, Math.min(100, actual)) / 100;
-                const groupColor = LC_GROUP_COLOR[p.phase_group];
+                const isPassed = lcState.projectPhases[p.code]?.gate_status === 'passed';
+                const segColor = isPassed ? LC_NEON_GREEN : 'rgba(255,255,255,.28)';
+                const midX = cx + nodeOrbitR * Math.cos(midRad), midY = cy + nodeOrbitR * Math.sin(midRad);
+                const tangentDeg = midAngle + 90; // direction of clockwise travel at this point
 
                 connectorsHtml += `
-                    <path d="${lcArcPath(cx, cy, nodeOrbitR, angle, nextAngle)}" fill="none" stroke="${groupColor}" stroke-opacity="0.45" stroke-width="2" stroke-dasharray="1 7" stroke-linecap="round"/>
-                    <circle cx="${cx + nodeOrbitR * Math.cos(midRad)}" cy="${cy + nodeOrbitR * Math.sin(midRad)}" r="2.5" fill="${groupColor}" opacity="0.55"/>`;
+                    <path d="${lcArcPath(cx, cy, nodeOrbitR, angle, nextAngle)}" fill="none" stroke="${segColor}" stroke-opacity="${isPassed ? 0.85 : 0.5}" stroke-width="2.5" stroke-dasharray="${isPassed ? '0' : '1 7'}" stroke-linecap="round" ${isPassed ? `filter="drop-shadow(0 0 4px ${LC_NEON_GREEN})"` : ''}/>
+                    <path d="M -4,-3 L 4,0 L -4,3 Z" fill="${segColor}" opacity="${isPassed ? 0.95 : 0.55}" transform="translate(${midX} ${midY}) rotate(${tangentDeg})"/>`;
 
                 const iconKey = status === 'completed' ? 'checkCircle' : p.icon_key;
                 nodesHtml += `
@@ -8491,8 +8534,8 @@
                 <circle cx="${cx}" cy="${cy}" r="${nodeOrbitR}" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="1" stroke-dasharray="2 6"/>
                 ${connectorsHtml}
                 <circle cx="${cx}" cy="${cy}" r="${coreR}" fill="url(#lcCoreGrad)"/>
-                ${arc(plannedR, overall.planned, 'stroke:#94a3b8;stroke-width:7;opacity:.55;')}
-                ${arc(actualR, overall.actual, `stroke:${varianceColor};stroke-width:12;filter:drop-shadow(0 0 5px ${varianceColor}88);`)}
+                ${arc(plannedR, overall.planned, `stroke:${LC_PLANNED_COLOR};stroke-width:3.5;opacity:.7;`)}
+                ${arc(actualR, overall.actual, `stroke:${LC_NEON_GREEN};stroke-width:4;filter:drop-shadow(0 0 5px ${LC_NEON_GREEN}) drop-shadow(0 0 12px ${LC_NEON_GREEN}aa);`)}
                 ${nodesHtml}
             </svg>
             <div class="absolute inset-0 flex items-center justify-center pointer-events-none">${lcCoreOverlayHtml()}</div>
@@ -8522,49 +8565,24 @@
             </div>`;
         }
 
-        // شناسنامه پروژه — real fields only (from «اطلاعات پایه پروژه»); no
-        // photo/location/quality/HSE fields exist anywhere in this app yet,
-        // so those are left out rather than faked. The one gauge shown
-        // (schedule health) is a direct, labeled transform of the real
-        // planned/actual variance already computed above — not a separate
-        // untracked metric.
-        function lcIdentityCardHtml() {
+        // شناسنامه پروژه — now a thin strip along the top of the orbit panel
+        // rather than its own side column, so the orbit keeps the entire
+        // width of the page. Real fields only (from «اطلاعات پایه پروژه»);
+        // no photo/location/quality/HSE fields exist anywhere in this app
+        // yet, so those stay out rather than being invented. The schedule
+        // variance itself is already shown in the exec strip above, so this
+        // doesn't repeat it as a separate gauge.
+        function lcIdentityStripHtml() {
             const cr = lcState.clientReport;
-            const overall = lcOverallProgress();
-            const variance = Math.round(overall.actual) - Math.round(overall.planned);
-            const scheduleHealth = Math.max(0, Math.min(100, 100 + Math.min(0, variance)));
-            const healthColor = variance < -5 ? '#ef4444' : variance < 0 ? '#f59e0b' : '#10b981';
-            const rows = [
-                ['نوع قرارداد', cr?.contract_type === 'سایر' ? cr?.contract_type_other : cr?.contract_type],
-                ['پیمانکار', cr?.contractor_name],
-                ['مشاور', cr?.consultant_name],
-                ['مدیر پروژه کارفرما', cr?.client_pm_name],
-            ].filter(([, v]) => v);
-            const gaugeR = 32, gaugeLen = 2 * Math.PI * gaugeR;
-            const gaugeDash = gaugeLen * scheduleHealth / 100;
-
+            const parts = [
+                cr?.contract_type === 'سایر' ? cr?.contract_type_other : cr?.contract_type,
+                cr?.contractor_name ? `پیمانکار: ${cr.contractor_name}` : null,
+                cr?.consultant_name ? `مشاور: ${cr.consultant_name}` : null,
+            ].filter(Boolean);
             return `
-            <div class="rounded-2xl overflow-hidden border bg-white shadow-sm">
-                <div class="h-20 relative flex items-end p-3" style="background: linear-gradient(135deg, #0e2a5e, #0f766e);">
-                    <div class="absolute inset-0 flex items-center justify-center opacity-15">${iconSvg('gauge', 'w-14 h-14 text-white')}</div>
-                    <p class="relative text-white font-extrabold text-xs leading-snug" style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${esc(lcState.projectName)}</p>
-                </div>
-                <div class="p-3.5 space-y-3">
-                    ${rows.length ? `<div class="space-y-1.5">
-                        ${rows.map(([label, value]) => `<div class="flex items-center justify-between gap-2 text-[11px]"><span class="text-slate-400 shrink-0">${esc(label)}</span><span class="font-bold text-slate-700 truncate" title="${esc(value)}">${esc(value)}</span></div>`).join('')}
-                    </div>` : `<p class="text-[11px] text-slate-400">اطلاعات پایه پروژه هنوز ثبت نشده — «اطلاعات پایه پروژه» را تکمیل کنید.</p>`}
-                    <div class="pt-3 border-t flex items-center gap-3">
-                        <svg viewBox="0 0 76 76" class="w-14 h-14 shrink-0">
-                            <circle cx="38" cy="38" r="${gaugeR}" fill="none" stroke="#e2e8f0" stroke-width="7"/>
-                            <circle cx="38" cy="38" r="${gaugeR}" fill="none" stroke="${healthColor}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${gaugeDash} ${gaugeLen - gaugeDash}" transform="rotate(-90 38 38)"/>
-                            <text x="38" y="38" text-anchor="middle" dominant-baseline="central" font-size="16" font-weight="800" fill="${healthColor}">${toPersianDigits(Math.round(scheduleHealth))}</text>
-                        </svg>
-                        <div>
-                            <p class="text-[10px] font-bold text-slate-500">شاخص انطباق زمانی</p>
-                            <p class="text-[10px] text-slate-400">بر اساس انحراف ${variance >= 0 ? '+' : ''}${toPersianDigits(variance)}٪ برنامه/واقعی</p>
-                        </div>
-                    </div>
-                </div>
+            <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 pb-4 mb-4" style="border-bottom: 1px solid rgba(255,255,255,.08);">
+                <p class="text-white font-extrabold text-sm md:text-base">${esc(lcState.projectName)}</p>
+                ${parts.length ? `<p class="text-[11px] md:text-xs" style="color:#93c5fd;">${parts.map(esc).join(' · ')}</p>` : ''}
             </div>`;
         }
 
@@ -8593,7 +8611,7 @@
                     <div><p class="text-[11px]" style="color:#93c5fd;">پیشرفت واقعی کل</p><p class="text-2xl font-extrabold text-white">${toPersianDigits(Math.round(overall.actual))}٪</p></div>
                     <div><p class="text-[11px]" style="color:#93c5fd;">پیشرفت برنامه‌ای کل</p><p class="text-2xl font-extrabold text-white">${toPersianDigits(Math.round(overall.planned))}٪</p></div>
                     <div><p class="text-[11px]" style="color:#93c5fd;">انحراف</p><p class="text-2xl font-extrabold ${variance < -5 ? 'text-red-400' : variance > 2 ? 'text-emerald-400' : 'text-blue-300'}">${variance >= 0 ? '+' : ''}${toPersianDigits(Math.round(variance))}٪</p></div>
-                    <div><p class="text-[11px]" style="color:#93c5fd;">فاز جاری</p><p class="text-lg font-extrabold text-white">${activePhase ? esc(activePhase.code) : '—'} <span class="text-xs font-semibold" style="color:#cbd5e1;">${activePhase ? esc(activePhase.title) : ''}</span></p></div>
+                    <div><p class="text-[11px]" style="color:#93c5fd;">فاز جاری</p><p class="text-lg font-extrabold text-white">${activePhase ? esc(activePhase.title) : '—'}</p></div>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t" style="border-color:rgba(255,255,255,.1);">
                     ${gateMeta ? `<span class="text-[11px] px-2.5 py-1 rounded-full font-bold bg-${gateMeta.color}-100 text-${gateMeta.color}-700">گیت فاز جاری: ${esc(gateMeta.label)}</span>` : ''}
