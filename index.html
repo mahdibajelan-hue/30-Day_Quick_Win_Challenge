@@ -1581,6 +1581,10 @@
             return d.innerHTML;
         }
 
+        // Every view with its own "🖨 چاپ / PDF" button — kept in sync with
+        // the same view-ID list the @media print CSS rules target.
+        const PRINT_VIEW_IDS = ['aiReportView', 'execReportView', 'tasksView', 'projectsReportModal', 'lifecycleView', 'projectsStatusView', 'approvalRequestView'];
+
         // Every "🖨 چاپ / PDF" button in the app calls this instead of
         // window.print() directly. window.print() is synchronous — if it
         // fires before an <img> in the printed view (the letterhead logo,
@@ -1598,7 +1602,37 @@
                     img.addEventListener('error', resolve, { once: true });
                 })));
             }
+            // Belt-and-suspenders on top of the @media print color rules
+            // above: a real user's report (a specific Chrome build, both
+            // in and out of Incognito, both themes) still printed some
+            // text in these views invisible despite those !important
+            // stylesheet rules, which by spec should already win over
+            // any inherited or var()-based color. Rather than keep
+            // chasing a cascade explanation that didn't hold up under
+            // testing, this sets color directly as an inline style right
+            // before print and reverts it right after — inline + !important
+            // is close to the strongest override CSS has, independent of
+            // whatever the stylesheet-level rules were losing to.
+            // window.print() blocks until the dialog closes, so the
+            // override is in effect for exactly the print itself and
+            // reverts before the user sees the screen again.
+            const restores = [];
+            PRINT_VIEW_IDS.forEach(id => {
+                const view = document.getElementById(id);
+                if (!view) return;
+                view.querySelectorAll('*').forEach(el => {
+                    const forced = el.closest('.print-card-accent') ? '#fff' : '#000';
+                    const prevStyle = el.getAttribute('style');
+                    restores.push(() => {
+                        if (prevStyle === null) el.removeAttribute('style');
+                        else el.setAttribute('style', prevStyle);
+                    });
+                    el.style.setProperty('color', forced, 'important');
+                    el.style.setProperty('-webkit-text-fill-color', forced, 'important');
+                });
+            });
             window.print();
+            restores.forEach(fn => fn());
         }
 
         // --------------------------------------------------
