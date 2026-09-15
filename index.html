@@ -4306,14 +4306,20 @@
         }
 
         // executive_decisions_needed -> مصوبات rows: decision becomes the
-        // مصوبه itself, impact becomes the expected result; there's no AI
-        // field that maps onto «تعهد پیمانکار» (a decision from senior
-        // management isn't a contractor commitment), so that column is left
-        // for whoever composes the request to fill in themselves.
+        // مصوبه itself, impact becomes the expected result, and
+        // contractor_commitment (added to the analysis schema alongside this
+        // change) becomes «تعهد پیمانکار» — the AI's suggested counter-
+        // commitment in exchange for the decision, when one makes sense.
+        // An analysis generated BEFORE this field existed simply won't have
+        // it, so it falls back to an empty string exactly like before.
         function arDecisionsToRows(analysis) {
             if (!analysis || !Array.isArray(analysis.executive_decisions_needed)) return [];
             return analysis.executive_decisions_needed
-                .map(d => ({ resolution: execDecisionText(d), contractor_commitment: '', expected_result: (d && typeof d === 'object' && d.impact) || '' }))
+                .map(d => ({
+                    resolution: execDecisionText(d),
+                    contractor_commitment: (d && typeof d === 'object' && d.contractor_commitment) || '',
+                    expected_result: (d && typeof d === 'object' && d.impact) || '',
+                }))
                 .filter(r => r.resolution);
         }
 
