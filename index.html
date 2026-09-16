@@ -9082,6 +9082,70 @@
             return ticks;
         }
 
+        // ---------------- Effective timeline coverage (Phase 3) ----------------
+        // "Effective coverage" is a merged-interval check, not a sum of
+        // durations: a parent whose children overlap in time (the whole
+        // point of letting phases run non-sequentially) must never be
+        // flagged just because the durations added together exceed its own
+        // span — only an actual uncovered gap, or children spilling outside
+        // the parent's own declared range, counts.
+        const LC_COVERAGE_META = {
+            full: { label: 'پوشش کامل', icon: '🟢' },
+            minor_gap: { label: 'شکاف جزئی', icon: '🟡' },
+            gap: { label: 'شکاف زمانی', icon: '🔴' },
+            overflow: { label: 'تجاوز از بازه', icon: '🔴' },
+        };
+        function lcDaysBetween(a, b) { return Math.round((new Date(b) - new Date(a)) / 86400000); }
+
+        function lcMergeIntervals(intervals) {
+            const sorted = intervals.slice().sort((a, b) => a[0].localeCompare(b[0]));
+            const merged = [];
+            sorted.forEach(([s, f]) => {
+                const last = merged[merged.length - 1];
+                // Two ranges that touch (one starts the very day after the
+                // other ends) are back-to-back work, not a gap, so they merge too.
+                if (last && s <= lcAddDays(last[1], 1)) { if (f > last[1]) last[1] = f; }
+                else merged.push([s, f]);
+            });
+            return merged;
+        }
+
+        function lcCoverageStatus(parentStart, parentFinish, childIntervals) {
+            if (!parentStart || !parentFinish) return null;
+            const dated = childIntervals.filter(([s, f]) => s && f);
+            const parentDurationDays = lcDaysBetween(parentStart, parentFinish) + 1;
+            if (!dated.length) return { status: 'gap', gapDays: parentDurationDays, overflowDays: 0, coveragePct: 0 };
+            const merged = lcMergeIntervals(dated);
+            let coveredWithinParent = 0;
+            merged.forEach(([s, f]) => {
+                const cs = s < parentStart ? parentStart : s, cf = f > parentFinish ? parentFinish : f;
+                if (cs <= cf) coveredWithinParent += lcDaysBetween(cs, cf) + 1;
+            });
+            const gapDays = Math.max(0, parentDurationDays - coveredWithinParent);
+            const earliest = merged[0][0], latest = merged[merged.length - 1][1];
+            const overflowDays = (earliest < parentStart ? lcDaysBetween(earliest, parentStart) : 0) + (latest > parentFinish ? lcDaysBetween(parentFinish, latest) : 0);
+            const minorGapThreshold = Math.max(1, Math.round(parentDurationDays * 0.1));
+            const status = overflowDays > 1 ? 'overflow' : gapDays > minorGapThreshold ? 'gap' : gapDays > 0 ? 'minor_gap' : 'full';
+            return { status, gapDays, overflowDays, coveragePct: Math.round(coveredWithinParent / parentDurationDays * 100) };
+        }
+
+        function lcRowCoverage(row) {
+            if (!row.hasChildren || !row.start || !row.finish) return null;
+            const children = row.isPhase ? lcScheduleChildren(row.phaseCode, null) : lcScheduleChildren(row.phaseCode, row.item.id);
+            return lcCoverageStatus(row.start, row.finish, children.map(c => [c.planned_start, c.planned_finish]));
+        }
+
+        function lcCoverageSummaryHtml(rows) {
+            const counts = { minor_gap: 0, gap: 0, overflow: 0 };
+            rows.forEach(r => { const cov = lcRowCoverage(r); if (cov && cov.status !== 'full') counts[cov.status]++; });
+            const parts = [];
+            if (counts.overflow) parts.push(`${LC_COVERAGE_META.overflow.icon} ${toPersianDigits(counts.overflow)} ردیف با تجاوز از بازه فاز/زیرفاز`);
+            if (counts.gap) parts.push(`${LC_COVERAGE_META.gap.icon} ${toPersianDigits(counts.gap)} ردیف با شکاف زمانی`);
+            if (counts.minor_gap) parts.push(`${LC_COVERAGE_META.minor_gap.icon} ${toPersianDigits(counts.minor_gap)} ردیف با شکاف جزئی`);
+            if (!parts.length) return '';
+            return `<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] mb-3 px-3 py-2 rounded-lg" style="background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.2); color:#fca5a5;">${parts.join(' · ')}</div>`;
+        }
+
         function lcGanttLabelHtml(row) {
             const caret = row.hasChildren
                 ? `<button type="button" data-lc-toggle-row="${esc(row.id)}" class="w-4 h-4 shrink-0 inline-flex items-center justify-center text-[9px] rounded hover:bg-white/10" style="color:#93c5fd;">${lcState.collapsedScheduleRows.has(row.id) ? '▸' : '▾'}</button>`
@@ -9089,6 +9153,20 @@
             const titleCls = row.isPhase ? 'text-white font-extrabold' : (row.depth === 1 ? 'text-slate-200 font-bold' : 'text-slate-400');
             const gateDot = row.isPhase ? `<span class="inline-block w-1.5 h-1.5 rounded-full shrink-0 bg-${LC_GATE_STATUS_META[row.gateStatus].color}-500"></span>` : '';
             const weightTag = (!row.isPhase && row.item?.weight_pct != null) ? `<span class="text-[9px] shrink-0" style="color:#64748b;">${toPersianDigits(row.item.weight_pct)}٪</span>` : '';
+            const coverage = lcRowCoverage(row);
+            const coverageBadge = coverage ? `<span class="shrink-0" title="${esc(LC_COVERAGE_META[coverage.status].label)} (${toPersianDigits(coverage.coveragePct)}٪ پوشش${coverage.overflowDays ? '، ' + toPersianDigits(coverage.overflowDays) + ' روز تجاوز' : ''})">${LC_COVERAGE_META[coverage.status].icon}</span>` : '';
+            // Rather than nesting Auto-Fit/Fit-to-Phase inside the editor
+            // drawer (which for a phase row never actually represents "the
+            // phase itself" — clicking a phase row only ever opens "add a
+            // child" — these two live right on any row that has children,
+            // as their own <button>s inside this <div>. A <button> nested in
+            // a <div> is valid HTML, unlike the caret-in-a-button case above,
+            // so only their own stopPropagation is needed to keep a click on
+            // them from also opening the editor drawer underneath.
+            const fitButtons = (lcState.canEdit && row.hasChildren) ? `<span class="shrink-0 flex items-center">
+                <button type="button" data-lc-action="auto-fit" data-row-kind="${row.isPhase ? 'phase' : 'item'}" data-phase="${esc(row.phaseCode)}" data-item-id="${row.isPhase ? '' : row.item.id}" title="تنظیم خودکار بازه این ردیف بر اساس زیرمجموعه‌ها" class="text-[9px] w-4 h-4 inline-flex items-center justify-center rounded hover:bg-white/10" style="color:${LC_PLANNED_COLOR};">⇲</button>
+                <button type="button" data-lc-action="fit-children" data-row-kind="${row.isPhase ? 'phase' : 'item'}" data-phase="${esc(row.phaseCode)}" data-item-id="${row.isPhase ? '' : row.item.id}" title="تنظیم بازه زیرمجموعه‌ها متناسب با این ردیف" class="text-[9px] w-4 h-4 inline-flex items-center justify-center rounded hover:bg-white/10" style="color:${LC_NODE_PLANNED_COLOR};">⇱</button>
+            </span>` : '';
             // Clicking the row itself (rather than adding separate icon
             // buttons, which the narrow label column has no room for) opens
             // the schedule editor drawer below the grid — for a phase row
@@ -9100,7 +9178,7 @@
             return `<div ${editAttrs} class="flex items-center gap-1.5 w-full px-1 overflow-hidden${lcState.canEdit ? ' cursor-pointer hover:bg-white/5 rounded' : ''}" style="padding-right:${row.depth * 14}px;">
                 ${caret}${gateDot}
                 <span class="text-[10.5px] ${titleCls} truncate" title="${esc(row.title)}">${esc(row.title)}</span>
-                ${weightTag}
+                ${weightTag}${coverageBadge}${fitButtons}
             </div>`;
         }
 
@@ -9191,6 +9269,7 @@
 
             return `
             <p class="text-[10px] mb-3" style="color:#93c5fd;">از ${formatJalali(range.minIso)} تا ${formatJalali(range.maxIso)}</p>
+            ${lcCoverageSummaryHtml(rows)}
             <div class="overflow-x-auto scroll-thin">
                 <div style="width:${LC_GANTT_LABEL_W + LC_GANTT_TIMELINE_W}px;">
                     <div class="flex items-end" style="height:${LC_GANTT_HEADER_H}px;">
@@ -9526,6 +9605,88 @@
             });
         }
 
+        // ---------------- Auto-Fit / Fit-to-Phase ----------------
+        // Reconstructs the same {isPhase, phaseCode, item, title, start,
+        // finish} shape lcBuildScheduleRows() produces, from just the data
+        // attributes a button carries — the fit buttons live in the label
+        // row rather than the (row-object-scoped) editor drawer, so they
+        // only have those attributes to go on when clicked.
+        function lcRowFromRef(kind, phaseCode, itemId) {
+            if (kind === 'phase') {
+                const phase = lcState.phases.find(p => p.code === phaseCode);
+                const pp = lcState.projectPhases[phaseCode] || {};
+                return { isPhase: true, phaseCode, title: phase?.title || phaseCode, start: pp.planned_start, finish: pp.planned_finish };
+            }
+            const item = lcState.scheduleItems.find(si => si.id === Number(itemId));
+            return { isPhase: false, phaseCode, item, title: item?.title, start: item?.planned_start, finish: item?.planned_finish };
+        }
+
+        // Pulls the parent's own dates in to exactly match the merged span
+        // of its children — the fix for both a gap and an overflow at once,
+        // since afterward the parent's range IS its children's range.
+        async function lcAutoFitToChildren(row) {
+            const children = row.isPhase ? lcScheduleChildren(row.phaseCode, null) : lcScheduleChildren(row.phaseCode, row.item.id);
+            const dated = children.filter(c => c.planned_start && c.planned_finish);
+            if (!dated.length) { alert('هیچ زیرمجموعه‌ای با تاریخ ثبت‌شده وجود ندارد.'); return; }
+            const newStart = dated.reduce((min, c) => c.planned_start < min ? c.planned_start : min, dated[0].planned_start);
+            const newFinish = dated.reduce((max, c) => c.planned_finish > max ? c.planned_finish : max, dated[0].planned_finish);
+            if (newStart === row.start && newFinish === row.finish) { alert('بازه این ردیف از قبل دقیقاً با زیرمجموعه‌هایش هم‌پوشان است.'); return; }
+            const ok = confirm(`تنظیم خودکار بازه «${row.title}»:\nاز: ${row.start ? formatJalali(row.start) : '—'} تا ${row.finish ? formatJalali(row.finish) : '—'}\nبه: ${formatJalali(newStart)} تا ${formatJalali(newFinish)}\n\nاعمال شود؟`);
+            if (!ok) return;
+            if (row.isPhase) {
+                const { data, error } = await _supabase.from('project_lifecycle_phases')
+                    .upsert({ project_name: lcState.projectName, phase_code: row.phaseCode, planned_start: newStart, planned_finish: newFinish }, { onConflict: 'project_name,phase_code' })
+                    .select().single();
+                if (error) { alert('خطا: ' + error.message); return; }
+                lcState.projectPhases[row.phaseCode] = data;
+            } else {
+                const { data, error } = await _supabase.from('lifecycle_schedule_items')
+                    .update({ planned_start: newStart, planned_finish: newFinish, updated_at: new Date().toISOString(), updated_by: currentUser.email })
+                    .eq('id', row.item.id).select().single();
+                if (error) { alert('خطا: ' + error.message); return; }
+                const idx = lcState.scheduleItems.findIndex(si => si.id === row.item.id);
+                if (idx >= 0) lcState.scheduleItems[idx] = data;
+            }
+            lcRenderAll();
+        }
+
+        // The reverse direction: proportionally rescales every dated child
+        // so the merged span of all of them exactly matches the parent's
+        // OWN declared range — each child keeps its relative position and
+        // share of the sequence, just stretched or compressed to fit.
+        async function lcFitChildrenToPhase(row) {
+            if (!row.start || !row.finish) { alert('ابتدا باید بازه خود این ردیف ثبت شده باشد.'); return; }
+            const children = row.isPhase ? lcScheduleChildren(row.phaseCode, null) : lcScheduleChildren(row.phaseCode, row.item.id);
+            const dated = children.filter(c => c.planned_start && c.planned_finish);
+            if (!dated.length) { alert('هیچ زیرمجموعه‌ای با تاریخ ثبت‌شده وجود ندارد.'); return; }
+            const oldMin = dated.reduce((min, c) => c.planned_start < min ? c.planned_start : min, dated[0].planned_start);
+            const oldMax = dated.reduce((max, c) => c.planned_finish > max ? c.planned_finish : max, dated[0].planned_finish);
+            const oldSpanDays = Math.max(1, lcDaysBetween(oldMin, oldMax));
+            const newSpanDays = Math.max(1, lcDaysBetween(row.start, row.finish));
+            const scale = newSpanDays / oldSpanDays;
+            const rescale = (iso) => lcAddDays(row.start, Math.round(lcDaysBetween(oldMin, iso) * scale));
+            const preview = dated.map(c => ({ id: c.id, title: c.title, newStart: rescale(c.planned_start), newFinish: rescale(c.planned_finish) }));
+            if (preview.every(p => p.newStart === dated.find(c => c.id === p.id).planned_start && p.newFinish === dated.find(c => c.id === p.id).planned_finish)) {
+                alert('زیرمجموعه‌ها از قبل دقیقاً با بازه این ردیف هم‌پوشان‌اند.'); return;
+            }
+            const previewText = preview.map(p => `${p.title}: ${formatJalali(p.newStart)} تا ${formatJalali(p.newFinish)}`).join('\n');
+            const ok = confirm(`بازه همه زیرمجموعه‌های «${row.title}» متناسب با بازه خودش (${formatJalali(row.start)} تا ${formatJalali(row.finish)}) بازتنظیم می‌شود:\n\n${previewText}\n\nاعمال شود؟`);
+            if (!ok) return;
+            const results = await Promise.all(preview.map(p =>
+                _supabase.from('lifecycle_schedule_items')
+                    .update({ planned_start: p.newStart, planned_finish: p.newFinish, updated_at: new Date().toISOString(), updated_by: currentUser.email })
+                    .eq('id', p.id).select().single()
+            ));
+            const failed = results.find(r => r.error);
+            if (failed) alert('خطا در ذخیره: ' + failed.error.message);
+            results.forEach(({ data }) => {
+                if (!data) return;
+                const idx = lcState.scheduleItems.findIndex(si => si.id === data.id);
+                if (idx >= 0) lcState.scheduleItems[idx] = data;
+            });
+            lcRenderAll();
+        }
+
         // ---------------- Mutations ----------------
         async function lcSaveItemFromRow(rowEl) {
             if (!rowEl) return;
@@ -9638,6 +9799,8 @@
             root.querySelectorAll('[data-lc-action="delete-schedule-item"]').forEach(btn => btn.addEventListener('click', () => lcDeleteScheduleItem(btn.dataset.id)));
             root.querySelectorAll('[data-lc-action="add-dependency"]').forEach(btn => btn.addEventListener('click', () => lcAddDependency(Number(btn.dataset.id))));
             root.querySelectorAll('[data-lc-action="delete-dependency"]').forEach(btn => btn.addEventListener('click', () => lcDeleteDependency(btn.dataset.id)));
+            root.querySelectorAll('[data-lc-action="auto-fit"]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcAutoFitToChildren(lcRowFromRef(btn.dataset.rowKind, btn.dataset.phase, btn.dataset.itemId)); }));
+            root.querySelectorAll('[data-lc-action="fit-children"]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcFitChildrenToPhase(lcRowFromRef(btn.dataset.rowKind, btn.dataset.phase, btn.dataset.itemId)); }));
             lcBindGanttDragEvents();
             root.querySelectorAll('[data-lc-phase]').forEach(el => el.addEventListener('click', () => lcSelectPhase(el.dataset.lcPhase)));
             const backBtn = root.querySelector('[data-lc-back-to-orbit]');
