@@ -9146,6 +9146,61 @@
             return `<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] mb-3 px-3 py-2 rounded-lg" style="background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.2); color:#fca5a5;">${parts.join(' · ')}</div>`;
         }
 
+        // ---------------- Actual-progress rollup + status engine (Phase 4) ----------------
+        // A leaf's actual % is the only one ever typed in (via the editor
+        // drawer's "٪ پیشرفت واقعی" field, hidden for anything with
+        // children); every parent's is always this weighted average of its
+        // children, recursing all the way down — Activity -> Sub-Phase ->
+        // Phase-level schedule tree. This deliberately stays scoped to the
+        // schedule-item tree itself and is never surfaced as a second
+        // project-wide "physical progress" number next to the orbit's own
+        // (checklist/EPC/basic-design-engine-driven) progress — showing two
+        // differently-computed "the" progress numbers side by side would
+        // just make it unclear which one is authoritative. Weighting logic
+        // mirrors lcCategoryProgress() above: a null weight_pct splits
+        // equally with its siblings rather than counting as zero.
+        function lcItemActualPct(item) {
+            const children = lcScheduleChildren(item.phase_code, item.id);
+            if (!children.length) return item.manual_actual_pct != null ? item.manual_actual_pct : 0;
+            const hasCustomWeight = children.some(c => typeof c.weight_pct === 'number');
+            let sum = 0, totalW = 0;
+            children.forEach(c => {
+                const w = hasCustomWeight ? (Number(c.weight_pct) || 0) : 1;
+                sum += lcItemActualPct(c) * w;
+                totalW += w;
+            });
+            return totalW ? sum / totalW : 0;
+        }
+
+        const LC_ITEM_STATUS_META = {
+            completed: { label: 'تکمیل‌شده', icon: '🔵' },
+            not_started: { label: 'شروع نشده', icon: '⚪' },
+            delayed: { label: 'تاخیردار', icon: '🔴' },
+            at_risk: { label: 'در معرض ریسک', icon: '🟡' },
+            on_track: { label: 'طبق برنامه', icon: '🟢' },
+        };
+
+        // Time Progress (how much of the item's own date window has
+        // elapsed, via the same lcPlannedProgressByDate already used for
+        // phases) vs Physical Progress (the rollup above) — the two are
+        // shown together implicitly: the fill bar IS physical progress,
+        // and it sits against the grid's one shared "today" line, so how
+        // far the fill reaches relative to that line already reads as
+        // "ahead of / behind schedule" without a second per-bar marker.
+        // This status badge just names that same comparison explicitly.
+        function lcItemStatus(row) {
+            if (row.isPhase || !row.start || !row.finish) return null;
+            const physicalPct = lcItemActualPct(row.item);
+            if (physicalPct >= 100) return 'completed';
+            const timePct = lcPlannedProgressByDate(row.start, row.finish);
+            if (timePct == null) return null;
+            if (physicalPct === 0 && timePct <= 5) return 'not_started';
+            const variance = physicalPct - timePct;
+            if (variance < -15) return 'delayed';
+            if (variance < -5) return 'at_risk';
+            return 'on_track';
+        }
+
         function lcGanttLabelHtml(row) {
             const caret = row.hasChildren
                 ? `<button type="button" data-lc-toggle-row="${esc(row.id)}" class="w-4 h-4 shrink-0 inline-flex items-center justify-center text-[9px] rounded hover:bg-white/10" style="color:#93c5fd;">${lcState.collapsedScheduleRows.has(row.id) ? '▸' : '▾'}</button>`
@@ -9153,6 +9208,8 @@
             const titleCls = row.isPhase ? 'text-white font-extrabold' : (row.depth === 1 ? 'text-slate-200 font-bold' : 'text-slate-400');
             const gateDot = row.isPhase ? `<span class="inline-block w-1.5 h-1.5 rounded-full shrink-0 bg-${LC_GATE_STATUS_META[row.gateStatus].color}-500"></span>` : '';
             const weightTag = (!row.isPhase && row.item?.weight_pct != null) ? `<span class="text-[9px] shrink-0" style="color:#64748b;">${toPersianDigits(row.item.weight_pct)}٪</span>` : '';
+            const itemStatus = lcItemStatus(row);
+            const statusBadge = itemStatus ? `<span class="shrink-0" title="وضعیت: ${esc(LC_ITEM_STATUS_META[itemStatus].label)}">${LC_ITEM_STATUS_META[itemStatus].icon}</span>` : '';
             const coverage = lcRowCoverage(row);
             const coverageBadge = coverage ? `<span class="shrink-0" title="${esc(LC_COVERAGE_META[coverage.status].label)} (${toPersianDigits(coverage.coveragePct)}٪ پوشش${coverage.overflowDays ? '، ' + toPersianDigits(coverage.overflowDays) + ' روز تجاوز' : ''})">${LC_COVERAGE_META[coverage.status].icon}</span>` : '';
             // Rather than nesting Auto-Fit/Fit-to-Phase inside the editor
@@ -9176,7 +9233,7 @@
             // without producing invalid (and click-broken) nested buttons.
             const editAttrs = lcState.canEdit ? `data-lc-open-schedule-editor data-kind="${row.isPhase ? 'phase' : 'item'}" data-phase="${esc(row.phaseCode)}" data-item-id="${row.isPhase ? '' : row.item.id}"` : '';
             return `<div ${editAttrs} class="flex items-center gap-1.5 w-full px-1 overflow-hidden${lcState.canEdit ? ' cursor-pointer hover:bg-white/5 rounded' : ''}" style="padding-right:${row.depth * 14}px;">
-                ${caret}${gateDot}
+                ${caret}${gateDot}${statusBadge}
                 <span class="text-[10.5px] ${titleCls} truncate" title="${esc(row.title)}">${esc(row.title)}</span>
                 ${weightTag}${coverageBadge}${fitButtons}
             </div>`;
@@ -9199,9 +9256,12 @@
                     const aLeft = Math.min(aStartPct, aFinishPct), aWidth = Math.max(0.8, Math.abs(aFinishPct - aStartPct));
                     actualBar = `<div class="absolute rounded" style="left:${aLeft}%; width:${aWidth}%; top:${barTop + 15}px; height:5px; background:${LC_NEON_GREEN}; box-shadow:0 0 6px ${LC_NEON_GREEN}aa;"></div>`;
                 }
-            } else if (!row.hasChildren && row.item?.manual_actual_pct != null) {
-                const fillPct = Math.max(0, Math.min(100, row.item.manual_actual_pct));
-                inlineFill = `<div class="absolute inset-y-0 left-0 rounded" style="width:${fillPct}%; background:${LC_NEON_GREEN}; opacity:.85;"></div>`;
+            } else {
+                // Works the same for a leaf (its own manual_actual_pct) and
+                // a parent (the rollup) — lcItemActualPct already branches
+                // on whether the item has children.
+                const fillPct = Math.max(0, Math.min(100, lcItemActualPct(row.item)));
+                if (fillPct > 0) inlineFill = `<div class="absolute inset-y-0 left-0 rounded" style="width:${fillPct}%; background:${LC_NEON_GREEN}; opacity:.85;"></div>`;
             }
 
             // Only schedule items (not phase rows) are directly draggable —
@@ -9295,6 +9355,7 @@
                 <span class="inline-flex items-center gap-1.5"><span class="inline-block w-3 h-1.5 rounded-sm" style="background:${LC_PLANNED_COLOR}55; border:1px solid ${LC_PLANNED_COLOR};"></span>بازه برنامه‌ای</span>
                 <span class="inline-flex items-center gap-1.5"><span class="inline-block w-3 h-1.5 rounded-sm" style="background:${LC_NEON_GREEN};"></span>پیشرفت واقعی</span>
                 <span class="inline-flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5" style="background:#fbbf24;"></span>امروز</span>
+                <span class="inline-flex items-center gap-1">${Object.values(LC_ITEM_STATUS_META).map(m => `<span title="${esc(m.label)}">${m.icon}</span>`).join('')}<span style="color:#64748b;">وضعیت (زمانی/فیزیکی)</span></span>
                 ${lcState.canEdit ? `<span class="text-[9px] mr-auto" style="color:#64748b;">برای ویرایش روی ردیف کلیک کنید؛ برای جابه‌جایی/تغییر بازه، نوار را بکشید.</span>` : ''}
             </div>
             ${lcScheduleEditorHtml()}`;
