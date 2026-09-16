@@ -8158,6 +8158,7 @@
             scheduleItems: [],
             scheduleDeps: [],
             collapsedScheduleRows: new Set(),
+            scheduleEditor: null,
         };
 
         const LC_OBJECTIVE_STATUSES = [['not_started', 'شروع نشده', 'slate'], ['in_progress', 'در حال انجام', 'amber'], ['completed', 'تکمیل‌شده', 'emerald'], ['blocked', 'مسدود', 'red']];
@@ -9088,7 +9089,15 @@
             const titleCls = row.isPhase ? 'text-white font-extrabold' : (row.depth === 1 ? 'text-slate-200 font-bold' : 'text-slate-400');
             const gateDot = row.isPhase ? `<span class="inline-block w-1.5 h-1.5 rounded-full shrink-0 bg-${LC_GATE_STATUS_META[row.gateStatus].color}-500"></span>` : '';
             const weightTag = (!row.isPhase && row.item?.weight_pct != null) ? `<span class="text-[9px] shrink-0" style="color:#64748b;">${toPersianDigits(row.item.weight_pct)}٪</span>` : '';
-            return `<div class="flex items-center gap-1.5 w-full px-1 overflow-hidden" style="padding-right:${row.depth * 14}px;">
+            // Clicking the row itself (rather than adding separate icon
+            // buttons, which the narrow label column has no room for) opens
+            // the schedule editor drawer below the grid — for a phase row
+            // that means adding its first sub-phase, for an item row it
+            // means editing that item. This is a <div>, not a <button>,
+            // specifically so the caret's own <button> can nest inside it
+            // without producing invalid (and click-broken) nested buttons.
+            const editAttrs = lcState.canEdit ? `data-lc-open-schedule-editor data-kind="${row.isPhase ? 'phase' : 'item'}" data-phase="${esc(row.phaseCode)}" data-item-id="${row.isPhase ? '' : row.item.id}"` : '';
+            return `<div ${editAttrs} class="flex items-center gap-1.5 w-full px-1 overflow-hidden${lcState.canEdit ? ' cursor-pointer hover:bg-white/5 rounded' : ''}" style="padding-right:${row.depth * 14}px;">
                 ${caret}${gateDot}
                 <span class="text-[10.5px] ${titleCls} truncate" title="${esc(row.title)}">${esc(row.title)}</span>
                 ${weightTag}
@@ -9117,8 +9126,18 @@
                 inlineFill = `<div class="absolute inset-y-0 left-0 rounded" style="width:${fillPct}%; background:${LC_NEON_GREEN}; opacity:.85;"></div>`;
             }
 
+            // Only schedule items (not phase rows) are directly draggable —
+            // a phase's own planned/actual dates are governed by its gate
+            // workflow (G1's "ابلاغ" timestamp etc.) and edited through the
+            // existing phase-weight/date UI in its detail panel, not here.
+            const draggable = lcState.canEdit && !row.isPhase;
+            const dragAttrs = draggable ? `data-lc-drag-item="${row.item.id}"` : '';
+            const handles = draggable ? `
+                <div class="absolute inset-y-0 left-0" data-lc-resize="start" style="width:6px; cursor:ew-resize;"></div>
+                <div class="absolute inset-y-0 right-0" data-lc-resize="finish" style="width:6px; cursor:ew-resize;"></div>` : '';
+
             return `
-            <div class="absolute rounded" style="left:${left}%; width:${width}%; top:${barTop}px; height:14px; background:${LC_PLANNED_COLOR}33; border:1px solid ${LC_PLANNED_COLOR}aa; overflow:hidden;">${inlineFill}</div>
+            <div class="absolute rounded" ${dragAttrs} style="left:${left}%; width:${width}%; top:${barTop}px; height:14px; background:${LC_PLANNED_COLOR}33; border:1px solid ${LC_PLANNED_COLOR}aa; overflow:visible; ${draggable ? 'cursor:grab;' : ''}"><div class="w-full h-full overflow-hidden rounded">${inlineFill}</div>${handles}</div>
             ${actualBar}`;
         }
 
@@ -9152,8 +9171,18 @@
         // Plan tab and each phase detail page's own scoped timeline section,
         // so improvements to one (editing, validation, ...) land in both.
         function lcGanttGridHtml(rows, range) {
+            // Stashed so the drag handlers (bound after this HTML lands in
+            // the DOM, from lcBindEvents -> lcBindGanttDragEvents) can map
+            // a mouse delta back to a date using the exact same range/rows
+            // that were actually rendered, without recomputing them.
+            lcState._ganttRange = range;
+            lcState._ganttRows = rows;
             if (!range) {
-                return `<p class="text-sm text-center py-6" style="color:#93c5fd;">هنوز هیچ تاریخ برنامه‌ای برای این بخش ثبت نشده — با ثبت شروع/پایان برنامه‌ای فاز یا افزودن فعالیت، برنامه زمان‌بندی این‌جا نمایش داده می‌شود.</p>`;
+                const soloPhase = (rows.length === 1 && rows[0].isPhase) ? rows[0] : null;
+                return `<div class="text-center py-6">
+                    <p class="text-sm mb-3" style="color:#93c5fd;">هنوز هیچ تاریخ برنامه‌ای برای این بخش ثبت نشده — با ثبت شروع/پایان برنامه‌ای فاز یا افزودن فعالیت، برنامه زمان‌بندی این‌جا نمایش داده می‌شود.</p>
+                    ${soloPhase && lcState.canEdit ? `<div data-lc-open-schedule-editor data-kind="phase" data-phase="${esc(soloPhase.phaseCode)}" data-item-id="" class="inline-block cursor-pointer text-[11px] font-bold px-3 py-1.5 rounded-lg border text-slate-200 hover:bg-white/5">+ افزودن اولین زیرفاز/فعالیت</div>` : ''}
+                </div>${lcScheduleEditorHtml()}`;
             }
             const ticks = lcJalaliMonthTicks(range);
             const todayIso = new Date().toISOString().slice(0, 10);
@@ -9174,7 +9203,7 @@
                         <div style="width:${LC_GANTT_LABEL_W}px; flex-shrink:0;">
                             ${rows.map(row => `<div class="flex items-center border-b" style="height:${LC_GANTT_ROW_H}px; border-color:rgba(255,255,255,.05);">${lcGanttLabelHtml(row)}</div>`).join('')}
                         </div>
-                        <div class="relative" style="width:${LC_GANTT_TIMELINE_W}px; height:${bodyH}px;">
+                        <div class="relative" id="lcGanttTimeline" style="width:${LC_GANTT_TIMELINE_W}px; height:${bodyH}px;">
                             ${rows.map((row, i) => `<div class="absolute w-full border-b" style="top:${i * LC_GANTT_ROW_H}px; height:${LC_GANTT_ROW_H}px; border-color:rgba(255,255,255,.05);"></div>`).join('')}
                             ${todayPct != null ? `<div class="absolute top-0 bottom-0" style="left:${todayPct}%; width:1px; background:#fbbf24; opacity:.7;"></div>` : ''}
                             ${rows.map((row, i) => lcGanttBarHtml(row, i, range)).join('')}
@@ -9187,7 +9216,9 @@
                 <span class="inline-flex items-center gap-1.5"><span class="inline-block w-3 h-1.5 rounded-sm" style="background:${LC_PLANNED_COLOR}55; border:1px solid ${LC_PLANNED_COLOR};"></span>بازه برنامه‌ای</span>
                 <span class="inline-flex items-center gap-1.5"><span class="inline-block w-3 h-1.5 rounded-sm" style="background:${LC_NEON_GREEN};"></span>پیشرفت واقعی</span>
                 <span class="inline-flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5" style="background:#fbbf24;"></span>امروز</span>
-            </div>`;
+                ${lcState.canEdit ? `<span class="text-[9px] mr-auto" style="color:#64748b;">برای ویرایش روی ردیف کلیک کنید؛ برای جابه‌جایی/تغییر بازه، نوار را بکشید.</span>` : ''}
+            </div>
+            ${lcScheduleEditorHtml()}`;
         }
 
         function lcMasterPlanHtml() {
@@ -9204,6 +9235,295 @@
             if (lcState.collapsedScheduleRows.has(rowId)) lcState.collapsedScheduleRows.delete(rowId);
             else lcState.collapsedScheduleRows.add(rowId);
             lcRenderAll();
+        }
+
+        // ---------------- Master Plan editing (add/edit/delete + dependencies) ----------------
+        // A single drawer below the grid handles every add/edit — simpler
+        // than inline per-row forms given how narrow the label column is,
+        // and it doubles as the dependency editor for whichever item is
+        // currently open.
+        function lcOpenScheduleEditor(kind, phaseCode, itemId) {
+            lcState.scheduleEditor = kind === 'phase'
+                ? { mode: 'new', phaseCode, parentId: null }
+                : { mode: 'edit', id: Number(itemId) };
+            lcRenderAll();
+        }
+
+        function lcAddScheduleChild(parentId, phaseCode) {
+            lcState.scheduleEditor = { mode: 'new', phaseCode, parentId: Number(parentId) };
+            lcRenderAll();
+        }
+
+        function lcScheduleEditorHtml() {
+            const ed = lcState.scheduleEditor;
+            if (!ed || !lcState.canEdit) return '';
+            const isEdit = ed.mode === 'edit';
+            const item = isEdit ? lcState.scheduleItems.find(si => si.id === ed.id) : null;
+            if (isEdit && !item) return '';
+            const phaseCode = isEdit ? item.phase_code : ed.phaseCode;
+            const parentId = isEdit ? item.parent_id : ed.parentId;
+            const parentTitle = parentId
+                ? (lcState.scheduleItems.find(si => si.id === parentId)?.title || '')
+                : (lcState.phases.find(p => p.code === phaseCode)?.title || '');
+            const hasChildren = isEdit && lcState.scheduleItems.some(si => si.parent_id === item.id);
+            const existingDeps = isEdit ? lcState.scheduleDeps.filter(d => d.predecessor_id === item.id || d.successor_id === item.id) : [];
+            const depCandidates = isEdit ? lcState.scheduleItems.filter(si => si.phase_code === phaseCode && si.id !== item.id) : [];
+            const depTypeLabels = { FS: 'FS (پایان ← شروع)', SS: 'SS (شروع ← شروع)', FF: 'FF (پایان ← پایان)', SF: 'SF (شروع ← پایان)' };
+
+            return `
+            <div class="mt-4 pt-4 rounded-xl p-4" style="background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1);">
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="text-white font-extrabold text-xs">${isEdit ? 'ویرایش' : 'افزودن زیرمجموعه به'} «${esc(parentTitle)}»</h4>
+                    <button type="button" data-lc-action="close-schedule-editor" class="text-slate-400 hover:text-white text-lg leading-none">×</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-2">
+                    <input type="text" data-lc-sf="title" value="${isEdit ? esc(item.title) : ''}" placeholder="عنوان" class="text-[11px] border rounded-lg px-2 py-1.5 md:col-span-2">
+                    <input type="text" data-lc-sf="start" value="${isEdit ? formatJalali(item.planned_start) : ''}" placeholder="شروع (۱۴۰۴/۰۱/۰۱)" class="text-[11px] border rounded-lg px-2 py-1.5">
+                    <input type="text" data-lc-sf="finish" value="${isEdit ? formatJalali(item.planned_finish) : ''}" placeholder="پایان (۱۴۰۴/۰۱/۰۱)" class="text-[11px] border rounded-lg px-2 py-1.5">
+                    <input type="number" min="0" max="100" step="0.1" data-lc-sf="weight" value="${isEdit && item.weight_pct != null ? item.weight_pct : ''}" placeholder="وزن در بین هم‌سطح‌ها (٪)" class="text-[11px] border rounded-lg px-2 py-1.5">
+                    ${isEdit && !hasChildren ? `<input type="number" min="0" max="100" step="1" data-lc-sf="actual" value="${item.manual_actual_pct != null ? item.manual_actual_pct : ''}" placeholder="٪ پیشرفت واقعی" class="text-[11px] border rounded-lg px-2 py-1.5 md:col-span-2">` : ''}
+                </div>
+                <div class="flex flex-wrap items-center gap-2 mb-1">
+                    <button type="button" data-lc-action="save-schedule-item" class="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-blue-900 text-white">ذخیره</button>
+                    ${isEdit ? `
+                    <button type="button" data-lc-action="add-schedule-child" data-parent-id="${item.id}" data-phase="${esc(phaseCode)}" class="text-[11px] font-bold px-3 py-1.5 rounded-lg border text-slate-200">+ افزودن زیرفعالیت</button>
+                    <button type="button" data-lc-action="delete-schedule-item" data-id="${item.id}" class="text-[11px] font-bold px-3 py-1.5 rounded-lg border border-red-400 text-red-400 mr-auto">حذف</button>` : ''}
+                </div>
+                ${isEdit ? `
+                <div class="pt-3 mt-2" style="border-top:1px solid rgba(255,255,255,.08);">
+                    <p class="text-[11px] font-bold text-white mb-2">وابستگی‌ها</p>
+                    ${existingDeps.length ? existingDeps.map(d => {
+                        const isPred = d.predecessor_id === item.id;
+                        const other = lcState.scheduleItems.find(si => si.id === (isPred ? d.successor_id : d.predecessor_id));
+                        const lagLabel = d.lag_days ? ` — ${d.lag_days > 0 ? 'تاخیر' : 'همپوشانی'} ${toPersianDigits(Math.abs(d.lag_days))} روز` : '';
+                        return `<div class="flex items-center justify-between text-[10.5px] py-1" style="color:#cbd5e1;">
+                            <span>${isPred ? 'قبل از' : 'بعد از'} «${esc(other?.title || '—')}» — ${esc(depTypeLabels[d.dep_type] || d.dep_type)}${lagLabel}</span>
+                            <button type="button" data-lc-action="delete-dependency" data-id="${d.id}" class="text-red-400 hover:underline">حذف</button>
+                        </div>`;
+                    }).join('') : `<p class="text-[10px] text-slate-500 mb-2">وابستگی‌ای ثبت نشده.</p>`}
+                    <p class="text-[10px] mt-2 mb-1" style="color:#93c5fd;">این فعالیت به فعالیت زیر وابسته است:</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <select data-lc-sf="dep-other" class="text-[10.5px] border rounded-lg px-2 py-1.5 md:col-span-2">
+                            <option value="">-- گزینش فعالیت --</option>
+                            ${depCandidates.map(s => `<option value="${s.id}">${esc(s.title)}</option>`).join('')}
+                        </select>
+                        <select data-lc-sf="dep-type" class="text-[10.5px] border rounded-lg px-2 py-1.5">
+                            ${Object.entries(depTypeLabels).map(([k, label]) => `<option value="${k}">${esc(label)}</option>`).join('')}
+                        </select>
+                        <input type="number" data-lc-sf="dep-lag" placeholder="تاخیر(+)/همپوشانی(-) روز" class="text-[10.5px] border rounded-lg px-2 py-1.5">
+                    </div>
+                    <button type="button" data-lc-action="add-dependency" data-id="${item.id}" class="text-[10.5px] font-bold px-3 py-1.5 rounded-lg border text-slate-200 mt-2">+ افزودن وابستگی</button>
+                </div>` : ''}
+            </div>`;
+        }
+
+        async function lcSaveScheduleItem() {
+            const ed = lcState.scheduleEditor;
+            if (!ed) return;
+            const root = document.getElementById('lcBody');
+            const title = root.querySelector('[data-lc-sf="title"]')?.value.trim();
+            const startJalali = root.querySelector('[data-lc-sf="start"]')?.value.trim();
+            const finishJalali = root.querySelector('[data-lc-sf="finish"]')?.value.trim();
+            const weightRaw = root.querySelector('[data-lc-sf="weight"]')?.value;
+            const actualInput = root.querySelector('[data-lc-sf="actual"]');
+            if (!title) { alert('عنوان الزامی است.'); return; }
+            const planned_start = startJalali ? jalaliInputToIso(startJalali) : null;
+            const planned_finish = finishJalali ? jalaliInputToIso(finishJalali) : null;
+            if (startJalali && !planned_start) { alert('تاریخ شروع نامعتبر است.'); return; }
+            if (finishJalali && !planned_finish) { alert('تاریخ پایان نامعتبر است.'); return; }
+            if (planned_start && planned_finish && planned_finish < planned_start) { alert('تاریخ پایان نمی‌تواند قبل از شروع باشد.'); return; }
+            const patch = {
+                project_name: lcState.projectName, title, planned_start, planned_finish,
+                weight_pct: weightRaw ? Number(weightRaw) : null,
+                updated_at: new Date().toISOString(), updated_by: currentUser.email,
+            };
+            if (actualInput) patch.manual_actual_pct = actualInput.value === '' ? null : Number(actualInput.value);
+            if (ed.mode === 'new') {
+                const { data, error } = await _supabase.from('lifecycle_schedule_items')
+                    .insert(Object.assign({ phase_code: ed.phaseCode, parent_id: ed.parentId }, patch))
+                    .select().single();
+                if (error) { alert('خطا در ثبت: ' + error.message); return; }
+                lcState.scheduleItems.push(data);
+            } else {
+                const { data, error } = await _supabase.from('lifecycle_schedule_items').update(patch).eq('id', ed.id).select().single();
+                if (error) { alert('خطا در ذخیره: ' + error.message); return; }
+                const idx = lcState.scheduleItems.findIndex(si => si.id === ed.id);
+                if (idx >= 0) lcState.scheduleItems[idx] = data;
+            }
+            lcState.scheduleEditor = null;
+            lcRenderAll();
+        }
+
+        async function lcDeleteScheduleItem(id) {
+            const idNum = Number(id);
+            if (!confirm('این مورد و همه زیرمجموعه‌های آن حذف شود؟')) return;
+            const { error } = await _supabase.from('lifecycle_schedule_items').delete().eq('id', idNum);
+            if (error) { alert('خطا در حذف: ' + error.message); return; }
+            // The DB already cascades the delete via its FK, but lcState
+            // needs to drop the whole removed subtree too, not just this row.
+            const toRemove = new Set([idNum]);
+            let grew = true;
+            while (grew) {
+                grew = false;
+                lcState.scheduleItems.forEach(si => {
+                    if (si.parent_id != null && toRemove.has(si.parent_id) && !toRemove.has(si.id)) { toRemove.add(si.id); grew = true; }
+                });
+            }
+            lcState.scheduleItems = lcState.scheduleItems.filter(si => !toRemove.has(si.id));
+            lcState.scheduleDeps = lcState.scheduleDeps.filter(d => !toRemove.has(d.predecessor_id) && !toRemove.has(d.successor_id));
+            lcState.scheduleEditor = null;
+            lcRenderAll();
+        }
+
+        async function lcAddDependency(successorId) {
+            const root = document.getElementById('lcBody');
+            const predecessorId = Number(root.querySelector('[data-lc-sf="dep-other"]')?.value);
+            const dep_type = root.querySelector('[data-lc-sf="dep-type"]')?.value || 'FS';
+            const lagRaw = root.querySelector('[data-lc-sf="dep-lag"]')?.value;
+            if (!predecessorId) { alert('یک فعالیت را برای وابستگی انتخاب کنید.'); return; }
+            const { data, error } = await _supabase.from('lifecycle_schedule_dependencies')
+                .insert({ project_name: lcState.projectName, predecessor_id: predecessorId, successor_id: successorId, dep_type, lag_days: lagRaw ? Number(lagRaw) : 0 })
+                .select().single();
+            if (error) { alert('خطا در ثبت وابستگی: ' + error.message); return; }
+            lcState.scheduleDeps.push(data);
+            lcRenderAll();
+        }
+
+        async function lcDeleteDependency(id) {
+            const idNum = Number(id);
+            const { error } = await _supabase.from('lifecycle_schedule_dependencies').delete().eq('id', idNum);
+            if (error) { alert('خطا در حذف وابستگی: ' + error.message); return; }
+            lcState.scheduleDeps = lcState.scheduleDeps.filter(d => d.id !== idNum);
+            lcRenderAll();
+        }
+
+        // ---------------- Drag-to-move / drag-to-resize with real-time recalculation ----------------
+        function lcAddDays(iso, days) {
+            if (!iso) return iso;
+            const d = new Date(iso);
+            d.setDate(d.getDate() + days);
+            return d.toISOString().slice(0, 10);
+        }
+
+        // What date does this dependency's Lag/Lead require the successor's
+        // constrained endpoint to sit on, given the predecessor's CURRENT
+        // (possibly just-moved) dates?
+        function lcRequiredSuccessorDate(dep, predItem) {
+            const predDate = (dep.dep_type === 'SS' || dep.dep_type === 'SF') ? predItem.planned_start : predItem.planned_finish;
+            return predDate ? lcAddDays(predDate, Math.round(dep.lag_days || 0)) : null;
+        }
+
+        // Only ever pushes a successor LATER to satisfy its dependency, and
+        // only when it's actually violated — matches standard forward-pass
+        // CPM behavior (moving a predecessor earlier never pulls a
+        // successor back with it; that's a deliberate, separate decision
+        // the user makes, not an automatic side effect of this one).
+        function lcApplyDependencyConstraint(dep, predItem, succItem) {
+            if (!succItem.planned_start || !succItem.planned_finish) return null;
+            const required = lcRequiredSuccessorDate(dep, predItem);
+            if (!required) return null;
+            const constrainsStart = (dep.dep_type === 'FS' || dep.dep_type === 'SS');
+            const current = constrainsStart ? succItem.planned_start : succItem.planned_finish;
+            if (current >= required) return null;
+            const shiftDays = Math.round((new Date(required) - new Date(current)) / 86400000);
+            if (shiftDays <= 0) return null;
+            return { planned_start: lcAddDays(succItem.planned_start, shiftDays), planned_finish: lcAddDays(succItem.planned_finish, shiftDays) };
+        }
+
+        // Breadth-first walk outward from the moved item along "is
+        // predecessor of" edges, shifting every violated successor and then
+        // continuing from IT — a diamond-shaped dependency graph can validly
+        // revisit a node once its OTHER predecessor also shifts, so this
+        // counts revisits rather than using a plain visited-once set, with a
+        // generous cap as the only defense against a genuine cycle.
+        function lcCascadeShifts(movedId, movedPatch) {
+            const updates = new Map();
+            const getEffective = (id) => updates.has(id) ? updates.get(id) : lcState.scheduleItems.find(si => si.id === id);
+            updates.set(movedId, Object.assign({}, getEffective(movedId), movedPatch));
+            const queue = [movedId];
+            const visitCount = new Map();
+            while (queue.length) {
+                const curId = queue.shift();
+                const n = (visitCount.get(curId) || 0) + 1;
+                visitCount.set(curId, n);
+                if (n > 50) continue;
+                const curItem = getEffective(curId);
+                if (!curItem) continue;
+                lcState.scheduleDeps.filter(d => d.predecessor_id === curId).forEach(dep => {
+                    const succ = getEffective(dep.successor_id);
+                    if (!succ) return;
+                    const patch = lcApplyDependencyConstraint(dep, curItem, succ);
+                    if (patch) {
+                        updates.set(succ.id, Object.assign({}, succ, patch));
+                        queue.push(succ.id);
+                    }
+                });
+            }
+            return updates;
+        }
+
+        async function lcCommitScheduleItemDates(itemId, newStart, newFinish) {
+            const updates = lcCascadeShifts(itemId, { planned_start: newStart, planned_finish: newFinish });
+            const results = await Promise.all([...updates.entries()].map(([id, patch]) =>
+                _supabase.from('lifecycle_schedule_items')
+                    .update({ planned_start: patch.planned_start, planned_finish: patch.planned_finish, updated_at: new Date().toISOString(), updated_by: currentUser.email })
+                    .eq('id', id).select().single()
+            ));
+            const failed = results.find(r => r.error);
+            if (failed) alert('خطا در ذخیره تغییرات زمان‌بندی: ' + failed.error.message);
+            results.forEach(({ data }) => {
+                if (!data) return;
+                const idx = lcState.scheduleItems.findIndex(si => si.id === data.id);
+                if (idx >= 0) lcState.scheduleItems[idx] = data;
+            });
+            lcRenderAll();
+        }
+
+        function lcBindGanttDragEvents() {
+            const container = document.getElementById('lcGanttTimeline');
+            if (!container) return;
+            container.addEventListener('mousedown', (e) => {
+                const barEl = e.target.closest('[data-lc-drag-item]');
+                if (!barEl) return;
+                const range = lcState._ganttRange;
+                if (!range) return;
+                e.preventDefault();
+                const itemId = Number(barEl.dataset.lcDragItem);
+                const item = lcState.scheduleItems.find(si => si.id === itemId);
+                if (!item) return;
+                const resizeHandle = e.target.closest('[data-lc-resize]');
+                const mode = resizeHandle ? resizeHandle.dataset.lcResize : 'move';
+                const pxPerDay = container.getBoundingClientRect().width / range.totalDays;
+                const startX = e.clientX;
+                const origStart = item.planned_start, origFinish = item.planned_finish;
+                let pendingStart = origStart, pendingFinish = origFinish;
+
+                const onMove = (ev) => {
+                    const deltaDays = Math.round((ev.clientX - startX) / pxPerDay);
+                    if (mode === 'move') {
+                        pendingStart = lcAddDays(origStart, deltaDays);
+                        pendingFinish = lcAddDays(origFinish, deltaDays);
+                    } else if (mode === 'start') {
+                        const candidate = lcAddDays(origStart, deltaDays);
+                        pendingStart = candidate < origFinish ? candidate : origFinish;
+                    } else {
+                        const candidate = lcAddDays(origFinish, deltaDays);
+                        pendingFinish = candidate > origStart ? candidate : origStart;
+                    }
+                    const leftPct = lcPctForDate(pendingStart, range), rightPct = lcPctForDate(pendingFinish, range);
+                    barEl.style.left = Math.min(leftPct, rightPct) + '%';
+                    barEl.style.width = Math.max(0.8, Math.abs(rightPct - leftPct)) + '%';
+                };
+                const onUp = () => {
+                    document.removeEventListener('mousemove', onMove);
+                    document.removeEventListener('mouseup', onUp);
+                    if (pendingStart !== origStart || pendingFinish !== origFinish) {
+                        lcCommitScheduleItemDates(itemId, pendingStart, pendingFinish);
+                    }
+                };
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+            });
         }
 
         // ---------------- Mutations ----------------
@@ -9311,6 +9631,14 @@
             const root = document.getElementById('lcBody');
             root.querySelectorAll('[data-lc-tab]').forEach(btn => btn.addEventListener('click', () => { lcState.activeTab = btn.dataset.lcTab; lcRenderAll(); }));
             root.querySelectorAll('[data-lc-toggle-row]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcToggleScheduleRow(btn.dataset.lcToggleRow); }));
+            root.querySelectorAll('[data-lc-open-schedule-editor]').forEach(el => el.addEventListener('click', () => lcOpenScheduleEditor(el.dataset.kind, el.dataset.phase, el.dataset.itemId)));
+            root.querySelectorAll('[data-lc-action="close-schedule-editor"]').forEach(btn => btn.addEventListener('click', () => { lcState.scheduleEditor = null; lcRenderAll(); }));
+            root.querySelectorAll('[data-lc-action="save-schedule-item"]').forEach(btn => btn.addEventListener('click', lcSaveScheduleItem));
+            root.querySelectorAll('[data-lc-action="add-schedule-child"]').forEach(btn => btn.addEventListener('click', () => lcAddScheduleChild(btn.dataset.parentId, btn.dataset.phase)));
+            root.querySelectorAll('[data-lc-action="delete-schedule-item"]').forEach(btn => btn.addEventListener('click', () => lcDeleteScheduleItem(btn.dataset.id)));
+            root.querySelectorAll('[data-lc-action="add-dependency"]').forEach(btn => btn.addEventListener('click', () => lcAddDependency(Number(btn.dataset.id))));
+            root.querySelectorAll('[data-lc-action="delete-dependency"]').forEach(btn => btn.addEventListener('click', () => lcDeleteDependency(btn.dataset.id)));
+            lcBindGanttDragEvents();
             root.querySelectorAll('[data-lc-phase]').forEach(el => el.addEventListener('click', () => lcSelectPhase(el.dataset.lcPhase)));
             const backBtn = root.querySelector('[data-lc-back-to-orbit]');
             if (backBtn) backBtn.addEventListener('click', () => { lcState.selectedPhase = null; lcRenderAll(); });
