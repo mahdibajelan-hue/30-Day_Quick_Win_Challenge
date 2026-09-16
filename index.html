@@ -8157,6 +8157,7 @@
             activeTab: 'orbit',
             scheduleItems: [],
             scheduleDeps: [],
+            baselines: [],
             collapsedScheduleRows: new Set(),
             scheduleEditor: null,
         };
@@ -8243,7 +8244,7 @@
             document.getElementById('lcProjectNameLabel').textContent = projectName;
             document.getElementById('lcBody').innerHTML = '<p class="text-center text-slate-400 p-10">در حال بارگذاری چرخه عمر پروژه...</p>';
 
-            const [{ data: phases, error: phasesErr }, { data: projectPhases }, { data: items }, { data: gateDecisions }, { data: progressHistory }, { data: clientReports }, { data: scheduleItems }, { data: scheduleDeps }] = await Promise.all([
+            const [{ data: phases, error: phasesErr }, { data: projectPhases }, { data: items }, { data: gateDecisions }, { data: progressHistory }, { data: clientReports }, { data: scheduleItems }, { data: scheduleDeps }, { data: baselines }] = await Promise.all([
                 _supabase.from('lifecycle_phases').select('*, lifecycle_objectives(*), lifecycle_outputs(*), lifecycle_criteria(*)').eq('is_active', true).order('sort_order'),
                 _supabase.from('project_lifecycle_phases').select('*').eq('project_name', projectName),
                 _supabase.from('project_phase_items').select('*').eq('project_name', projectName),
@@ -8252,6 +8253,7 @@
                 _supabase.from('client_reports').select('*').eq('project_name', projectName).order('created_at', { ascending: true }),
                 _supabase.from('lifecycle_schedule_items').select('*').eq('project_name', projectName),
                 _supabase.from('lifecycle_schedule_dependencies').select('*').eq('project_name', projectName),
+                _supabase.from('lifecycle_schedule_baselines').select('*, lifecycle_schedule_baseline_items(*)').eq('project_name', projectName).order('created_at', { ascending: false }),
             ]);
 
             if (phasesErr) {
@@ -8281,6 +8283,7 @@
             lcState.clientReport = lcState.clientReportHistory.length ? lcState.clientReportHistory[lcState.clientReportHistory.length - 1] : null;
             lcState.scheduleItems = (scheduleItems || []).slice().sort((a, b) => (a.seq - b.seq) || (a.id - b.id));
             lcState.scheduleDeps = scheduleDeps || [];
+            lcState.baselines = baselines || [];
             lcState.canEdit = isAdminUser() || myProjectAccess.some(a => a.project_name === projectName);
             // Open on the project's current phase by default (matching the
             // "at a glance" executive view) rather than an empty placeholder
@@ -9239,6 +9242,19 @@
             </div>`;
         }
 
+        // ---------------- Baselines (Phase 5) ----------------
+        // A baseline is a frozen snapshot, never edited after creation — see
+        // migration 039's own comment for why. Only the LATEST one is drawn
+        // for comparison; older ones stay in the database (and lcState) for
+        // a manager to look up later, but showing more than one bar per row
+        // at once would just clutter the chart rather than help it.
+        function lcLatestBaseline() {
+            return lcState.baselines[0] || null;
+        }
+        function lcBaselineItemFor(baseline, scheduleItemId) {
+            return baseline?.lifecycle_schedule_baseline_items?.find(bi => bi.schedule_item_id === scheduleItemId) || null;
+        }
+
         function lcGanttBarHtml(row, index, range) {
             const top = index * LC_GANTT_ROW_H;
             if (!row.start || !row.finish) {
@@ -9247,6 +9263,16 @@
             const startPct = lcPctForDate(row.start, range), finishPct = lcPctForDate(row.finish, range);
             const left = Math.min(startPct, finishPct), width = Math.max(0.8, Math.abs(finishPct - startPct));
             const barTop = top + (LC_GANTT_ROW_H - 14) / 2;
+
+            let baselineBar = '';
+            if (!row.isPhase) {
+                const bi = lcBaselineItemFor(lcLatestBaseline(), row.item.id);
+                if (bi && bi.planned_start && bi.planned_finish) {
+                    const bLeftPct = lcPctForDate(bi.planned_start, range), bRightPct = lcPctForDate(bi.planned_finish, range);
+                    const bLeft = Math.min(bLeftPct, bRightPct), bWidth = Math.max(0.8, Math.abs(bRightPct - bLeftPct));
+                    baselineBar = `<div class="absolute rounded-sm" style="left:${bLeft}%; width:${bWidth}%; top:${top + 2}px; height:3px; background:#94a3b8; opacity:.65;" title="خط مبنا: ${formatJalali(bi.planned_start)} تا ${formatJalali(bi.planned_finish)}"></div>`;
+                }
+            }
 
             let inlineFill = '', actualBar = '';
             if (row.isPhase) {
@@ -9275,6 +9301,7 @@
                 <div class="absolute inset-y-0 right-0" data-lc-resize="finish" style="width:6px; cursor:ew-resize;"></div>` : '';
 
             return `
+            ${baselineBar}
             <div class="absolute rounded" ${dragAttrs} style="left:${left}%; width:${width}%; top:${barTop}px; height:14px; background:${LC_PLANNED_COLOR}33; border:1px solid ${LC_PLANNED_COLOR}aa; overflow:visible; ${draggable ? 'cursor:grab;' : ''}"><div class="w-full h-full overflow-hidden rounded">${inlineFill}</div>${handles}</div>
             ${actualBar}`;
         }
@@ -9356,9 +9383,56 @@
                 <span class="inline-flex items-center gap-1.5"><span class="inline-block w-3 h-1.5 rounded-sm" style="background:${LC_NEON_GREEN};"></span>پیشرفت واقعی</span>
                 <span class="inline-flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5" style="background:#fbbf24;"></span>امروز</span>
                 <span class="inline-flex items-center gap-1">${Object.values(LC_ITEM_STATUS_META).map(m => `<span title="${esc(m.label)}">${m.icon}</span>`).join('')}<span style="color:#64748b;">وضعیت (زمانی/فیزیکی)</span></span>
+                ${lcState.baselines.length ? `<span class="inline-flex items-center gap-1.5"><span class="inline-block w-3 h-0.5 rounded-sm" style="background:#94a3b8;"></span>خط مبنا</span>` : ''}
                 ${lcState.canEdit ? `<span class="text-[9px] mr-auto" style="color:#64748b;">برای ویرایش روی ردیف کلیک کنید؛ برای جابه‌جایی/تغییر بازه، نوار را بکشید.</span>` : ''}
             </div>
             ${lcScheduleEditorHtml()}`;
+        }
+
+        // Shows the drift between the latest baseline's overall end date and
+        // the CURRENT plan's overall end date — the whole reason a baseline
+        // is worth taking in the first place. Only the project's own
+        // schedule-item tree feeds this (not phase-level dates), matching
+        // Phases 3/4's own scoping of everything else in this grid.
+        function lcBaselineVarianceSummaryHtml() {
+            const baseline = lcLatestBaseline();
+            if (!baseline || !baseline.lifecycle_schedule_baseline_items?.length) return '';
+            const baselineFinishes = baseline.lifecycle_schedule_baseline_items.map(bi => bi.planned_finish).filter(Boolean);
+            const currentFinishes = lcState.scheduleItems.map(si => si.planned_finish).filter(Boolean);
+            if (!baselineFinishes.length || !currentFinishes.length) return '';
+            const baselineEnd = baselineFinishes.reduce((a, b) => b > a ? b : a);
+            const currentEnd = currentFinishes.reduce((a, b) => b > a ? b : a);
+            const varianceDays = lcDaysBetween(baselineEnd, currentEnd);
+            const varianceColor = varianceDays > 5 ? '#f87171' : varianceDays < -2 ? '#34d399' : '#93c5fd';
+            return `<p class="text-[10px] mb-2" style="color:#93c5fd;">
+                خط مبنا: «${esc(baseline.label)}» (${formatJalali(baseline.created_at)}) —
+                <span style="color:${varianceColor}; font-weight:700;">${varianceDays > 0 ? '+' : ''}${toPersianDigits(varianceDays)} روز</span>
+                نسبت به پایان برنامه‌ای آن (${formatJalali(baselineEnd)} ← ${formatJalali(currentEnd)})
+            </p>`;
+        }
+
+        async function lcCreateBaseline() {
+            const existing = lcLatestBaseline();
+            const label = prompt('نامی برای این خط مبنا وارد کنید:', existing ? 'بازتنظیم خط مبنا' : 'خط مبنای اولیه');
+            if (!label) return;
+            if (existing) {
+                const ok = confirm(`این پروژه از قبل یک خط مبنا دارد («${existing.label}»، ${formatJalali(existing.created_at)}). خط مبنای قبلی حذف نمی‌شود — هر دو در سامانه می‌مانند و مقایسه همیشه با آخرین خط مبنا انجام می‌شود.\n\nخط مبنای جدید «${label}» ثبت شود؟`);
+                if (!ok) return;
+            }
+            if (!lcState.scheduleItems.length) { alert('هیچ فعالیت/زیرفازی برای ثبت در خط مبنا وجود ندارد.'); return; }
+            const { data: baseline, error: bErr } = await _supabase.from('lifecycle_schedule_baselines')
+                .insert({ project_name: lcState.projectName, label, created_by: currentUser.email })
+                .select().single();
+            if (bErr) { alert('خطا در ایجاد خط مبنا: ' + bErr.message); return; }
+            const rows = lcState.scheduleItems.map(si => ({
+                baseline_id: baseline.id, schedule_item_id: si.id, title: si.title,
+                planned_start: si.planned_start, planned_finish: si.planned_finish, weight_pct: si.weight_pct,
+            }));
+            const { data: baselineItems, error: iErr } = await _supabase.from('lifecycle_schedule_baseline_items').insert(rows).select();
+            if (iErr) { alert('خطا در ثبت جزئیات خط مبنا: ' + iErr.message); return; }
+            baseline.lifecycle_schedule_baseline_items = baselineItems;
+            lcState.baselines.unshift(baseline);
+            lcRenderAll();
         }
 
         function lcMasterPlanHtml() {
@@ -9366,7 +9440,11 @@
             const range = lcScheduleDateRange();
             return `
             <div class="lc-dark-panel rounded-2xl p-4 md:p-6" style="background: radial-gradient(ellipse 90% 70% at 50% 10%, #123159 0%, #04070f 78%); border: 1px solid rgba(255,255,255,.07); min-height: 60vh;">
-                <h3 class="text-white font-extrabold text-sm mb-1">برنامه زمان‌بندی چرخه عمر پروژه</h3>
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
+                    <h3 class="text-white font-extrabold text-sm">برنامه زمان‌بندی چرخه عمر پروژه</h3>
+                    ${lcState.canEdit ? `<button type="button" data-lc-action="create-baseline" class="no-print text-[10.5px] font-bold px-3 py-1.5 rounded-lg border text-slate-200 hover:bg-white/5">📌 ثبت خط مبنا (Baseline)</button>` : ''}
+                </div>
+                ${lcBaselineVarianceSummaryHtml()}
                 ${lcGanttGridHtml(rows, range)}
             </div>`;
         }
@@ -9862,6 +9940,7 @@
             root.querySelectorAll('[data-lc-action="delete-dependency"]').forEach(btn => btn.addEventListener('click', () => lcDeleteDependency(btn.dataset.id)));
             root.querySelectorAll('[data-lc-action="auto-fit"]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcAutoFitToChildren(lcRowFromRef(btn.dataset.rowKind, btn.dataset.phase, btn.dataset.itemId)); }));
             root.querySelectorAll('[data-lc-action="fit-children"]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcFitChildrenToPhase(lcRowFromRef(btn.dataset.rowKind, btn.dataset.phase, btn.dataset.itemId)); }));
+            root.querySelectorAll('[data-lc-action="create-baseline"]').forEach(btn => btn.addEventListener('click', lcCreateBaseline));
             lcBindGanttDragEvents();
             root.querySelectorAll('[data-lc-phase]').forEach(el => el.addEventListener('click', () => lcSelectPhase(el.dataset.lcPhase)));
             const backBtn = root.querySelector('[data-lc-back-to-orbit]');
