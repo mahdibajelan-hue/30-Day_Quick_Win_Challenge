@@ -8302,6 +8302,13 @@
             if (!projectName) { alert('لطفاً ابتدا پروژه را انتخاب کنید.'); return; }
             pickedProjectContext = { project_name: projectName, organization: (myProjectAccess.find(a => a.project_name === projectName) || {}).organization || 'کارفرما' };
             lcState.projectName = projectName;
+            // Every fresh open of چرخه عمر پروژه (nav click, project switch,
+            // or the manual «بارگذاری» button) starts back on the orbit —
+            // lcState persists for the whole SPA session, so without this a
+            // previous visit's Gantt tab or open phase page would still be
+            // showing instead of the orbit the user actually expects to land on.
+            lcState.activeTab = 'orbit';
+            lcState.selectedPhase = null;
             document.getElementById('lcProjectNameLabel').textContent = projectName;
             document.getElementById('lcBody').innerHTML = '<p class="text-center text-slate-400 p-10">در حال بارگذاری چرخه عمر پروژه...</p>';
 
@@ -8487,13 +8494,41 @@
                        float-panel entrance below runs once (180ms) and then stops. */
                     .lc-node { transition: transform .15s ease; transform-box: fill-box; transform-origin: center; }
                     .lc-node:hover { transform: scale(1.08); }
-                    /* Full phase names collide if shown permanently on every node at
-                       once (9 nodes, some names run 30+ characters) — instead only the
-                       always-on node label is a short "N · %"; the full name/status
-                       lives in a transparent callout that appears beside the node on
-                       hover, and stays pinned open for whichever node is selected. */
+                    /* Every phase's title is always visible now (dim, small,
+                       positioned radially outward from its node so 9 titles
+                       around a circle fan away from each other instead of
+                       piling up underneath every node the same way) — it
+                       grows larger and bold on hover so the one you're
+                       looking at is unambiguous even where two neighbors'
+                       titles run long enough to overlap at rest. The fuller
+                       callout (status + completion %) still only appears on
+                       hover/selection, further out beside the node. */
+                    .lc-node-title { display:inline-block; font-size:9px; font-weight:600; line-height:1.2; opacity:.65; transition: all .15s ease; }
+                    .lc-node-hit:hover .lc-node-title-wrap { z-index: 10; }
+                    .lc-node-hit:hover .lc-node-title { opacity:1; font-weight:800; font-size:12px; }
                     .lc-callout { opacity: 0; transition: opacity .15s ease; }
                     .lc-node-hit:hover .lc-callout, .lc-callout.lc-callout-pinned { opacity: 1; }
+                    /* Tailwind's text-white/text-slate-* utilities here read
+                       this app's OWN light/dark theme CSS variables (so an
+                       ordinary "white" card correctly flips dark when the
+                       whole app's theme toggle is set to dark) — but every
+                       .lc-dark-panel in this module is deliberately dark
+                       regardless of that toggle. The app's dark theme
+                       redefines "white" as a dark navy (so a light card
+                       becomes a dark one), so text-white used for literal
+                       bright text against one of these ALREADY-dark panels
+                       would silently turn near-invisible the moment a
+                       user's own app theme is set to dark — exactly what
+                       was reported for the برنامه زمان‌بندی tab. Pinning
+                       these to literal values here matches how every other
+                       color in these panels (all inline hex/rgba) already
+                       works, independent of that toggle. */
+                    .lc-dark-panel .text-white,
+                    .lc-dark-panel .hover\\:text-white:hover { color: #ffffff !important; }
+                    .lc-dark-panel .text-slate-200 { color: #e2e8f0 !important; }
+                    .lc-dark-panel .text-slate-300 { color: #cbd5e1 !important; }
+                    .lc-dark-panel .text-slate-400 { color: #94a3b8 !important; }
+                    .lc-dark-panel .text-slate-500 { color: #94a3b8 !important; }
                 </style>
                 ${lcTabBarHtml()}
                 ${lcExecStripHtml()}
@@ -8554,7 +8589,7 @@
                     </div>
                 </div>
                 ${lcPhaseTimelineSectionHtml(phase)}
-                <div class="bg-white rounded-2xl shadow-sm border p-5">
+                <div id="lcPhaseDetailBody" class="bg-white rounded-2xl shadow-sm border p-5">
                     ${lcDetailPanelHtml()}
                 </div>
             </div>`;
@@ -8673,10 +8708,20 @@
                 const rad = angle * Math.PI / 180;
                 const pushLeft = Math.cos(rad) < 0; // which side of the node the callout opens toward
 
+                // Title position, expressed as a % of .lc-node-hit's OWN box
+                // (not the viewBox) so it scales correctly with the SVG at
+                // any rendered size: radially outward from the node center,
+                // just past its glow halo, so titles fan out around the
+                // circle instead of all sitting directly underneath.
+                const boxSize = nodeR * 2;
+                const labelDist = nodeR + 24;
+                const titleLeftPct = 50 + (labelDist * Math.cos(rad) / boxSize) * 100;
+                const titleTopPct = 50 + (labelDist * Math.sin(rad) / boxSize) * 100;
+
                 return `
                 <div data-lc-phase="${p.code}" class="lc-node-hit" style="position:absolute; right:${100 - leftPct}%; top:${topPct}%; width:${nodeR * 2}px; height:${nodeR * 2}px; transform:translate(50%, -50%); pointer-events:auto; cursor:pointer;">
-                    <div class="text-center pointer-events-none" style="position:absolute; right:50%; top:100%; transform:translate(50%, 6px); white-space:nowrap;">
-                        <span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full" style="color:${meta.color}; background:rgba(15,23,42,.55);">${toPersianDigits(i + 1)} · ${toPersianDigits(Math.round(actual))}٪</span>
+                    <div class="lc-node-title-wrap text-center pointer-events-none" style="position:absolute; right:${100 - titleLeftPct}%; top:${titleTopPct}%; transform:translate(50%, -50%); width:130px; z-index:2;">
+                        <span class="lc-node-title" style="color:${meta.color};">${esc(p.title)}</span>
                     </div>
                     <div class="lc-callout${isSelected ? ' lc-callout-pinned' : ''} pointer-events-none" style="position:absolute; ${pushLeft ? 'right' : 'left'}:calc(100% + 10px); top:50%; transform:translateY(-50%); width:180px; z-index:5;">
                         <div class="rounded-xl px-3 py-2.5 text-center" style="background:rgba(8,15,30,.88); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.14); box-shadow:0 8px 24px rgba(0,0,0,.35);">
@@ -9985,7 +10030,12 @@
         function lcSelectPhase(code) {
             lcState.selectedPhase = code;
             lcRenderAll();
-            document.getElementById('lifecycleView')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Land where the user actually needs to act — the checklist/
+            // gate-action body at the bottom of the phase page — rather than
+            // jumping to the top of the whole لایف‌سایکل view (hero + its
+            // own timeline), which just makes them scroll down again anyway.
+            const target = document.getElementById('lcPhaseDetailBody') || document.getElementById('lifecycleView');
+            target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function lcBindEvents() {
