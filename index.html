@@ -8221,6 +8221,11 @@
             baselines: [],
             collapsedScheduleRows: new Set(),
             scheduleEditor: null,
+            phaseDurations: {},
+            strategyDeps: {},
+            masterSchedule: null,
+            scheduleVersions: [],
+            strategyDraft: null,
         };
 
         const LC_OBJECTIVE_STATUSES = [['not_started', 'شروع نشده', 'slate'], ['in_progress', 'در حال انجام', 'amber'], ['completed', 'تکمیل‌شده', 'emerald'], ['blocked', 'مسدود', 'red']];
@@ -8312,7 +8317,7 @@
             document.getElementById('lcProjectNameLabel').textContent = projectName;
             document.getElementById('lcBody').innerHTML = '<p class="text-center text-slate-400 p-10">در حال بارگذاری چرخه عمر پروژه...</p>';
 
-            const [{ data: phases, error: phasesErr }, { data: projectPhases }, { data: items }, { data: gateDecisions }, { data: progressHistory }, { data: clientReports }, { data: scheduleItems }, { data: scheduleDeps }, { data: baselines }] = await Promise.all([
+            const [{ data: phases, error: phasesErr }, { data: projectPhases }, { data: items }, { data: gateDecisions }, { data: progressHistory }, { data: clientReports }, { data: scheduleItems }, { data: scheduleDeps }, { data: baselines }, { data: phaseDurations }, { data: strategyDeps }, { data: masterSchedule }, { data: scheduleVersions }] = await Promise.all([
                 _supabase.from('lifecycle_phases').select('*, lifecycle_objectives(*), lifecycle_outputs(*), lifecycle_criteria(*)').eq('is_active', true).order('sort_order'),
                 _supabase.from('project_lifecycle_phases').select('*').eq('project_name', projectName),
                 _supabase.from('project_phase_items').select('*').eq('project_name', projectName),
@@ -8322,6 +8327,10 @@
                 _supabase.from('lifecycle_schedule_items').select('*').eq('project_name', projectName),
                 _supabase.from('lifecycle_schedule_dependencies').select('*').eq('project_name', projectName),
                 _supabase.from('lifecycle_schedule_baselines').select('*, lifecycle_schedule_baseline_items(*)').eq('project_name', projectName).order('created_at', { ascending: false }),
+                _supabase.from('lifecycle_phase_durations').select('*'),
+                _supabase.from('lifecycle_strategy_phase_dependencies').select('*'),
+                _supabase.from('lifecycle_master_schedule').select('*').eq('project_name', projectName).maybeSingle(),
+                _supabase.from('lifecycle_master_schedule_versions').select('*').eq('project_name', projectName).order('created_at', { ascending: false }),
             ]);
 
             if (phasesErr) {
@@ -8352,6 +8361,16 @@
             lcState.scheduleItems = (scheduleItems || []).slice().sort((a, b) => (a.seq - b.seq) || (a.id - b.id));
             lcState.scheduleDeps = scheduleDeps || [];
             lcState.baselines = baselines || [];
+            lcState.phaseDurations = {};
+            (phaseDurations || []).forEach(d => { lcState.phaseDurations[d.phase_code] = d.duration_days; });
+            lcState.strategyDeps = {};
+            (strategyDeps || []).forEach(d => {
+                lcState.strategyDeps[d.strategy] = lcState.strategyDeps[d.strategy] || [];
+                lcState.strategyDeps[d.strategy].push(d);
+            });
+            lcState.masterSchedule = masterSchedule || null;
+            lcState.scheduleVersions = scheduleVersions || [];
+            lcState.strategyDraft = null;
             lcState.canEdit = isAdminUser() || myProjectAccess.some(a => a.project_name === projectName);
             // Open on the project's current phase by default (matching the
             // "at a glance" executive view) rather than an empty placeholder
@@ -9341,9 +9360,15 @@
             // specifically so the caret's own <button> can nest inside it
             // without producing invalid (and click-broken) nested buttons.
             const editAttrs = lcState.canEdit ? `data-lc-open-schedule-editor data-kind="${row.isPhase ? 'phase' : 'item'}" data-phase="${esc(row.phaseCode)}" data-item-id="${row.isPhase ? '' : row.item.id}"` : '';
+            // Duration in parens on phase rows only (Section 7 of the
+            // Execution Strategy spec) — purely a label, reads from the
+            // same lifecycle_phase_durations master data the schedule
+            // engine itself schedules against, so it never drifts from it.
+            const durationDays = row.isPhase ? lcState.phaseDurations[row.phaseCode] : null;
+            const durationSuffix = durationDays ? ` (${toPersianDigits(Math.round(durationDays / 30 * 10) / 10)}م)` : '';
             return `<div ${editAttrs} class="flex items-center gap-1.5 w-full px-1 overflow-hidden${lcState.canEdit ? ' cursor-pointer hover:bg-white/5 rounded' : ''}" style="padding-right:${row.depth * 14}px;">
                 ${caret}${gateDot}${statusBadge}
-                <span class="text-[10.5px] ${titleCls} truncate" title="${esc(row.title)}">${esc(row.title)}</span>
+                <span class="text-[10.5px] ${titleCls} truncate" title="${esc(row.title)}">${esc(row.title)}${durationSuffix}</span>
                 ${weightTag}${coverageBadge}${fitButtons}
             </div>`;
         }
@@ -9406,9 +9431,18 @@
                 <div class="absolute inset-y-0 left-0" data-lc-resize="start" style="width:6px; cursor:ew-resize;"></div>
                 <div class="absolute inset-y-0 right-0" data-lc-resize="finish" style="width:6px; cursor:ew-resize;"></div>` : '';
 
+            // Critical-path phases (zero float in the Master Schedule's own
+            // backward-pass CPM) get a red outline instead of the ordinary
+            // planned-bar border — a read-only visual cue, item-level bars
+            // are untouched since only the phase-level Execution Strategy
+            // engine computes float today.
+            const cpEntry = row.isPhase ? lcCriticalSetForCurrentSchedule()?.[row.phaseCode] : null;
+            const barBorder = cpEntry?.critical ? '#f87171' : `${LC_PLANNED_COLOR}aa`;
+            const criticalTitle = cpEntry?.critical ? ' title="روی مسیر بحرانی (Critical Path)"' : '';
+
             return `
             ${baselineBar}
-            <div class="absolute rounded" ${dragAttrs} style="left:${left}%; width:${width}%; top:${barTop}px; height:14px; background:${LC_PLANNED_COLOR}33; border:1px solid ${LC_PLANNED_COLOR}aa; overflow:visible; ${draggable ? 'cursor:grab;' : ''}"><div class="w-full h-full overflow-hidden rounded">${inlineFill}</div>${handles}</div>
+            <div class="absolute rounded"${criticalTitle} ${dragAttrs} style="left:${left}%; width:${width}%; top:${barTop}px; height:14px; background:${LC_PLANNED_COLOR}33; border:1px solid ${barBorder}; overflow:visible; ${draggable ? 'cursor:grab;' : ''}"><div class="w-full h-full overflow-hidden rounded">${inlineFill}</div>${handles}</div>
             ${actualBar}`;
         }
 
@@ -9541,17 +9575,341 @@
             lcRenderAll();
         }
 
+        // ---------------- Master Project Lifecycle & Schedule — Execution Strategy engine ----------------
+        // ADDITIVE on top of the unchanged G1..G9 lifecycle: this only ever
+        // computes planned_start/planned_finish for the existing 9 phases
+        // and writes them onto project_lifecycle_phases, so the Master Plan
+        // Gantt below (lcGanttGridHtml, already built) needs no structural
+        // change to display it. Gate count, each gate's sub-items/pass
+        // criteria and the orbit view itself are completely untouched.
+        const LC_STRATEGIES = [
+            { key: 'sequential', label: 'ترتیبی (Sequential)', desc: 'محافظه‌کارانه، عمدتاً متوالی' },
+            { key: 'overlapping', label: 'همپوشان (Overlapping)', desc: 'همپوشانی کنترل‌شده بین فازها' },
+            { key: 'fast_track', label: 'تسریع‌شده (Fast-Track)', desc: 'همپوشانی تهاجمی از طریق SS/FF/FS+Lag' },
+            { key: 'emergency_fast_track', label: 'تسریع اضطراری (Emergency)', desc: 'حداکثر همپوشانی کنترل‌شده برای شرایط فوریتی/فورس‌ماژور' },
+        ];
+        const LC_STRATEGY_LABELS = Object.fromEntries(LC_STRATEGIES.map(s => [s.key, s.label]));
+        const LC_GOVERNANCE_FLOW = ['draft', 'proposed', 'reviewed', 'approved', 'baseline', 'in_execution', 'revised', 'completed'];
+        const LC_GOVERNANCE_LABELS = {
+            draft: 'پیش‌نویس', proposed: 'پیشنهادی', reviewed: 'بازبینی‌شده', approved: 'تاییدشده',
+            baseline: 'خط مبنا', in_execution: 'در حال اجرا', revised: 'بازنگری‌شده', completed: 'تکمیل‌شده',
+        };
+
+        function lcMasterScheduleStrategy() {
+            return (lcState.strategyDraft && lcState.strategyDraft.execution_strategy) || lcState.masterSchedule?.execution_strategy || 'sequential';
+        }
+        function lcMasterScheduleStartIso() {
+            return (lcState.strategyDraft && lcState.strategyDraft.project_start_date) || lcState.masterSchedule?.project_start_date || null;
+        }
+        function lcMasterScheduleIsDraft() {
+            const ms = lcState.masterSchedule;
+            if (!ms) return true;
+            return ms.execution_strategy !== lcMasterScheduleStrategy() || ms.project_start_date !== lcMasterScheduleStartIso();
+        }
+
+        function lcPhaseDependencyFor(strategy, succCode) {
+            return (lcState.strategyDeps[strategy] || []).find(d => d.succ_phase_code === succCode) || null;
+        }
+
+        // Forward-pass CPM over the 9 phases in lifecycle_phases.sort_order —
+        // same FS/SS/FF/SF + Lag/Lead semantics as lcRequiredSuccessorDate
+        // below, walked once in fixed phase order rather than a general
+        // graph (every strategy's dependencies only ever point from an
+        // earlier phase to a later one — a deliberate authoring rule for
+        // lifecycle_strategy_phase_dependencies, not merely convenient).
+        function lcComputeMasterSchedule(strategy, startIso) {
+            const order = lcState.phases.map(p => p.code);
+            if (!order.length || !startIso) return null;
+            const start = {}, finish = {};
+            order.forEach((code, i) => {
+                const dur = lcState.phaseDurations[code];
+                if (dur == null) { start[code] = null; finish[code] = null; return; }
+                if (i === 0) { start[code] = startIso; finish[code] = lcAddDays(startIso, dur); return; }
+                const dep = lcPhaseDependencyFor(strategy, code);
+                let s;
+                if (dep && start[dep.pred_phase_code] != null) {
+                    const anchor = (dep.dep_type === 'SS' || dep.dep_type === 'SF') ? start[dep.pred_phase_code] : finish[dep.pred_phase_code];
+                    const raw = lcAddDays(anchor, dep.lag_days || 0);
+                    s = dep.dep_type === 'SF' ? lcAddDays(raw, -dur) : raw;
+                } else {
+                    s = finish[order[i - 1]];
+                }
+                start[code] = s;
+                finish[code] = lcAddDays(s, dur);
+            });
+            const lastCode = order[order.length - 1];
+            return {
+                order, start, finish,
+                startupDate: finish['G7'] ?? null,
+                completionDate: finish[lastCode] ?? null,
+                totalDays: finish[lastCode] ? lcDaysBetween(startIso, finish[lastCode]) : null,
+            };
+        }
+
+        // Standard backward-pass CPM: the last phase's late finish pins to
+        // its own early finish (no externally-imposed deadline), then walks
+        // phases in reverse deriving each one's late start/finish from every
+        // phase whose start/finish depends on it — the same dependency
+        // semantics as the forward pass above, solved in the other
+        // direction. A phase with zero float (its early and late dates
+        // coincide) is on the Critical Path.
+        function lcComputeMasterCriticalPath(strategy, startIso) {
+            const sched = lcComputeMasterSchedule(strategy, startIso);
+            if (!sched) return null;
+            const { order } = sched;
+            const dur = code => lcState.phaseDurations[code];
+            const successorsOf = code => order.filter((c, i) => {
+                if (i === 0) return false;
+                const dep = lcPhaseDependencyFor(strategy, c);
+                return dep ? dep.pred_phase_code === code : order[i - 1] === code;
+            });
+            const lateStart = {}, lateFinish = {};
+            const lastCode = order[order.length - 1];
+            lateFinish[lastCode] = sched.finish[lastCode];
+            lateStart[lastCode] = lcAddDays(lateFinish[lastCode], -dur(lastCode));
+            for (let i = order.length - 2; i >= 0; i--) {
+                const code = order[i];
+                if (sched.start[code] == null) continue;
+                const succs = successorsOf(code);
+                const candidates = succs.map(succCode => {
+                    const dep = lcPhaseDependencyFor(strategy, succCode);
+                    const lag = dep && dep.pred_phase_code === code ? (dep.lag_days || 0) : 0;
+                    const depType = dep && dep.pred_phase_code === code ? dep.dep_type : 'FS';
+                    if (depType === 'SS') return lcAddDays(lateStart[succCode], dur(code) - lag);
+                    if (depType === 'FF') return lcAddDays(lateFinish[succCode], -lag);
+                    if (depType === 'SF') return lcAddDays(lateFinish[succCode], dur(code) - lag);
+                    return lcAddDays(lateStart[succCode], -lag);
+                }).filter(Boolean);
+                lateFinish[code] = candidates.length ? candidates.reduce((a, b) => (b < a ? b : a)) : sched.finish[code];
+                lateStart[code] = lcAddDays(lateFinish[code], -dur(code));
+            }
+            const result = {};
+            order.forEach(code => {
+                if (sched.start[code] == null) { result[code] = null; return; }
+                const floatDays = lcDaysBetween(sched.start[code], lateStart[code]);
+                result[code] = { earlyStart: sched.start[code], earlyFinish: sched.finish[code], lateStart: lateStart[code], lateFinish: lateFinish[code], floatDays, critical: floatDays <= 0 };
+            });
+            return result;
+        }
+
+        function lcCriticalSetForCurrentSchedule() {
+            if (!lcState.masterSchedule?.execution_strategy || !lcState.masterSchedule?.project_start_date) return null;
+            return lcComputeMasterCriticalPath(lcState.masterSchedule.execution_strategy, lcState.masterSchedule.project_start_date);
+        }
+
+        function lcSetStrategyDraft(key) {
+            lcState.strategyDraft = { execution_strategy: key, project_start_date: lcMasterScheduleStartIso() || new Date().toISOString().slice(0, 10) };
+            lcRenderAll();
+        }
+        function lcSetStrategyDraftStart(jalaliStr) {
+            const iso = jalaliInputToIso(jalaliStr);
+            if (!iso) { alert('تاریخ نامعتبر است.'); return; }
+            lcState.strategyDraft = { execution_strategy: lcMasterScheduleStrategy(), project_start_date: iso };
+            lcRenderAll();
+        }
+
+        async function lcApplyMasterSchedule() {
+            const strategy = lcMasterScheduleStrategy();
+            const startIso = lcMasterScheduleStartIso();
+            if (!startIso) { alert('لطفاً تاریخ شروع پروژه را وارد کنید.'); return; }
+            const sched = lcComputeMasterSchedule(strategy, startIso);
+            if (!sched) { alert('محاسبه برنامه ممکن نشد — مدت زمان همه فازها را بررسی کنید.'); return; }
+            const rows = sched.order.map(code => ({
+                project_name: lcState.projectName, phase_code: code,
+                planned_start: sched.start[code], planned_finish: sched.finish[code],
+            }));
+            const { data, error } = await _supabase.from('project_lifecycle_phases')
+                .upsert(rows, { onConflict: 'project_name,phase_code' })
+                .select();
+            if (error) { alert('خطا در اعمال برنامه: ' + error.message); return; }
+            data.forEach(row => { lcState.projectPhases[row.phase_code] = row; });
+            const wasBaselined = ['baseline', 'in_execution', 'revised', 'completed'].includes(lcState.masterSchedule?.governance_status);
+            const nextStatus = wasBaselined ? 'revised' : (!lcState.masterSchedule || lcState.masterSchedule.governance_status === 'draft' ? 'proposed' : lcState.masterSchedule.governance_status);
+            const { data: msRow, error: msErr } = await _supabase.from('lifecycle_master_schedule')
+                .upsert({ project_name: lcState.projectName, execution_strategy: strategy, project_start_date: startIso, governance_status: nextStatus, updated_at: new Date().toISOString(), updated_by: currentUser.email }, { onConflict: 'project_name' })
+                .select().single();
+            if (msErr) { alert('خطا در ثبت وضعیت زمان‌بندی: ' + msErr.message); return; }
+            lcState.masterSchedule = msRow;
+            lcState.strategyDraft = null;
+            await _supabase.from('lifecycle_audit_log').insert({
+                project_name: lcState.projectName, action: 'apply_master_schedule', field: 'execution_strategy',
+                old_value: null, new_value: strategy, changed_by: currentUser.email,
+            });
+            lcRenderAll();
+        }
+
+        async function lcCreateMasterBaseline() {
+            if (!lcState.masterSchedule) { alert('ابتدا برنامه زمان‌بندی را اعمال کنید («اعمال به برنامه فازها»).'); return; }
+            const existingVersions = lcState.scheduleVersions;
+            const isFirst = !existingVersions.length;
+            let versionLabel = 'V1.0', changeReason = null;
+            if (!isFirst) {
+                changeReason = prompt('دلیل بازنگری زمان‌بندی را وارد کنید (اختیاری):') || null;
+                const lastMajor = existingVersions.reduce((max, v) => Math.max(max, Math.floor(Number(v.version_label.replace('V', '')) || 0)), 1);
+                versionLabel = 'V' + (lastMajor + 1) + '.0';
+            }
+            if (!confirm(`ثبت «${versionLabel}» به عنوان خط مبنای جدید؟ این نسخه پس از ثبت غیرقابل ویرایش خواهد بود.`)) return;
+            const strategy = lcState.masterSchedule.execution_strategy;
+            const startIso = lcState.masterSchedule.project_start_date;
+            const sched = lcComputeMasterSchedule(strategy, startIso);
+            const { data: version, error } = await _supabase.from('lifecycle_master_schedule_versions').insert({
+                project_name: lcState.projectName, version_label: versionLabel, is_baseline: true, execution_strategy: strategy,
+                project_start_date: startIso, startup_date: sched?.startupDate || null, completion_date: sched?.completionDate || null,
+                total_duration_days: sched?.totalDays || null, change_reason: changeReason, created_by: currentUser.email,
+            }).select().single();
+            if (error) { alert('خطا در ثبت خط مبنا: ' + error.message); return; }
+            lcState.scheduleVersions.unshift(version);
+            const { data: msRow, error: msErr } = await _supabase.from('lifecycle_master_schedule')
+                .update({ governance_status: 'baseline', active_baseline_version_id: version.id, updated_at: new Date().toISOString(), updated_by: currentUser.email })
+                .eq('project_name', lcState.projectName).select().single();
+            if (msErr) { alert('خطا در به‌روزرسانی وضعیت: ' + msErr.message); return; }
+            lcState.masterSchedule = msRow;
+            lcRenderAll();
+        }
+
+        function lcMasterScheduleKpiHtml() {
+            const strategy = lcMasterScheduleStrategy();
+            const startIso = lcMasterScheduleStartIso();
+            const sched = startIso ? lcComputeMasterSchedule(strategy, startIso) : null;
+            const isDraft = lcMasterScheduleIsDraft();
+            const g9 = lcState.phases[lcState.phases.length - 1];
+            const appliedStartup = lcState.projectPhases['G7']?.planned_finish || null;
+            const appliedCompletion = g9 ? (lcState.projectPhases[g9.code]?.planned_finish || null) : null;
+            const startupIso = isDraft ? (sched?.startupDate || null) : (appliedStartup || sched?.startupDate || null);
+            const completionIso = isDraft ? (sched?.completionDate || null) : (appliedCompletion || sched?.completionDate || null);
+            const totalMonths = startIso && completionIso ? Math.round(lcDaysBetween(startIso, completionIso) / 30 * 10) / 10 : null;
+            const cells = [
+                ['🚀 راه‌اندازی برنامه‌ای (Start-up)', startupIso ? formatJalali(startupIso) : '—'],
+                ['🏁 تکمیل قراردادی (FAC)', completionIso ? formatJalali(completionIso) : '—'],
+                ['مدت کل پروژه', totalMonths != null ? toPersianDigits(totalMonths) + ' ماه' : '—'],
+                ['وضعیت زمان‌بندی', LC_GOVERNANCE_LABELS[lcState.masterSchedule?.governance_status || 'draft']],
+            ];
+            return `<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                ${cells.map(([label, value]) => `<div class="rounded-xl p-3 text-center" style="background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1);">
+                    <p class="text-[9.5px] mb-1" style="color:#93c5fd;">${esc(label)}</p>
+                    <p class="text-white font-extrabold text-sm">${value}</p>
+                </div>`).join('')}
+                ${isDraft && lcState.canEdit ? `<p class="col-span-2 md:col-span-4 text-[10px]" style="color:#fbbf24;">⚠ این اعداد بر اساس استراتژی/تاریخ شروعِ درحال‌بررسی محاسبه شده و هنوز به برنامه فازها اعمال نشده — برای ثبت، «اعمال به برنامه فازها» را بزنید.</p>` : ''}
+            </div>`;
+        }
+
+        function lcStrategyComparisonTableHtml(startIso) {
+            if (!startIso) return '';
+            const current = lcMasterScheduleStrategy();
+            const rows = LC_STRATEGIES.map(s => {
+                const sched = lcComputeMasterSchedule(s.key, startIso);
+                const startupM = sched?.startupDate ? Math.round(lcDaysBetween(startIso, sched.startupDate) / 30 * 10) / 10 : null;
+                const finalM = sched?.completionDate ? Math.round(lcDaysBetween(startIso, sched.completionDate) / 30 * 10) / 10 : null;
+                return `<tr style="color:${current === s.key ? '#ffffff' : '#93c5fd'}; font-weight:${current === s.key ? '800' : '400'};">
+                    <td class="py-1 pl-2">${esc(s.label)}</td>
+                    <td class="py-1 text-center">${startupM != null ? toPersianDigits(startupM) + ' ماه' : '—'}</td>
+                    <td class="py-1 text-center">${finalM != null ? toPersianDigits(finalM) + ' ماه' : '—'}</td>
+                </tr>`;
+            }).join('');
+            return `<table class="w-full text-[10.5px] mt-1 mb-2">
+                <thead><tr style="color:#64748b;"><th class="text-right pb-1 font-normal">استراتژی اجرا</th><th class="pb-1 font-normal">Start-up</th><th class="pb-1 font-normal">تکمیل نهایی</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+        }
+
+        function lcMasterScheduleStrategyRowHtml() {
+            const current = lcMasterScheduleStrategy();
+            const startIso = lcMasterScheduleStartIso() || new Date().toISOString().slice(0, 10);
+            return `<div class="mb-3">
+                <div class="flex flex-wrap items-center gap-2 mb-2">
+                    ${LC_STRATEGIES.map(s => `<button type="button" data-lc-set-strategy="${s.key}" title="${esc(s.desc)}" class="text-[10.5px] font-bold px-3 py-1.5 rounded-lg border transition ${current === s.key ? 'bg-blue-900 text-white border-blue-900' : 'text-slate-200 hover:bg-white/5'}">${esc(s.label)}</button>`).join('')}
+                    <span class="mr-auto flex items-center gap-1.5 text-[10.5px]" style="color:#93c5fd;">
+                        تاریخ شروع پروژه:
+                        <input type="text" data-lc-strategy-start value="${startIso ? formatJalali(startIso) : ''}" placeholder="۱۴۰۴/۰۱/۰۱" class="text-[10.5px] border rounded-lg px-2 py-1" style="width:100px;">
+                    </span>
+                    <button type="button" data-lc-action="apply-master-schedule" class="text-[10.5px] font-bold px-3 py-1.5 rounded-lg bg-emerald-600 text-white">اعمال به برنامه فازها ↻</button>
+                </div>
+                ${lcStrategyComparisonTableHtml(startIso)}
+                ${current !== 'sequential' ? `<p class="text-[10px] px-3 py-2 rounded-lg" style="background:rgba(251,191,36,.1); color:#fbbf24; border:1px solid rgba(251,191,36,.3);">⚠️ افزایش ریسک تسریع (Fast-Track Exposure) — همپوشانی فعالیت‌ها می‌تواند ریسک هماهنگی، تغییرات و دوباره‌کاری را افزایش دهد.</p>` : ''}
+            </div>`;
+        }
+
+        function lcExecutiveSummaryCardHtml() {
+            const applied = lcState.masterSchedule;
+            const strategy = lcMasterScheduleStrategy();
+            const startIso = lcMasterScheduleStartIso();
+            if (!startIso) return '';
+            const sched = lcComputeMasterSchedule(strategy, startIso);
+            const g9 = lcState.phases[lcState.phases.length - 1];
+            const appliedCompletion = g9 ? (lcState.projectPhases[g9.code]?.planned_finish || null) : null;
+            const forecastIso = appliedCompletion || sched?.completionDate || null;
+            const baseline = applied?.active_baseline_version_id ? lcState.scheduleVersions.find(v => v.id === applied.active_baseline_version_id) : null;
+            const varianceDays = baseline?.completion_date && forecastIso ? lcDaysBetween(baseline.completion_date, forecastIso) : null;
+            const cp = lcComputeMasterCriticalPath(strategy, startIso);
+            const criticalTitles = cp ? Object.entries(cp).filter(([, v]) => v?.critical).map(([code]) => lcState.phases.find(p => p.code === code)?.title || code) : [];
+            const rows = [
+                ['شروع پروژه', startIso ? formatJalali(startIso) : '—'],
+                ['استراتژی اجرا', LC_STRATEGY_LABELS[strategy]],
+                ['مدت کل', sched?.totalDays != null ? toPersianDigits(Math.round(sched.totalDays / 30 * 10) / 10) + ' ماه' : '—'],
+                ['راه‌اندازی برنامه‌ای', sched?.startupDate ? formatJalali(sched.startupDate) : '—'],
+                ['تکمیل قراردادی', sched?.completionDate ? formatJalali(sched.completionDate) : '—'],
+                ['پیش‌بینی جاری', forecastIso ? formatJalali(forecastIso) : '—'],
+                ['انحراف زمان‌بندی', varianceDays != null ? `${varianceDays > 0 ? '+' : ''}${toPersianDigits(varianceDays)} روز نسبت به خط مبنا` : '—'],
+                ['وضعیت خط مبنا', baseline ? `تاییدشده (${esc(baseline.version_label)})` : 'تاییدنشده'],
+            ];
+            return `<div class="rounded-xl p-4 mb-3" style="background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1);">
+                <p class="text-white font-extrabold text-[11px] mb-2">خلاصه اجرایی چرخه عمر پروژه</p>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2">
+                    ${rows.map(([label, value]) => `<div><p class="text-[9px]" style="color:#64748b;">${esc(label)}</p><p class="text-[10.5px] font-bold text-slate-200">${value}</p></div>`).join('')}
+                </div>
+                ${criticalTitles.length ? `<p class="text-[9.5px] mt-2 pt-2" style="border-top:1px solid rgba(255,255,255,.08); color:#f87171;">مسیر بحرانی (Critical Path): ${criticalTitles.map(esc).join(' ← ')}</p>` : ''}
+            </div>`;
+        }
+
+        function lcGovernanceStepperHtml() {
+            const current = lcState.masterSchedule?.governance_status || 'draft';
+            const idx = LC_GOVERNANCE_FLOW.indexOf(current);
+            return `<div class="flex flex-wrap items-center gap-1 mb-3 text-[9.5px]">
+                ${LC_GOVERNANCE_FLOW.map((st, i) => `<span class="px-2 py-1 rounded-full ${i <= idx ? 'bg-blue-900 text-white' : 'border text-slate-500'}">${esc(LC_GOVERNANCE_LABELS[st])}</span>${i < LC_GOVERNANCE_FLOW.length - 1 ? '<span style="color:#475569;">←</span>' : ''}`).join('')}
+            </div>`;
+        }
+
+        function lcMasterScheduleHistoryHtml() {
+            if (!lcState.scheduleVersions.length) return '';
+            return `<div class="mb-3">
+                <p class="text-white font-extrabold text-[10.5px] mb-2">تاریخچه نسخه‌های زمان‌بندی</p>
+                <table class="w-full text-[10px]">
+                    <thead><tr style="color:#64748b;"><th class="text-right pb-1 font-normal">نسخه</th><th class="pb-1 font-normal">استراتژی</th><th class="pb-1 font-normal">Start-up</th><th class="pb-1 font-normal">تکمیل</th><th class="pb-1 font-normal">تاریخ ثبت</th></tr></thead>
+                    <tbody>
+                        ${lcState.scheduleVersions.map(v => `<tr style="color:${v.is_baseline ? '#ffffff' : '#93c5fd'};">
+                            <td class="py-1">${esc(v.version_label)}${v.is_baseline ? ' 📌' : ''}</td>
+                            <td class="py-1">${esc(LC_STRATEGY_LABELS[v.execution_strategy] || v.execution_strategy)}</td>
+                            <td class="py-1">${v.startup_date ? formatJalali(v.startup_date) : '—'}</td>
+                            <td class="py-1">${v.completion_date ? formatJalali(v.completion_date) : '—'}</td>
+                            <td class="py-1">${formatJalali(v.created_at)}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+        }
+
         function lcMasterPlanHtml() {
             const rows = lcBuildScheduleRows();
             const range = lcScheduleDateRange();
             return `
             <div class="lc-dark-panel rounded-2xl p-4 md:p-6" style="background: radial-gradient(ellipse 90% 70% at 50% 10%, #123159 0%, #04070f 78%); border: 1px solid rgba(255,255,255,.07); min-height: 60vh;">
-                <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
-                    <h3 class="text-white font-extrabold text-sm">برنامه زمان‌بندی چرخه عمر پروژه</h3>
-                    ${lcState.canEdit ? `<button type="button" data-lc-action="create-baseline" class="no-print text-[10.5px] font-bold px-3 py-1.5 rounded-lg border text-slate-200 hover:bg-white/5">📌 ثبت خط مبنا (Baseline)</button>` : ''}
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <h3 class="text-white font-extrabold text-sm">چرخه عمر پروژه | برنامه زمان‌بندی اصلی (Master Schedule)</h3>
+                    ${lcState.canEdit ? `<button type="button" data-lc-action="create-master-baseline" class="no-print text-[10.5px] font-bold px-3 py-1.5 rounded-lg border text-slate-200 hover:bg-white/5">📌 تایید و تبدیل به Baseline</button>` : ''}
                 </div>
-                ${lcBaselineVarianceSummaryHtml()}
-                ${lcGanttGridHtml(rows, range)}
+                ${lcGovernanceStepperHtml()}
+                ${lcMasterScheduleKpiHtml()}
+                ${lcState.canEdit ? lcMasterScheduleStrategyRowHtml() : lcStrategyComparisonTableHtml(lcMasterScheduleStartIso())}
+                ${lcExecutiveSummaryCardHtml()}
+                ${lcMasterScheduleHistoryHtml()}
+                <div class="mt-4 pt-4" style="border-top:1px solid rgba(255,255,255,.08);">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
+                        <h4 class="text-white font-extrabold text-xs">برنامه زمان‌بندی تفصیلی (Gantt)</h4>
+                        ${lcState.canEdit ? `<button type="button" data-lc-action="create-baseline" class="no-print text-[10.5px] font-bold px-3 py-1.5 rounded-lg border text-slate-200 hover:bg-white/5">📌 ثبت خط مبنا فعالیت‌ها (Baseline)</button>` : ''}
+                    </div>
+                    ${lcBaselineVarianceSummaryHtml()}
+                    ${lcGanttGridHtml(rows, range)}
+                </div>
             </div>`;
         }
 
@@ -10052,6 +10410,10 @@
             root.querySelectorAll('[data-lc-action="auto-fit"]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcAutoFitToChildren(lcRowFromRef(btn.dataset.rowKind, btn.dataset.phase, btn.dataset.itemId)); }));
             root.querySelectorAll('[data-lc-action="fit-children"]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcFitChildrenToPhase(lcRowFromRef(btn.dataset.rowKind, btn.dataset.phase, btn.dataset.itemId)); }));
             root.querySelectorAll('[data-lc-action="create-baseline"]').forEach(btn => btn.addEventListener('click', lcCreateBaseline));
+            root.querySelectorAll('[data-lc-set-strategy]').forEach(btn => btn.addEventListener('click', () => lcSetStrategyDraft(btn.dataset.lcSetStrategy)));
+            root.querySelectorAll('[data-lc-strategy-start]').forEach(input => input.addEventListener('change', () => lcSetStrategyDraftStart(input.value.trim())));
+            root.querySelectorAll('[data-lc-action="apply-master-schedule"]').forEach(btn => btn.addEventListener('click', lcApplyMasterSchedule));
+            root.querySelectorAll('[data-lc-action="create-master-baseline"]').forEach(btn => btn.addEventListener('click', lcCreateMasterBaseline));
             lcBindGanttDragEvents();
             root.querySelectorAll('[data-lc-phase]').forEach(el => el.addEventListener('click', () => lcSelectPhase(el.dataset.lcPhase)));
             const backBtn = root.querySelector('[data-lc-back-to-orbit]');
