@@ -4139,12 +4139,23 @@
                 ? psPctUncapped(cr.contract_current_amount_rial, budgetCeilingRial)
                 : (cr.contract_current_amount_eur != null && budgetCeilingEur ? psPctUncapped(cr.contract_current_amount_eur, budgetCeilingEur) : null);
 
-            const elapsedMonths = cr.contract_start_date ? monthsBetween(cr.contract_start_date) : null;
-            const totalPct = (elapsedMonths != null && cr.contract_duration_months) ? psPctUncapped(elapsedMonths, cr.contract_duration_months) : null;
+            // Elapsed % is measured in exact DAYS against contract_end_date
+            // (itself derived from start+duration via proper Jalali-month
+            // arithmetic in updateEndDateFromStartAndDuration), not whole
+            // floored months. monthsBetween() only advances once a full
+            // CALENDAR month has completed, so a deadline that actually
+            // passed just days or a couple of weeks ago could still read
+            // under 100% — and fail to raise «نیاز به تطویل» — for up to a
+            // month after it was genuinely overrun. Falls back to the
+            // month-based figure only for legacy rows saved before
+            // contract_end_date was auto-derived and stored.
+            const totalPct = (cr.contract_start_date && cr.contract_end_date)
+                ? psPctUncapped(Math.max(0, lcDaysBetween(cr.contract_start_date, new Date())), lcDaysBetween(cr.contract_start_date, cr.contract_end_date))
+                : (cr.contract_start_date && cr.contract_duration_months ? psPctUncapped(monthsBetween(cr.contract_start_date), cr.contract_duration_months) : null);
             let extendedPct = null;
-            if (elapsedMonths != null && cr.contract_start_date && cr.latest_extension_end_date) {
-                const extendedMonths = monthsBetween(cr.contract_start_date, new Date(cr.latest_extension_end_date));
-                extendedPct = extendedMonths ? psPctUncapped(elapsedMonths, extendedMonths) : null;
+            if (cr.contract_start_date && cr.latest_extension_end_date) {
+                const totalExtendedDays = lcDaysBetween(cr.contract_start_date, cr.latest_extension_end_date);
+                extendedPct = totalExtendedDays ? psPctUncapped(Math.max(0, lcDaysBetween(cr.contract_start_date, new Date())), totalExtendedDays) : null;
             }
             // Distinct from extendedPct (the whole project's elapsed% against
             // the new total duration): this is how much of just the ADDED
@@ -4153,9 +4164,8 @@
             // آخرین تطویل سپری شده".
             let extensionWindowPct = null;
             if (cr.contract_end_date && cr.latest_extension_end_date) {
-                const windowMonths = monthsBetween(cr.contract_end_date, new Date(cr.latest_extension_end_date));
-                const elapsedInWindowMonths = monthsBetween(cr.contract_end_date);
-                extensionWindowPct = windowMonths ? psPctUncapped(elapsedInWindowMonths, windowMonths) : null;
+                const windowDays = lcDaysBetween(cr.contract_end_date, cr.latest_extension_end_date);
+                extensionWindowPct = windowDays ? psPctUncapped(Math.max(0, lcDaysBetween(cr.contract_end_date, new Date())), windowDays) : null;
             }
 
             const activeTimePct = extendedPct != null ? extendedPct : totalPct;
