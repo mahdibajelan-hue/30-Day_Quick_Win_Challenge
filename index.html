@@ -295,7 +295,7 @@
     <div class="flex min-h-screen">
 
         <!-- SIDEBAR (desktop) -->
-        <aside id="sidebar" class="hidden md:flex md:flex-col w-64 shrink-0 bg-white border-l border-slate-800 h-screen sticky top-0 overflow-y-auto scroll-thin">
+        <aside id="sidebar" class="hidden md:flex md:flex-col w-64 shrink-0 bg-white border-l border-slate-800 h-screen sticky top-0 overflow-y-auto scroll-thin" style="transition: width .2s ease, opacity .2s ease, border-width .2s ease;">
             <div class="flex items-center gap-3 p-5 border-b border-slate-800">
                 <img src="logo.png" alt="لوگوی شرکت" class="h-9 w-9 object-contain shrink-0" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
                 <div class="min-w-0">
@@ -339,6 +339,7 @@
                     <span id="topbarUserEmail" class="hidden font-bold text-slate-700 border-l pl-2 md:pl-3 truncate max-w-[96px] sm:max-w-[160px] md:max-w-none" dir="ltr"></span>
                     <span id="topbarDate" class="hidden sm:inline font-bold text-slate-600"></span>
                     <span class="hidden sm:flex items-center gap-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="topbarClock"></span></span>
+                    <button id="sidebarToggleBtn" type="button" title="نمایش/پنهان‌سازی نوار کناری" class="hidden md:inline-flex text-base leading-none hover:opacity-70 shrink-0">☰</button>
                     <button id="themeToggleBtn" type="button" class="text-base leading-none hover:opacity-70 shrink-0"></button>
                     <button id="profileBtn" type="button" title="مشخصات من" class="text-base leading-none hover:opacity-70 shrink-0">👤</button>
                     <button id="logoutBtn" type="button" title="خروج" class="hover:opacity-70 hover:text-red-600 shrink-0">
@@ -1292,7 +1293,10 @@
                                 <p class="text-xs text-slate-500 mt-0.5">پیشرفت، جذب بودجه و زمان‌بندی هر پروژه، بر اساس آخرین «اطلاعات پایه و پیشرفت پروژه» ثبت‌شده</p>
                             </div>
                         </div>
-                        <button type="button" onclick="printPage()" class="no-print text-xs font-bold px-4 py-2 rounded-xl border text-slate-600 hover:bg-slate-50">🖨 چاپ / PDF</button>
+                        <div class="no-print flex items-center gap-2">
+                            <button type="button" id="psBulkPassPreEpcBtn" class="hidden text-xs font-bold px-4 py-2 rounded-xl border text-amber-700 border-amber-300 hover:bg-amber-50">🚀 علامت‌گذاری فازهای پیش از EPC برای همه پروژه‌ها</button>
+                            <button type="button" onclick="printPage()" class="text-xs font-bold px-4 py-2 rounded-xl border text-slate-600 hover:bg-slate-50">🖨 چاپ / PDF</button>
+                        </div>
                     </div>
                 </div>
 
@@ -2213,6 +2217,30 @@
             applyTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
         });
         document.getElementById('logoutBtn').addEventListener('click', logout);
+
+        // «ساید بار کنار نرم‌افزار امکان مخفی شدن هم داشته باشد» — desktop
+        // only (mobile already collapses the sidebar into the bottom icon
+        // strip on its own); persisted per-browser like the theme toggle
+        // right above, so it stays collapsed across reloads.
+        function applySidebarCollapsed(collapsed) {
+            const sidebar = document.getElementById('sidebar');
+            const btn = document.getElementById('sidebarToggleBtn');
+            if (!sidebar || !btn) return;
+            sidebar.style.width = collapsed ? '0px' : '';
+            sidebar.style.opacity = collapsed ? '0' : '';
+            sidebar.style.borderLeftWidth = collapsed ? '0px' : '';
+            sidebar.classList.toggle('overflow-hidden', collapsed);
+            sidebar.classList.toggle('pointer-events-none', collapsed);
+            btn.textContent = collapsed ? '☰' : '✕';
+            btn.title = collapsed ? 'نمایش نوار کناری' : 'پنهان‌سازی نوار کناری';
+        }
+        applySidebarCollapsed(localStorage.getItem('lcSidebarCollapsed') === '1');
+        document.getElementById('sidebarToggleBtn').addEventListener('click', () => {
+            const isCurrentlyCollapsed = document.getElementById('sidebar').style.width === '0px';
+            const nextCollapsed = !isCurrentlyCollapsed;
+            localStorage.setItem('lcSidebarCollapsed', nextCollapsed ? '1' : '0');
+            applySidebarCollapsed(nextCollapsed);
+        });
 
         async function login() {
             const email = document.getElementById('loginEmail').value.trim().toLowerCase();
@@ -4344,10 +4372,65 @@
                 [...document.getElementById('psFilterProjects').options].forEach(o => { o.selected = false; });
                 psApplyFilters();
             });
+            document.getElementById('psBulkPassPreEpcBtn').addEventListener('click', lcBulkPassPreEpcPhasesForAllProjects);
+        }
+
+        // «بیشتر پروژه‌های حال حاضر من ... کلیه فازهای ابتدایی را گذرانده‌اند
+        // ... همه پروژه‌هایی که در حال اجرای EPC هستند رو مراحل قبلشون رو
+        // پیشرفت ۱۰۰ درصدی بده فقط EPC به بعد نیاز به تکمیل داشته باشد» —
+        // every project already being tracked via «اطلاعات پایه و پیشرفت
+        // پروژه» (client_reports) is, by construction, already at EPC
+        // execution or later, so this is a one-time backfill: for every
+        // phase before the EPC-engine phase (driven by lifecycle_phases
+        // itself, never hardcoded "G1..G5"), mark the gate passed and
+        // every one of its Key Outputs/Exit Criteria verified — skipping
+        // any phase already passed, so re-running it is harmless. Admin-only,
+        // and confirmed up front since it writes across every project at once.
+        async function lcBulkPassPreEpcPhasesForAllProjects() {
+            if (!isAdminUser()) return;
+            if (!confirm('این عملیات برای همه پروژه‌های ثبت‌شده (هر پروژه‌ای که «اطلاعات پایه و پیشرفت پروژه» دارد)، همه فازهای پیش از «اجرای پروژه (EPC)» را به‌صورت گذرانده‌شده (Passed) علامت می‌زند و خروجی‌ها/معیارهای آن‌ها را تاییدشده ثبت می‌کند.\n\nفازی که از قبل گذرانده‌شده باشد دست‌نخورده می‌ماند، اما این عملیات به‌صورت خودکار قابل بازگشت نیست. ادامه می‌دهید؟')) return;
+
+            const [{ data: reports, error: repErr }, { data: phases, error: phaseErr }, guideNames] = await Promise.all([
+                _supabase.from('client_reports').select('project_name'),
+                _supabase.from('lifecycle_phases').select('*, lifecycle_outputs(*), lifecycle_criteria(*)').eq('is_active', true).order('sort_order'),
+                getGuideProjectNames(),
+            ]);
+            if (repErr) { alert('خطا در خواندن فهرست پروژه‌ها: ' + repErr.message); return; }
+            if (phaseErr) { alert('خطا در خواندن فازهای مرجع: ' + phaseErr.message); return; }
+            const epcPhase = phases.find(p => p.progress_engine === 'epc');
+            if (!epcPhase) { alert('فاز EPC در داده مرجع یافت نشد.'); return; }
+            const prePhases = phases.filter(p => p.sort_order < epcPhase.sort_order);
+            if (!prePhases.length) { alert('هیچ فازی قبل از EPC یافت نشد.'); return; }
+            const projectNames = [...new Set((reports || []).map(r => r.project_name))].filter(name => !guideNames.has(name));
+            if (!projectNames.length) { alert('هیچ پروژه‌ای یافت نشد.'); return; }
+
+            let done = 0, skipped = 0;
+            const todayIso = new Date().toISOString().slice(0, 10);
+            for (const projectName of projectNames) {
+                const { data: existing } = await _supabase.from('project_lifecycle_phases').select('phase_code, gate_status').eq('project_name', projectName);
+                const alreadyPassed = new Set((existing || []).filter(pp => pp.gate_status === 'passed').map(pp => pp.phase_code));
+                for (const phase of prePhases) {
+                    if (alreadyPassed.has(phase.code)) { skipped++; continue; }
+                    const { error: ppErr } = await _supabase.from('project_lifecycle_phases')
+                        .upsert({ project_name: projectName, phase_code: phase.code, gate_status: 'passed', updated_at: new Date().toISOString(), updated_by: currentUser.email }, { onConflict: 'project_name,phase_code' });
+                    if (ppErr) continue;
+                    const itemRows = [];
+                    (phase.lifecycle_outputs || []).filter(o => o.is_active !== false).forEach(o => itemRows.push({ project_name: projectName, phase_code: phase.code, kind: 'output', item_id: o.id, status: 'verified', verified_by: currentUser.email, verification_date: todayIso }));
+                    (phase.lifecycle_criteria || []).filter(c => c.is_active !== false).forEach(c => itemRows.push({ project_name: projectName, phase_code: phase.code, kind: 'criterion', item_id: c.id, status: 'verified', verified_by: currentUser.email, verification_date: todayIso }));
+                    if (itemRows.length) {
+                        await _supabase.from('project_phase_items').upsert(itemRows, { onConflict: 'project_name,phase_code,kind,item_id' });
+                    }
+                    await _supabase.from('lifecycle_gate_decisions').insert({ project_name: projectName, phase_code: phase.code, decision: 'pass', decided_by: currentUser.email });
+                    done++;
+                }
+            }
+            alert(`انجام شد — ${toPersianDigits(done)} فاز در ${toPersianDigits(projectNames.length)} پروژه علامت‌گذاری شد، ${toPersianDigits(skipped)} فاز از قبل گذرانده بودند.`);
+            if (lcState.projectName) await openLifecyclePreview(lcState.projectName);
         }
 
         async function loadProjectsStatusView() {
             wirePsFilterControls();
+            document.getElementById('psBulkPassPreEpcBtn').classList.toggle('hidden', !isAdminUser());
             const body = document.getElementById('projectsStatusCards');
             body.innerHTML = '<p class="text-xs text-slate-500 py-8 text-center col-span-full">در حال بارگذاری...</p>';
 
@@ -8513,6 +8596,29 @@
             return actual > 0 ? 'active' : 'upcoming';
         }
 
+        // «در بخش نمایش چرخه عمر در صورتی که در هر یک از زیرمجموعه تاخیری
+        // ایجاد شده بصورت برجسته و کوچک با یک علامت اخطار نام زیرمجموعه و
+        // تعداد روز تاخیر ... نوشته شود» — the single WORST-overdue leaf
+        // schedule item under a phase (planned_finish already past, not
+        // yet 100% actual) — leaves only, so a parent container isn't
+        // separately flagged for a delay that's really its child's.
+        function lcMostDelayedScheduleItem(phaseCode) {
+            const todayIso = new Date().toISOString().slice(0, 10);
+            let worst = null;
+            const walk = (parentId) => {
+                lcScheduleChildren(phaseCode, parentId).forEach(item => {
+                    const children = lcScheduleChildren(phaseCode, item.id);
+                    if (children.length) { walk(item.id); return; }
+                    if (!item.planned_finish || item.planned_finish >= todayIso) return;
+                    if (lcItemActualPct(item) >= 100) return;
+                    const delayDays = lcDaysBetween(item.planned_finish, todayIso);
+                    if (!worst || delayDays > worst.delayDays) worst = { item, delayDays };
+                });
+            };
+            walk(null);
+            return worst;
+        }
+
         // ---------------- Rendering ----------------
         function lcRenderAll() {
             if (!lcState.phases.length) {
@@ -8777,12 +8883,16 @@
                 const labelDist = nodeR + 24;
                 const titleLeftPct = 50 + (labelDist * Math.cos(rad) / boxSize) * 100;
                 const titleTopPct = 50 + (labelDist * Math.sin(rad) / boxSize) * 100;
+                const delay = lcMostDelayedScheduleItem(p.code);
 
                 return `
                 <div data-lc-phase="${p.code}" class="lc-node-hit" style="position:absolute; right:${100 - leftPct}%; top:${topPct}%; width:${nodeR * 2}px; height:${nodeR * 2}px; transform:translate(50%, -50%); pointer-events:auto; cursor:pointer;">
                     <div class="lc-node-title-wrap text-center pointer-events-none" style="position:absolute; right:${100 - titleLeftPct}%; top:${titleTopPct}%; transform:translate(50%, -50%); width:130px; z-index:2;">
                         <span class="lc-node-title" style="color:${meta.color};">${esc(p.title)}</span>
                     </div>
+                    ${delay ? `<div class="pointer-events-none text-center" style="position:absolute; right:${100 - titleLeftPct}%; top:${titleTopPct}%; transform:translate(50%, calc(-50% + 15px)); width:160px; z-index:6;">
+                        <span class="animate-pulse text-[8px] font-extrabold px-1.5 py-0.5 rounded-full inline-block" style="background:#dc2626; color:#ffffff; box-shadow:0 0 6px rgba(220,38,38,.7);" title="زیرفعالیت تاخیردار">⚠ ${esc(lcTitleWithReviewFlag(delay.item.title).clean)} (+${toPersianDigits(delay.delayDays)} روز)</span>
+                    </div>` : ''}
                     <div class="lc-callout${isSelected ? ' lc-callout-pinned' : ''} pointer-events-none" style="position:absolute; ${pushLeft ? 'right' : 'left'}:calc(100% + 10px); top:50%; transform:translateY(-50%); width:180px; z-index:5;">
                         <div class="rounded-xl px-3 py-2.5 text-center" style="background:rgba(8,15,30,.88); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.14); box-shadow:0 8px 24px rgba(0,0,0,.35);">
                             <p class="text-[10px] font-bold" style="color:${meta.color};">${toPersianDigits(i + 1)} · ${esc(meta.label)}</p>
@@ -9071,11 +9181,19 @@
 
         function lcPhaseScheduleHtml(phase, pp) {
             const fmt = (d) => d ? formatJalali(d) : '—';
+            // project_lifecycle_phases.actual_start/actual_finish are never
+            // written by any form in this module — fall back to the same
+            // schedule-item rollup the Gantt bar itself now uses, so this
+            // panel doesn't keep reading "—" even once every sub-activity
+            // is actually done.
+            const derived = pp.actual_start || pp.actual_finish ? null : lcPhaseActualDateRange(phase.code);
+            const actualStart = pp.actual_start || derived?.start;
+            const actualFinish = pp.actual_finish || derived?.finish;
             return `<div class="border rounded-xl p-3 space-y-1.5 text-[11px]">
                 <div class="flex justify-between"><span class="text-slate-500">شروع برنامه‌ای</span><b class="text-slate-700">${fmt(pp.planned_start)}</b></div>
                 <div class="flex justify-between"><span class="text-slate-500">پایان برنامه‌ای</span><b class="text-slate-700">${fmt(pp.planned_finish)}</b></div>
-                <div class="flex justify-between"><span class="text-slate-500">شروع واقعی</span><b class="text-slate-700">${fmt(pp.actual_start)}</b></div>
-                <div class="flex justify-between"><span class="text-slate-500">پایان واقعی</span><b class="text-slate-700">${fmt(pp.actual_finish)}</b></div>
+                <div class="flex justify-between"><span class="text-slate-500">شروع واقعی</span><b class="text-slate-700">${fmt(actualStart)}</b></div>
+                <div class="flex justify-between"><span class="text-slate-500">پایان واقعی</span><b class="text-slate-700">${fmt(actualFinish)}</b></div>
                 <div class="flex justify-between"><span class="text-slate-500">وزن فاز در چرخه عمر</span><b class="text-slate-700">${pp.weight_pct != null ? toPersianDigits(pp.weight_pct) + '٪' : 'به‌صورت مساوی'}</b></div>
                 ${isAdminUser() ? `
                 <div class="flex items-center gap-2 pt-1">
@@ -9161,7 +9279,7 @@
         // are later phases of this same feature, not this one.
         const LC_JALALI_MONTHS = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
         const LC_GANTT_ROW_H = 30;
-        const LC_GANTT_HEADER_H = 26;
+        const LC_GANTT_HEADER_H = 32;
         const LC_GANTT_LABEL_W = 260;
         const LC_GANTT_TIMELINE_W = 760;
 
@@ -9242,6 +9360,12 @@
             return Math.max(0, Math.min(100, (days / range.totalDays) * 100));
         }
 
+        // «بخش هدر که مربوط به تاریخ هست دارای دو سطر باشد سطر بالایی سال
+        // ... سطر پایین شماره ماه ... هدف اینه که با نوشتن تاریخ‌ها کل هدر
+        // سیاه نشود» — yearLabel/monthLabel are rendered as two short
+        // stacked lines instead of one long "MonthName Year" string, so
+        // dense multi-year ranges (many month boundaries close together)
+        // don't overlap into an unreadable block of text.
         function lcJalaliMonthTicks(range) {
             const ticks = [];
             const d = new Date(range.minIso);
@@ -9249,11 +9373,27 @@
             let guard = 0;
             while (d <= end && guard < 3000) {
                 const [jy, jm, jd] = gregorianToJalali(d.getFullYear(), d.getMonth() + 1, d.getDate());
-                if (jd === 1) ticks.push({ iso: d.toISOString().slice(0, 10), label: LC_JALALI_MONTHS[jm - 1] + ' ' + toPersianDigits(jy) });
+                if (jd === 1) ticks.push({ iso: d.toISOString().slice(0, 10), yearLabel: toPersianDigits(jy), monthLabel: toPersianDigits(String(jm).padStart(2, '0')) });
                 d.setDate(d.getDate() + 1);
                 guard++;
             }
             return ticks;
+        }
+
+        // Faint alternating week bands across the timeline body — a rough,
+        // color-only sense of day-level granularity between month
+        // boundaries without adding any more text next to the already
+        // dense month/year ticks.
+        function lcWeekBandsHtml(range) {
+            const bands = [];
+            let weekIndex = 0;
+            for (let offset = 0; offset < range.totalDays; offset += 7, weekIndex++) {
+                if (weekIndex % 2 === 0) continue;
+                const leftPct = (offset / range.totalDays) * 100;
+                const widthPct = (Math.min(7, range.totalDays - offset) / range.totalDays) * 100;
+                bands.push(`<div class="absolute inset-y-0" style="left:${leftPct}%; width:${widthPct}%; background:#ffffff; opacity:.025;"></div>`);
+            }
+            return bands.join('');
         }
 
         // ---------------- Effective timeline coverage (Phase 3) ----------------
@@ -9344,6 +9484,44 @@
                 totalW += w;
             });
             return totalW ? sum / totalW : 0;
+        }
+
+        // A PHASE row's own actual progress/dates, rolled up the exact same
+        // way lcItemActualPct already rolls up a schedule item WITH
+        // children — just applied one level higher, to the phase's own
+        // top-level schedule items. project_lifecycle_phases.actual_start/
+        // actual_finish are never written by any part of this module (no
+        // form anywhere sets them), so a phase's own Gantt bar and its
+        // "شروع/پایان واقعی" metadata used to always read empty even after
+        // every one of its schedule items reached 100% — this derives both
+        // from the schedule tree instead, staying scoped to the Gantt's own
+        // rendering of that tree (same "never leaks into the orbit's own
+        // checklist-driven progress" boundary as lcItemActualPct above).
+        function lcPhaseScheduleActualPct(phaseCode) {
+            const topItems = lcScheduleChildren(phaseCode, null);
+            if (!topItems.length) return null;
+            const hasCustomWeight = topItems.some(c => typeof c.weight_pct === 'number');
+            let sum = 0, totalW = 0;
+            topItems.forEach(c => {
+                const w = hasCustomWeight ? (Number(c.weight_pct) || 0) : 1;
+                sum += lcItemActualPct(c) * w;
+                totalW += w;
+            });
+            return totalW ? sum / totalW : 0;
+        }
+
+        function lcPhaseActualDateRange(phaseCode) {
+            const items = lcState.scheduleItems.filter(si => si.phase_code === phaseCode);
+            if (!items.length) return null;
+            const started = items.filter(si => lcItemActualPct(si) > 0);
+            if (!started.length) return { start: null, finish: null };
+            const start = started.reduce((min, si) => (!min || (si.planned_start && si.planned_start < min)) ? si.planned_start : min, null);
+            const overallPct = lcPhaseScheduleActualPct(phaseCode);
+            let finish = null;
+            if (overallPct != null && overallPct >= 100) {
+                finish = items.reduce((max, si) => (!max || (si.planned_finish && si.planned_finish > max)) ? si.planned_finish : max, null);
+            }
+            return { start, finish };
         }
 
         const LC_ITEM_STATUS_META = {
@@ -9610,7 +9788,13 @@
 
             let inlineFill = '', actualBar = '';
             if (row.isPhase) {
-                if (row.actualStart) {
+                const rolledPct = lcPhaseScheduleActualPct(row.phaseCode);
+                if (rolledPct != null) {
+                    // Rolled up from this phase's own schedule items — same
+                    // inline %-fill treatment as an item row with children.
+                    const fillPct = Math.max(0, Math.min(100, rolledPct));
+                    if (fillPct > 0) inlineFill = `<div class="absolute inset-y-0 left-0 rounded" style="width:${fillPct}%; background:${LC_NEON_GREEN}; opacity:.85;"></div>`;
+                } else if (row.actualStart) {
                     const aStartPct = lcPctForDate(row.actualStart, range);
                     const aFinishPct = lcPctForDate(row.actualFinish || new Date().toISOString().slice(0, 10), range);
                     const aLeft = Math.min(aStartPct, aFinishPct), aWidth = Math.max(0.8, Math.abs(aFinishPct - aStartPct));
@@ -9705,7 +9889,10 @@
                     <div class="flex items-end" style="height:${LC_GANTT_HEADER_H}px;">
                         <div style="width:${LC_GANTT_LABEL_W}px; flex-shrink:0;"></div>
                         <div class="relative" style="width:${LC_GANTT_TIMELINE_W}px; height:${LC_GANTT_HEADER_H}px; border-bottom:1px solid rgba(255,255,255,.1);">
-                            ${ticks.map(t => `<div class="absolute text-[9px] whitespace-nowrap" style="left:${lcPctForDate(t.iso, range)}%; bottom:4px; color:#64748b; padding-left:4px; border-left:1px solid rgba(255,255,255,.15);">${esc(t.label)}</div>`).join('')}
+                            ${ticks.map(t => `<div class="absolute flex flex-col items-start whitespace-nowrap" style="left:${lcPctForDate(t.iso, range)}%; bottom:2px; padding-left:4px; border-left:1px solid rgba(255,255,255,.15); line-height:1.25;">
+                                <span class="text-[8.5px]" style="color:#475569;">${t.yearLabel}</span>
+                                <span class="text-[9.5px] font-bold" style="color:#94a3b8;">${t.monthLabel}</span>
+                            </div>`).join('')}
                         </div>
                     </div>
                     <div class="flex">
@@ -9713,6 +9900,7 @@
                             ${rows.map(row => `<div class="flex items-center border-b" style="height:${LC_GANTT_ROW_H}px; border-color:rgba(255,255,255,.05);">${lcGanttLabelHtml(row)}</div>`).join('')}
                         </div>
                         <div class="relative" id="lcGanttTimeline" style="width:${LC_GANTT_TIMELINE_W}px; height:${bodyH}px;">
+                            ${lcWeekBandsHtml(range)}
                             ${rows.map((row, i) => `<div class="absolute w-full border-b" style="top:${i * LC_GANTT_ROW_H}px; height:${LC_GANTT_ROW_H}px; border-color:rgba(255,255,255,.05);"></div>`).join('')}
                             ${todayPct != null ? `<div class="absolute top-0 bottom-0" style="left:${todayPct}%; width:1px; background:#fbbf24; opacity:.7;"></div>` : ''}
                             ${rows.map((row, i) => lcGanttBarHtml(row, i, range)).join('')}
@@ -10382,6 +10570,24 @@
             return predDate ? lcAddDays(predDate, Math.round(dep.lag_days || 0)) : null;
         }
 
+        // «در صورت جابجایی بهتر است مقدار تاخیر یا همپوشانی آن هم در جدول
+        // ثبت شود» — a drag only ever CASCADES a move onto a successor
+        // when its dependency would otherwise be violated (see
+        // lcApplyDependencyConstraint above); it never corrects the
+        // dragged item's own INCOMING dependency, and never touches
+        // lag_days at all — so after any drag, whichever end moved, the
+        // stored lag can silently stop matching the two items' real
+        // positions. This re-derives the actual gap/overlap (negative =
+        // overlap) between a dependency's two ends exactly as they ended
+        // up, using the same predDate/succDate anchors as
+        // lcRequiredSuccessorDate/lcApplyDependencyConstraint.
+        function lcActualLagForDep(dep, predItem, succItem) {
+            const predDate = (dep.dep_type === 'SS' || dep.dep_type === 'SF') ? predItem.planned_start : predItem.planned_finish;
+            const succDate = (dep.dep_type === 'FS' || dep.dep_type === 'SS') ? succItem.planned_start : succItem.planned_finish;
+            if (!predDate || !succDate) return null;
+            return lcDaysBetween(predDate, succDate);
+        }
+
         // Only ever pushes a successor LATER to satisfy its dependency, and
         // only when it's actually violated — matches standard forward-pass
         // CPM behavior (moving a predecessor earlier never pulls a
@@ -10445,6 +10651,32 @@
                 const idx = lcState.scheduleItems.findIndex(si => si.id === data.id);
                 if (idx >= 0) lcState.scheduleItems[idx] = data;
             });
+
+            // Re-derive lag_days for every dependency touching anything
+            // that just moved (as predecessor OR successor) from wherever
+            // the two items actually ended up, and persist whichever ones
+            // changed — see lcActualLagForDep above for why this can't
+            // just be left at whatever it was typed in as.
+            const movedIds = new Set(updates.keys());
+            const lagChanges = [];
+            lcState.scheduleDeps.forEach(dep => {
+                if (!movedIds.has(dep.predecessor_id) && !movedIds.has(dep.successor_id)) return;
+                const predItem = lcState.scheduleItems.find(si => si.id === dep.predecessor_id);
+                const succItem = lcState.scheduleItems.find(si => si.id === dep.successor_id);
+                if (!predItem || !succItem) return;
+                const actualLag = lcActualLagForDep(dep, predItem, succItem);
+                if (actualLag != null && actualLag !== dep.lag_days) lagChanges.push({ dep, actualLag });
+            });
+            if (lagChanges.length) {
+                const lagResults = await Promise.all(lagChanges.map(({ dep, actualLag }) =>
+                    _supabase.from('lifecycle_schedule_dependencies').update({ lag_days: actualLag }).eq('id', dep.id).select().single()
+                ));
+                lagResults.forEach(({ data, error }) => {
+                    if (error || !data) return;
+                    const idx = lcState.scheduleDeps.findIndex(d => d.id === data.id);
+                    if (idx >= 0) lcState.scheduleDeps[idx] = data;
+                });
+            }
             lcRenderAll();
         }
 
