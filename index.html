@@ -4139,12 +4139,23 @@
                 ? psPctUncapped(cr.contract_current_amount_rial, budgetCeilingRial)
                 : (cr.contract_current_amount_eur != null && budgetCeilingEur ? psPctUncapped(cr.contract_current_amount_eur, budgetCeilingEur) : null);
 
-            const elapsedMonths = cr.contract_start_date ? monthsBetween(cr.contract_start_date) : null;
-            const totalPct = (elapsedMonths != null && cr.contract_duration_months) ? psPctUncapped(elapsedMonths, cr.contract_duration_months) : null;
+            // Elapsed % is measured in exact DAYS against contract_end_date
+            // (itself derived from start+duration via proper Jalali-month
+            // arithmetic in updateEndDateFromStartAndDuration), not whole
+            // floored months. monthsBetween() only advances once a full
+            // CALENDAR month has completed, so a deadline that actually
+            // passed just days or a couple of weeks ago could still read
+            // under 100% — and fail to raise «نیاز به تطویل» — for up to a
+            // month after it was genuinely overrun. Falls back to the
+            // month-based figure only for legacy rows saved before
+            // contract_end_date was auto-derived and stored.
+            const totalPct = (cr.contract_start_date && cr.contract_end_date)
+                ? psPctUncapped(Math.max(0, lcDaysBetween(cr.contract_start_date, new Date())), lcDaysBetween(cr.contract_start_date, cr.contract_end_date))
+                : (cr.contract_start_date && cr.contract_duration_months ? psPctUncapped(monthsBetween(cr.contract_start_date), cr.contract_duration_months) : null);
             let extendedPct = null;
-            if (elapsedMonths != null && cr.contract_start_date && cr.latest_extension_end_date) {
-                const extendedMonths = monthsBetween(cr.contract_start_date, new Date(cr.latest_extension_end_date));
-                extendedPct = extendedMonths ? psPctUncapped(elapsedMonths, extendedMonths) : null;
+            if (cr.contract_start_date && cr.latest_extension_end_date) {
+                const totalExtendedDays = lcDaysBetween(cr.contract_start_date, cr.latest_extension_end_date);
+                extendedPct = totalExtendedDays ? psPctUncapped(Math.max(0, lcDaysBetween(cr.contract_start_date, new Date())), totalExtendedDays) : null;
             }
             // Distinct from extendedPct (the whole project's elapsed% against
             // the new total duration): this is how much of just the ADDED
@@ -4153,9 +4164,8 @@
             // آخرین تطویل سپری شده".
             let extensionWindowPct = null;
             if (cr.contract_end_date && cr.latest_extension_end_date) {
-                const windowMonths = monthsBetween(cr.contract_end_date, new Date(cr.latest_extension_end_date));
-                const elapsedInWindowMonths = monthsBetween(cr.contract_end_date);
-                extensionWindowPct = windowMonths ? psPctUncapped(elapsedInWindowMonths, windowMonths) : null;
+                const windowDays = lcDaysBetween(cr.contract_end_date, cr.latest_extension_end_date);
+                extensionWindowPct = windowDays ? psPctUncapped(Math.max(0, lcDaysBetween(cr.contract_end_date, new Date())), windowDays) : null;
             }
 
             const activeTimePct = extendedPct != null ? extendedPct : totalPct;
@@ -9352,6 +9362,12 @@
                 <button type="button" data-lc-action="auto-fit" data-row-kind="${row.isPhase ? 'phase' : 'item'}" data-phase="${esc(row.phaseCode)}" data-item-id="${row.isPhase ? '' : row.item.id}" title="تنظیم خودکار بازه این ردیف بر اساس زیرمجموعه‌ها" class="text-[9px] w-4 h-4 inline-flex items-center justify-center rounded hover:bg-white/10" style="color:${LC_PLANNED_COLOR};">⇲</button>
                 <button type="button" data-lc-action="fit-children" data-row-kind="${row.isPhase ? 'phase' : 'item'}" data-phase="${esc(row.phaseCode)}" data-item-id="${row.isPhase ? '' : row.item.id}" title="تنظیم بازه زیرمجموعه‌ها متناسب با این ردیف" class="text-[9px] w-4 h-4 inline-flex items-center justify-center rounded hover:bg-white/10" style="color:${LC_NODE_PLANNED_COLOR};">⇱</button>
             </span>` : '';
+            // Bulk-seed a phase's first round of schedule sub-items straight
+            // from its own (immutable) اهداف مرحله — one schedule item per
+            // objective — instead of typing each one by hand. Only offered
+            // before the phase has any children yet, so it's never a
+            // surprise duplicate-creation trap once real editing has begun.
+            const autoGenButton = (lcState.canEdit && row.isPhase && !row.hasChildren) ? `<button type="button" data-lc-action="auto-generate-objectives" data-phase="${esc(row.phaseCode)}" title="ایجاد خودکار زیرفعالیت‌ها از روی اهداف این مرحله" class="shrink-0 text-[9px] w-4 h-4 inline-flex items-center justify-center rounded hover:bg-white/10" style="color:#a78bfa;">🧩</button>` : '';
             // Clicking the row itself (rather than adding separate icon
             // buttons, which the narrow label column has no room for) opens
             // the schedule editor drawer below the grid — for a phase row
@@ -9369,8 +9385,51 @@
             return `<div ${editAttrs} class="flex items-center gap-1.5 w-full px-1 overflow-hidden${lcState.canEdit ? ' cursor-pointer hover:bg-white/5 rounded' : ''}" style="padding-right:${row.depth * 14}px;">
                 ${caret}${gateDot}${statusBadge}
                 <span class="text-[10.5px] ${titleCls} truncate" title="${esc(row.title)}">${esc(row.title)}${durationSuffix}</span>
-                ${weightTag}${coverageBadge}${fitButtons}
+                ${weightTag}${coverageBadge}${fitButtons}${autoGenButton}
             </div>`;
+        }
+
+        // «برای افزودن زیرمجموعه به یک مرحله از اهداف مرحله استفاده کن و
+        // خودت اتوماتیک ایجاد کن» — turns a phase's own, unchanged
+        // lifecycle_objectives into its first round of
+        // lifecycle_schedule_items (one row per objective), laid out
+        // back-to-back inside that phase's OWN planned_start/planned_finish
+        // window — which already reflects whichever Execution Strategy is
+        // applied — so the generated sub-schedule can never run outside the
+        // phase's own dates or contradict the chosen strategy. Purely
+        // additive: never reads or writes lifecycle_objectives itself, only
+        // copies each objective's title into a new schedule row.
+        async function lcAutoGenerateScheduleFromObjectives(phaseCode) {
+            const phase = lcState.phases.find(p => p.code === phaseCode);
+            if (!phase) return;
+            const objectives = (phase.lifecycle_objectives || []).filter(o => o.is_active !== false).slice().sort((a, b) => a.seq - b.seq);
+            if (!objectives.length) { alert('این مرحله هیچ هدفی در «اهداف مرحله» ندارد.'); return; }
+            const pp = lcState.projectPhases[phaseCode];
+            if (!pp?.planned_start || !pp?.planned_finish) {
+                alert('ابتدا باید بازه زمانی برنامه‌ای این فاز مشخص شده باشد (از طریق «برنامه زمان‌بندی اصلی» / استراتژی اجرا).');
+                return;
+            }
+            const existing = lcScheduleChildren(phaseCode, null);
+            if (existing.length && !confirm(`این فاز از قبل ${toPersianDigits(existing.length)} زیرفعالیت دارد. ${toPersianDigits(objectives.length)} زیرفعالیت جدید بر اساس اهداف مرحله اضافه شود؟`)) return;
+
+            const totalDays = Math.max(1, lcDaysBetween(pp.planned_start, pp.planned_finish));
+            const share = Math.max(1, Math.floor(totalDays / objectives.length));
+            const weight = Math.round((100 / objectives.length) * 10) / 10;
+            let cursor = pp.planned_start;
+            const rows = objectives.map((obj, i) => {
+                const isLast = i === objectives.length - 1;
+                const start = cursor;
+                const finish = isLast ? pp.planned_finish : lcAddDays(cursor, share);
+                cursor = finish;
+                return {
+                    project_name: lcState.projectName, phase_code: phaseCode, parent_id: null, seq: i + 1,
+                    title: obj.title, planned_start: start, planned_finish: finish, weight_pct: weight,
+                };
+            });
+            const { data, error } = await _supabase.from('lifecycle_schedule_items').insert(rows).select();
+            if (error) { alert('خطا در ایجاد خودکار زیرفعالیت‌ها: ' + error.message); return; }
+            lcState.scheduleItems.push(...data);
+            lcRenderAll();
         }
 
         // ---------------- Baselines (Phase 5) ----------------
@@ -10409,6 +10468,7 @@
             root.querySelectorAll('[data-lc-action="delete-dependency"]').forEach(btn => btn.addEventListener('click', () => lcDeleteDependency(btn.dataset.id)));
             root.querySelectorAll('[data-lc-action="auto-fit"]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcAutoFitToChildren(lcRowFromRef(btn.dataset.rowKind, btn.dataset.phase, btn.dataset.itemId)); }));
             root.querySelectorAll('[data-lc-action="fit-children"]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcFitChildrenToPhase(lcRowFromRef(btn.dataset.rowKind, btn.dataset.phase, btn.dataset.itemId)); }));
+            root.querySelectorAll('[data-lc-action="auto-generate-objectives"]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcAutoGenerateScheduleFromObjectives(btn.dataset.phase); }));
             root.querySelectorAll('[data-lc-action="create-baseline"]').forEach(btn => btn.addEventListener('click', lcCreateBaseline));
             root.querySelectorAll('[data-lc-set-strategy]').forEach(btn => btn.addEventListener('click', () => lcSetStrategyDraft(btn.dataset.lcSetStrategy)));
             root.querySelectorAll('[data-lc-strategy-start]').forEach(input => input.addEventListener('change', () => lcSetStrategyDraftStart(input.value.trim())));
