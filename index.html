@@ -8320,6 +8320,7 @@
             scheduleVersions: [],
             strategyDraft: null,
             successTemplates: [],
+            ganttZoom: 1,
         };
 
         const LC_OBJECTIVE_STATUSES = [['not_started', 'شروع نشده', 'slate'], ['in_progress', 'در حال انجام', 'amber'], ['completed', 'تکمیل‌شده', 'emerald'], ['blocked', 'مسدود', 'red']];
@@ -9281,7 +9282,20 @@
         const LC_GANTT_ROW_H = 30;
         const LC_GANTT_HEADER_H = 32;
         const LC_GANTT_LABEL_W = 260;
-        const LC_GANTT_TIMELINE_W = 760;
+        const LC_GANTT_TIMELINE_W_BASE = 760;
+        const LC_GANTT_ZOOM_LEVELS = [0.5, 0.75, 1, 1.5, 2, 3];
+
+        // «امکان زوم کردن روی فعالیت‌ها و گانت» — everything below already
+        // positions bars/ticks by PERCENTAGE of this width, so widening it
+        // is the whole zoom: more pixels per day, same dates.
+        function lcGanttTimelineW() { return Math.round(LC_GANTT_TIMELINE_W_BASE * (lcState.ganttZoom || 1)); }
+        function lcGanttZoomStep(dir) {
+            const levels = LC_GANTT_ZOOM_LEVELS;
+            const idx = levels.indexOf(lcState.ganttZoom || 1);
+            const nextIdx = idx === -1 ? levels.indexOf(1) : Math.min(levels.length - 1, Math.max(0, idx + dir));
+            lcState.ganttZoom = levels[nextIdx];
+            lcRenderAll();
+        }
 
         function lcTabBarHtml() {
             const tabs = [['orbit', 'نمای مداری'], ['plan', 'برنامه زمان‌بندی (Gantt)']];
@@ -9845,15 +9859,15 @@
                 if (predRow == null || succRow == null || !pred || !succ || !pred.planned_start || !pred.planned_finish || !succ.planned_start || !succ.planned_finish) return;
                 const fromIso = (dep.dep_type === 'SS' || dep.dep_type === 'SF') ? pred.planned_start : pred.planned_finish;
                 const toIso = (dep.dep_type === 'FS' || dep.dep_type === 'SS') ? succ.planned_start : succ.planned_finish;
-                const fromX = lcPctForDate(fromIso, range) / 100 * LC_GANTT_TIMELINE_W;
-                const toX = lcPctForDate(toIso, range) / 100 * LC_GANTT_TIMELINE_W;
+                const fromX = lcPctForDate(fromIso, range) / 100 * lcGanttTimelineW();
+                const toX = lcPctForDate(toIso, range) / 100 * lcGanttTimelineW();
                 const fromY = predRow * LC_GANTT_ROW_H + LC_GANTT_ROW_H / 2;
                 const toY = succRow * LC_GANTT_ROW_H + LC_GANTT_ROW_H / 2;
                 paths.push(`<path d="M ${fromX},${fromY} C ${fromX + 24},${fromY} ${toX - 24},${toY} ${toX},${toY}" fill="none" stroke="#7dd3fc" stroke-width="1.25" stroke-opacity="0.55" marker-end="url(#lcGanttArrow)"/>`);
             });
             if (!paths.length) return '';
             const bodyH = rows.length * LC_GANTT_ROW_H;
-            return `<svg class="absolute inset-0 pointer-events-none" width="${LC_GANTT_TIMELINE_W}" height="${bodyH}" style="overflow:visible;">
+            return `<svg class="absolute inset-0 pointer-events-none" width="${lcGanttTimelineW()}" height="${bodyH}" style="overflow:visible;">
                 <defs><marker id="lcGanttArrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#7dd3fc" opacity="0.7"/></marker></defs>
                 ${paths.join('')}
             </svg>`;
@@ -9882,16 +9896,24 @@
             const bodyH = rows.length * LC_GANTT_ROW_H;
 
             return `
-            <p class="text-[10px] mb-3" style="color:#93c5fd;">از ${formatJalali(range.minIso)} تا ${formatJalali(range.maxIso)}</p>
+            <div class="flex items-center justify-between gap-2 mb-3">
+                <p class="text-[10px]" style="color:#93c5fd;">از ${formatJalali(range.minIso)} تا ${formatJalali(range.maxIso)}</p>
+                <div class="flex items-center gap-1 shrink-0">
+                    <button type="button" data-lc-action="gantt-zoom-out" title="کوچک‌نمایی" class="text-[11px] font-bold w-6 h-6 rounded border text-slate-200 hover:bg-white/10" style="border-color:rgba(255,255,255,.2);">−</button>
+                    <span class="text-[10px] w-9 text-center" style="color:#94a3b8;">×${toPersianDigits(String(lcState.ganttZoom || 1))}</span>
+                    <button type="button" data-lc-action="gantt-zoom-in" title="بزرگ‌نمایی" class="text-[11px] font-bold w-6 h-6 rounded border text-slate-200 hover:bg-white/10" style="border-color:rgba(255,255,255,.2);">+</button>
+                    ${(lcState.ganttZoom || 1) !== 1 ? `<button type="button" data-lc-action="gantt-zoom-reset" title="بازنشانی زوم" class="text-[10px] font-bold px-1.5 h-6 rounded border text-slate-300 hover:bg-white/10" style="border-color:rgba(255,255,255,.2);">۱۰۰٪</button>` : ''}
+                </div>
+            </div>
             ${lcCoverageSummaryHtml(rows)}
             <div class="overflow-x-auto scroll-thin">
-                <div style="width:${LC_GANTT_LABEL_W + LC_GANTT_TIMELINE_W}px;">
+                <div style="width:${LC_GANTT_LABEL_W + lcGanttTimelineW()}px;">
                     <div class="flex items-end" style="height:${LC_GANTT_HEADER_H}px;">
                         <div style="width:${LC_GANTT_LABEL_W}px; flex-shrink:0;"></div>
-                        <div class="relative" style="width:${LC_GANTT_TIMELINE_W}px; height:${LC_GANTT_HEADER_H}px; border-bottom:1px solid rgba(255,255,255,.1);">
+                        <div class="relative" style="width:${lcGanttTimelineW()}px; height:${LC_GANTT_HEADER_H}px; border-bottom:1px solid rgba(255,255,255,.1);">
                             ${ticks.map(t => `<div class="absolute flex flex-col items-start whitespace-nowrap" style="left:${lcPctForDate(t.iso, range)}%; bottom:2px; padding-left:4px; border-left:1px solid rgba(255,255,255,.15); line-height:1.25;">
-                                <span class="text-[8.5px]" style="color:#475569;">${t.yearLabel}</span>
-                                <span class="text-[9.5px] font-bold" style="color:#94a3b8;">${t.monthLabel}</span>
+                                <span class="text-[8.5px]" style="color:#94a3b8; opacity:.6;">${t.yearLabel}</span>
+                                <span class="text-[9.5px] font-bold" style="color:#e2e8f0;">${t.monthLabel}</span>
                             </div>`).join('')}
                         </div>
                     </div>
@@ -9899,7 +9921,7 @@
                         <div style="width:${LC_GANTT_LABEL_W}px; flex-shrink:0;">
                             ${rows.map(row => `<div class="flex items-center border-b" style="height:${LC_GANTT_ROW_H}px; border-color:rgba(255,255,255,.05);">${lcGanttLabelHtml(row)}</div>`).join('')}
                         </div>
-                        <div class="relative" id="lcGanttTimeline" style="width:${LC_GANTT_TIMELINE_W}px; height:${bodyH}px;">
+                        <div class="relative" id="lcGanttTimeline" style="width:${lcGanttTimelineW()}px; height:${bodyH}px;">
                             ${lcWeekBandsHtml(range)}
                             ${rows.map((row, i) => `<div class="absolute w-full border-b" style="top:${i * LC_GANTT_ROW_H}px; height:${LC_GANTT_ROW_H}px; border-color:rgba(255,255,255,.05);"></div>`).join('')}
                             ${todayPct != null ? `<div class="absolute top-0 bottom-0" style="left:${todayPct}%; width:1px; background:#fbbf24; opacity:.7;"></div>` : ''}
@@ -10543,6 +10565,26 @@
                 .select().single();
             if (error) { alert('خطا در ثبت وابستگی: ' + error.message); return; }
             lcState.scheduleDeps.push(data);
+            // «علیرغم تعریف وابستگی‌ها ... تاخیر رو هم صفر ثبت کرده‌ام» — the
+            // two items were positioned before this dependency existed, so
+            // whatever gap/overlap they already had would otherwise survive
+            // even though the just-typed Lag/Lead says otherwise. Unlike a
+            // drag (where the moved position is authoritative and lag is
+            // DERIVED from it — see lcActualLagForDep), here the typed lag
+            // is authoritative, so snap the successor onto it now, in
+            // either direction, then cascade like any other commit.
+            const predItem = lcState.scheduleItems.find(si => si.id === predecessorId);
+            const succItem = lcState.scheduleItems.find(si => si.id === successorId);
+            if (predItem && succItem && succItem.planned_start && succItem.planned_finish) {
+                const required = lcRequiredSuccessorDate(data, predItem);
+                const constrainsStart = (dep_type === 'FS' || dep_type === 'SS');
+                const current = constrainsStart ? succItem.planned_start : succItem.planned_finish;
+                if (required && current && required !== current) {
+                    const shiftDays = Math.round((new Date(required) - new Date(current)) / 86400000);
+                    await lcCommitScheduleItemDates(successorId, lcAddDays(succItem.planned_start, shiftDays), lcAddDays(succItem.planned_finish, shiftDays));
+                    return;
+                }
+            }
             lcRenderAll();
         }
 
@@ -10949,6 +10991,9 @@
             root.querySelectorAll('[data-lc-action="apply-master-schedule"]').forEach(btn => btn.addEventListener('click', lcApplyMasterSchedule));
             root.querySelectorAll('[data-lc-action="create-master-baseline"]').forEach(btn => btn.addEventListener('click', lcCreateMasterBaseline));
             root.querySelectorAll('[data-lc-action="save-success-template"]').forEach(btn => btn.addEventListener('click', lcSaveAsSuccessTemplate));
+            root.querySelectorAll('[data-lc-action="gantt-zoom-in"]').forEach(btn => btn.addEventListener('click', () => lcGanttZoomStep(1)));
+            root.querySelectorAll('[data-lc-action="gantt-zoom-out"]').forEach(btn => btn.addEventListener('click', () => lcGanttZoomStep(-1)));
+            root.querySelectorAll('[data-lc-action="gantt-zoom-reset"]').forEach(btn => btn.addEventListener('click', () => { lcState.ganttZoom = 1; lcRenderAll(); }));
             lcBindGanttDragEvents();
             root.querySelectorAll('[data-lc-phase]').forEach(el => el.addEventListener('click', () => lcSelectPhase(el.dataset.lcPhase)));
             const backBtn = root.querySelector('[data-lc-back-to-orbit]');
