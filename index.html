@@ -8236,6 +8236,7 @@
             masterSchedule: null,
             scheduleVersions: [],
             strategyDraft: null,
+            successTemplates: [],
         };
 
         const LC_OBJECTIVE_STATUSES = [['not_started', 'شروع نشده', 'slate'], ['in_progress', 'در حال انجام', 'amber'], ['completed', 'تکمیل‌شده', 'emerald'], ['blocked', 'مسدود', 'red']];
@@ -8327,7 +8328,7 @@
             document.getElementById('lcProjectNameLabel').textContent = projectName;
             document.getElementById('lcBody').innerHTML = '<p class="text-center text-slate-400 p-10">در حال بارگذاری چرخه عمر پروژه...</p>';
 
-            const [{ data: phases, error: phasesErr }, { data: projectPhases }, { data: items }, { data: gateDecisions }, { data: progressHistory }, { data: clientReports }, { data: scheduleItems }, { data: scheduleDeps }, { data: baselines }, { data: phaseDurations }, { data: strategyDeps }, { data: masterSchedule }, { data: scheduleVersions }] = await Promise.all([
+            const [{ data: phases, error: phasesErr }, { data: projectPhases }, { data: items }, { data: gateDecisions }, { data: progressHistory }, { data: clientReports }, { data: scheduleItems }, { data: scheduleDeps }, { data: baselines }, { data: phaseDurations }, { data: strategyDeps }, { data: masterSchedule }, { data: scheduleVersions }, { data: successTemplates }] = await Promise.all([
                 _supabase.from('lifecycle_phases').select('*, lifecycle_objectives(*), lifecycle_outputs(*), lifecycle_criteria(*)').eq('is_active', true).order('sort_order'),
                 _supabase.from('project_lifecycle_phases').select('*').eq('project_name', projectName),
                 _supabase.from('project_phase_items').select('*').eq('project_name', projectName),
@@ -8341,6 +8342,7 @@
                 _supabase.from('lifecycle_strategy_phase_dependencies').select('*'),
                 _supabase.from('lifecycle_master_schedule').select('*').eq('project_name', projectName).maybeSingle(),
                 _supabase.from('lifecycle_master_schedule_versions').select('*').eq('project_name', projectName).order('created_at', { ascending: false }),
+                _supabase.from('lifecycle_schedule_success_templates').select('*').order('created_at', { ascending: false }),
             ]);
 
             if (phasesErr) {
@@ -8381,11 +8383,13 @@
             lcState.masterSchedule = masterSchedule || null;
             lcState.scheduleVersions = scheduleVersions || [];
             lcState.strategyDraft = null;
+            lcState.successTemplates = successTemplates || [];
             lcState.canEdit = isAdminUser() || myProjectAccess.some(a => a.project_name === projectName);
-            // Open on the project's current phase by default (matching the
-            // "at a glance" executive view) rather than an empty placeholder
-            // — a user can still click any other node to inspect it.
-            lcState.selectedPhase = lcCurrentActivePhase()?.code || null;
+            // lcState.selectedPhase was already reset to null at the top of
+            // this function so every fresh open lands on the orbit (all 9
+            // planets visible) — this used to be re-pointed at the current
+            // active phase right here, right after data finished loading,
+            // which silently undid that reset on every single load.
 
             lcRenderAll();
         }
@@ -8412,7 +8416,6 @@
         function lcPhaseCategoryBreakdown(phase) {
             const it = lcState.items[phase.code] || { objective: {}, output: {}, criterion: {} };
             return {
-                objective: lcCategoryProgress(phase.lifecycle_objectives, it.objective, 'objective'),
                 output: lcCategoryProgress(phase.lifecycle_outputs, it.output, 'output'),
                 criterion: lcCategoryProgress(phase.lifecycle_criteria, it.criterion, 'criterion'),
             };
@@ -8452,7 +8455,14 @@
                 return { actual, planned: planned == null ? actual : planned };
             }
             const cat = lcPhaseCategoryBreakdown(phase);
-            const actual = (cat.objective * phase.objectives_weight_pct + cat.output * phase.outputs_weight_pct + cat.criterion * phase.criteria_weight_pct) / 100;
+            // Objectives are no longer an independent checklist category —
+            // they're tracked via this phase's own schedule (Gantt)
+            // sub-items instead (see lcBuildAutoGenRows) — so a 'step'
+            // phase's progress and gate-readiness rest on its Key Outputs
+            // and Exit Criteria alone, re-normalized against just their own
+            // two weights.
+            const catWeight = (phase.outputs_weight_pct || 0) + (phase.criteria_weight_pct || 0);
+            const actual = catWeight ? (cat.output * phase.outputs_weight_pct + cat.criterion * phase.criteria_weight_pct) / catWeight : 0;
             const planned = lcPlannedProgressByDate(pp?.planned_start, pp?.planned_finish);
             return { actual, planned: planned == null ? actual : planned, cat };
         }
@@ -8463,13 +8473,12 @@
             const mandatoryCriteria = (phase.lifecycle_criteria || []).filter(c => c.is_active !== false && c.is_mandatory);
             const criteriaOk = mandatoryCriteria.every(c => ['verified', 'waived'].includes(it.criterion[c.id]?.status));
             const outputsOk = (phase.lifecycle_outputs || []).filter(o => o.is_active !== false).every(o => it.output[o.id]?.status === 'verified');
-            const objectivesOk = (phase.lifecycle_objectives || []).filter(o => o.is_active !== false).every(o => it.objective[o.id]?.status === 'completed');
-            const readyForGate = criteriaOk && outputsOk && objectivesOk;
+            const readyForGate = criteriaOk && outputsOk;
             const stored = pp?.gate_status || 'not_ready';
             const pendingMandatory = mandatoryCriteria.filter(c => !['verified', 'waived'].includes(it.criterion[c.id]?.status));
             let effective = stored;
             if (stored === 'not_ready' || stored === 'ready_for_review') effective = readyForGate ? 'ready_for_review' : 'not_ready';
-            return { effective, readyForGate, criteriaOk, outputsOk, objectivesOk, pendingMandatory };
+            return { effective, readyForGate, criteriaOk, outputsOk, pendingMandatory };
         }
 
         function lcOverallProgress() {
@@ -8616,12 +8625,34 @@
                         <div class="rounded-xl p-2.5 text-center" style="background:rgba(255,255,255,.06);"><p class="text-[10px]" style="color:#93c5fd;">برنامه‌ای</p><p class="text-lg font-extrabold text-white">${toPersianDigits(Math.round(planned))}٪</p></div>
                         <div class="rounded-xl p-2.5 text-center" style="background:rgba(255,255,255,.06);"><p class="text-[10px]" style="color:#93c5fd;">انحراف</p><p class="text-lg font-extrabold ${variance < -5 ? 'text-red-400' : variance > 2 ? 'text-emerald-400' : 'text-blue-300'}">${variance >= 0 ? '+' : ''}${toPersianDigits(Math.round(variance))}٪</p></div>
                     </div>
+                    ${lcPhaseHeroActionsHtml(phase)}
                 </div>
                 ${lcPhaseTimelineSectionHtml(phase)}
                 <div id="lcPhaseDetailBody" class="bg-white rounded-2xl shadow-sm border p-5">
                     ${lcDetailPanelHtml()}
                 </div>
             </div>`;
+        }
+
+        // «دکمه‌های ایجاد فعالیت‌های زیرمجموعه و ری‌پلن رو بزرگتر و در
+        // جای مناسب قرار بده» — the same two actions already available as
+        // small icons on this phase's own Gantt row (still there for quick
+        // access from the whole-project Master Plan tab) also get a
+        // proper, clearly-labeled button right on this phase's own hero —
+        // exactly where someone working on this phase is already looking.
+        function lcPhaseHeroActionsHtml(phase) {
+            if (!lcState.canEdit) return '';
+            const pp = lcState.projectPhases[phase.code];
+            const hasChildren = lcScheduleChildren(phase.code, null).length > 0;
+            const buttons = [];
+            if (!hasChildren) {
+                buttons.push(`<button type="button" data-lc-action="auto-generate-objectives" data-phase="${esc(phase.code)}" class="text-[11px] font-bold px-3 py-2 rounded-xl border" style="color:#a78bfa; border-color:#a78bfa66;">🧩 ایجاد زیرفعالیت‌ها از اهداف مرحله</button>`);
+            }
+            if (pp?.planned_start) {
+                buttons.push(`<button type="button" data-lc-action="replan-from-delay" data-phase="${esc(phase.code)}" class="text-[11px] font-bold px-3 py-2 rounded-xl border" style="color:#fb923c; border-color:#fb923c66;">🔄 ری‌پلن (در صورت تاخیر)</button>`);
+            }
+            if (!buttons.length) return '';
+            return `<div class="no-print flex flex-wrap items-center gap-2 mt-4 pt-4" style="border-top:1px solid rgba(255,255,255,.08);">${buttons.join('')}</div>`;
         }
 
         function lcPhaseTimelineSectionHtml(phase) {
@@ -8840,7 +8871,8 @@
                 (p.lifecycle_outputs || []).filter(o => o.is_active !== false).forEach(o => {
                     if (it.output[o.id]?.status !== 'verified') pendingOutputs++;
                 });
-                Object.values(it.objective).forEach(row => { if (row.status === 'blocked') blockedItems++; });
+                Object.values(it.output).forEach(row => { if (row.status === 'rejected') blockedItems++; });
+                Object.values(it.criterion).forEach(row => { if (row.status === 'failed') blockedItems++; });
             });
 
             return `
@@ -8896,8 +8928,14 @@
                                     ${statuses.map(([sv, sl]) => `<option value="${sv}" ${row.status === sv ? 'selected' : ''}>${esc(sl)}</option>`).join('')}
                                 </select>
                                 <input type="text" data-lc-field="evidence" placeholder="مدرک/شاهد (لینک یا توضیح)" value="${esc(row.evidence || '')}" class="text-[10px] border rounded-lg px-2 py-1 flex-1 min-w-[110px]">
+                                <input type="file" data-lc-field="evidence-file" class="text-[10px]" style="max-width:130px;">
                                 <button type="button" data-lc-action="save-item" class="text-[10px] font-bold px-2 py-1 rounded-lg bg-blue-900 text-white">ذخیره</button>
-                            </div>` : (row.evidence ? `<p class="text-[10px] text-slate-400 mt-1">مدرک: ${esc(row.evidence)}</p>` : '')}
+                            </div>
+                            ${row.evidence_file_url ? `<a href="${esc(row.evidence_file_url)}" target="_blank" rel="noopener" class="text-[10px] text-blue-600 underline mt-1 inline-block">📎 مشاهده فایل ضمیمه</a>` : ''}
+                            ` : `
+                            ${row.evidence ? `<p class="text-[10px] text-slate-400 mt-1">مدرک: ${esc(row.evidence)}</p>` : ''}
+                            ${row.evidence_file_url ? `<a href="${esc(row.evidence_file_url)}" target="_blank" rel="noopener" class="text-[10px] text-blue-600 underline mt-1 inline-block">📎 مشاهده فایل ضمیمه</a>` : ''}
+                            `}
                         </div>`;
                     }).join('')}
                 </div>
@@ -9022,7 +9060,6 @@
         function lcRisksSectionHtml(phase) {
             const it = lcState.items[phase.code] || { objective: {}, output: {}, criterion: {} };
             const risks = [];
-            (phase.lifecycle_objectives || []).forEach(o => { if (it.objective[o.id]?.status === 'blocked') risks.push({ label: o.title, kind: 'هدف مسدود', comment: it.objective[o.id].comment }); });
             (phase.lifecycle_outputs || []).forEach(o => { if (it.output[o.id]?.status === 'rejected') risks.push({ label: o.title, kind: 'خروجی ردشده', comment: it.output[o.id].comment }); });
             (phase.lifecycle_criteria || []).forEach(c => { if (it.criterion[c.id]?.status === 'failed') risks.push({ label: c.title, kind: 'معیار ناموفق', comment: it.criterion[c.id].comment }); });
             if (!risks.length) return '';
@@ -9054,7 +9091,7 @@
                 return `<div class="h-full flex flex-col items-center justify-center text-center text-slate-400 py-10 gap-2">
                     ${iconSvg('target', 'w-10 h-10 opacity-40')}
                     <p class="text-sm font-bold text-slate-500">یک فاز را از روی مدار انتخاب کنید</p>
-                    <p class="text-xs">اهداف، خروجی‌های کلیدی، معیارهای عبور و وضعیت گیت همین‌جا نمایش داده می‌شود.</p>
+                    <p class="text-xs">خروجی‌های کلیدی، معیارهای عبور و وضعیت گیت همین‌جا نمایش داده می‌شود؛ اهداف مرحله را در جدول زمانی همین فاز ببینید.</p>
                 </div>`;
             }
             const phase = lcState.phases.find(p => p.code === lcState.selectedPhase);
@@ -9072,7 +9109,6 @@
                 ${phase.progress_engine === 'epc' ? lcEpcDrilldownHtml() : ''}
                 ${phase.progress_engine === 'basic_design' ? lcBasicDesignHtml(phase, pp) : ''}
 
-                ${lcChecklistSectionHtml(phase, 'objective', 'اهداف مرحله')}
                 ${lcChecklistSectionHtml(phase, 'output', 'خروجی کلیدی')}
                 ${lcChecklistSectionHtml(phase, 'criterion', 'معیار عبور (Exit Criteria)')}
 
@@ -9367,12 +9403,12 @@
             // objective — instead of typing each one by hand. Only offered
             // before the phase has any children yet, so it's never a
             // surprise duplicate-creation trap once real editing has begun.
-            const autoGenButton = (lcState.canEdit && row.isPhase && !row.hasChildren) ? `<button type="button" data-lc-action="auto-generate-objectives" data-phase="${esc(row.phaseCode)}" title="ایجاد خودکار زیرفعالیت‌ها از روی اهداف این مرحله" class="shrink-0 text-[9px] w-4 h-4 inline-flex items-center justify-center rounded hover:bg-white/10" style="color:#a78bfa;">🧩</button>` : '';
+            const autoGenButton = (lcState.canEdit && row.isPhase && !row.hasChildren) ? `<button type="button" data-lc-action="auto-generate-objectives" data-phase="${esc(row.phaseCode)}" title="ایجاد خودکار زیرفعالیت‌ها از روی اهداف این مرحله" class="shrink-0 text-[12px] w-6 h-6 inline-flex items-center justify-center rounded-lg border hover:bg-white/10" style="color:#a78bfa; border-color:#a78bfa66;">🧩</button>` : '';
             // «در صورت تاخیرات بیش از اندازه کاربر بتونه برنامه رو ری‌پلن
             // بکنه» — always offered on any phase row that already has a
             // planned window (lcReplanFromDelay itself is a no-op alert
             // when that phase isn't actually overdue yet).
-            const replanButton = (lcState.canEdit && row.isPhase && lcState.projectPhases[row.phaseCode]?.planned_start) ? `<button type="button" data-lc-action="replan-from-delay" data-phase="${esc(row.phaseCode)}" title="ری‌پلن: در صورت تاخیر، این فاز و فازهای بعدی را از امروز جلو بکش" class="shrink-0 text-[9px] w-4 h-4 inline-flex items-center justify-center rounded hover:bg-white/10" style="color:#fb923c;">🔄</button>` : '';
+            const replanButton = (lcState.canEdit && row.isPhase && lcState.projectPhases[row.phaseCode]?.planned_start) ? `<button type="button" data-lc-action="replan-from-delay" data-phase="${esc(row.phaseCode)}" title="ری‌پلن: در صورت تاخیر، این فاز و فازهای بعدی را از امروز جلو بکش" class="shrink-0 text-[12px] w-6 h-6 inline-flex items-center justify-center rounded-lg border hover:bg-white/10" style="color:#fb923c; border-color:#fb923c66;">🔄</button>` : '';
             // Clicking the row itself (rather than adding separate icon
             // buttons, which the narrow label column has no room for) opens
             // the schedule editor drawer below the grid — for a phase row
@@ -9934,6 +9970,83 @@
             lcRenderAll();
         }
 
+        // «اگر برنامه زمانبندی مطلوبی کاربران درست کردند ... بشه اونو به
+        // عنوان یک نمونه موفق ذخیره کرد و یک نام مناسب هم بهش داد» —
+        // snapshots this project's CURRENT schedule (whichever Execution
+        // Strategy it ended up on, every phase's real planned window, and
+        // its own schedule-item tree) into an organization-wide, named
+        // library entry. Everything is captured as RELATIVE day offsets
+        // from the project's own start date (never absolute dates), since
+        // the whole point is reuse on a future project with a different
+        // start date.
+        async function lcSaveAsSuccessTemplate() {
+            if (!lcState.masterSchedule?.project_start_date) { alert('ابتدا باید یک برنامه زمان‌بندی برای این پروژه اعمال شده باشد.'); return; }
+            const name = (prompt('یک نام مناسب برای این نمونه موفق وارد کنید (مثلاً «خط لوله ۴۲ اینچ — نمونه موفق»):') || '').trim();
+            if (!name) return;
+            const projectStartIso = lcState.masterSchedule.project_start_date;
+            const phaseRows = lcState.phases
+                .map(phase => {
+                    const pp = lcState.projectPhases[phase.code];
+                    if (!pp?.planned_start || !pp?.planned_finish) return null;
+                    return {
+                        phase_code: phase.code,
+                        day_offset_start: lcDaysBetween(projectStartIso, pp.planned_start),
+                        duration_days: Math.max(1, lcDaysBetween(pp.planned_start, pp.planned_finish)),
+                        seq: phase.sort_order,
+                    };
+                })
+                .filter(Boolean);
+            if (!phaseRows.length) { alert('هیچ فازی با بازه زمانی برنامه‌ای یافت نشد.'); return; }
+
+            const lastPhase = lcState.phases[lcState.phases.length - 1];
+            const lastPp = lastPhase ? lcState.projectPhases[lastPhase.code] : null;
+            const totalDurationDays = lastPp?.planned_finish ? lcDaysBetween(projectStartIso, lastPp.planned_finish) : null;
+
+            const { data: template, error: tErr } = await _supabase.from('lifecycle_schedule_success_templates').insert({
+                name, source_project_name: lcState.projectName, execution_strategy: lcState.masterSchedule.execution_strategy,
+                total_duration_days: totalDurationDays, created_by: currentUser.email,
+            }).select().single();
+            if (tErr) { alert('خطا در ذخیره نمونه: ' + tErr.message); return; }
+
+            const { error: pErr } = await _supabase.from('lifecycle_schedule_success_template_phases')
+                .insert(phaseRows.map(r => Object.assign({ template_id: template.id }, r)));
+            if (pErr) { alert('خطا در ذخیره فازهای نمونه: ' + pErr.message); return; }
+
+            const itemRows = lcState.scheduleItems
+                .filter(si => si.planned_start && si.planned_finish)
+                .map(si => {
+                    const pp = lcState.projectPhases[si.phase_code];
+                    return {
+                        template_id: template.id, phase_code: si.phase_code, source_item_id: si.id, source_parent_id: si.parent_id,
+                        title: si.title,
+                        day_offset_from_phase_start: pp?.planned_start ? lcDaysBetween(pp.planned_start, si.planned_start) : 0,
+                        duration_days: Math.max(1, lcDaysBetween(si.planned_start, si.planned_finish)),
+                        weight_pct: si.weight_pct, seq: si.seq,
+                    };
+                });
+            if (itemRows.length) {
+                const { error: iErr } = await _supabase.from('lifecycle_schedule_success_template_items').insert(itemRows);
+                if (iErr) { alert('خطا در ذخیره فعالیت‌های نمونه: ' + iErr.message); return; }
+            }
+            lcState.successTemplates.unshift(template);
+            alert(`نمونه موفق «${name}» با موفقیت ذخیره شد.`);
+            lcRenderAll();
+        }
+
+        function lcSuccessTemplatesListHtml() {
+            if (!lcState.successTemplates.length) return '';
+            return `<div class="mb-3">
+                <p class="text-white font-extrabold text-[10.5px] mb-2">📚 نمونه‌های موفق ذخیره‌شده</p>
+                <div class="flex flex-wrap gap-2">
+                    ${lcState.successTemplates.map(t => {
+                        const months = t.total_duration_days != null ? Math.round(t.total_duration_days / 30 * 10) / 10 : null;
+                        const tooltip = `پروژه مبدا: ${t.source_project_name} — استراتژی: ${LC_STRATEGY_LABELS[t.execution_strategy] || t.execution_strategy || '—'}${months != null ? ' — ' + months + ' ماه' : ''}`;
+                        return `<span class="text-[10px] px-2.5 py-1 rounded-lg" style="background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color:#93c5fd;" title="${esc(tooltip)}">${esc(t.name)}</span>`;
+                    }).join('')}
+                </div>
+            </div>`;
+        }
+
         function lcMasterScheduleKpiHtml() {
             const strategy = lcMasterScheduleStrategy();
             const startIso = lcMasterScheduleStartIso();
@@ -10062,13 +10175,17 @@
             <div class="lc-dark-panel rounded-2xl p-4 md:p-6" style="background: radial-gradient(ellipse 90% 70% at 50% 10%, #123159 0%, #04070f 78%); border: 1px solid rgba(255,255,255,.07); min-height: 60vh;">
                 <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
                     <h3 class="text-white font-extrabold text-sm">چرخه عمر پروژه | برنامه زمان‌بندی اصلی (Master Schedule)</h3>
-                    ${lcState.canEdit ? `<button type="button" data-lc-action="create-master-baseline" class="no-print text-[10.5px] font-bold px-3 py-1.5 rounded-lg border text-slate-200 hover:bg-white/5">📌 تایید و تبدیل به Baseline</button>` : ''}
+                    <div class="flex flex-wrap items-center gap-2">
+                        ${lcState.canEdit ? `<button type="button" data-lc-action="save-success-template" class="no-print text-[10.5px] font-bold px-3 py-1.5 rounded-lg border text-slate-200 hover:bg-white/5">💾 ذخیره به عنوان نمونه موفق</button>` : ''}
+                        ${lcState.canEdit ? `<button type="button" data-lc-action="create-master-baseline" class="no-print text-[10.5px] font-bold px-3 py-1.5 rounded-lg border text-slate-200 hover:bg-white/5">📌 تایید و تبدیل به Baseline</button>` : ''}
+                    </div>
                 </div>
                 ${lcGovernanceStepperHtml()}
                 ${lcMasterScheduleKpiHtml()}
                 ${lcState.canEdit ? lcMasterScheduleStrategyRowHtml() : lcStrategyComparisonTableHtml(lcMasterScheduleStartIso())}
                 ${lcExecutiveSummaryCardHtml()}
                 ${lcMasterScheduleHistoryHtml()}
+                ${lcSuccessTemplatesListHtml()}
                 <div class="mt-4 pt-4" style="border-top:1px solid rgba(255,255,255,.08);">
                     <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
                         <h4 class="text-white font-extrabold text-xs">برنامه زمان‌بندی تفصیلی (Gantt)</h4>
@@ -10470,8 +10587,20 @@
                 project_name: lcState.projectName, phase_code: phaseCode, kind, item_id: itemId,
                 status, evidence: evidence || null, updated_at: new Date().toISOString(), updated_by: currentUser.email,
             };
+            // «امکان ضمیمه نمودن فایل» — same public-bucket-plus-folder-check
+            // Storage pattern already used for signature uploads, scoped by
+            // project name so lifecycle_evidence's RLS can check it.
+            const fileInput = rowEl.querySelector('[data-lc-field="evidence-file"]');
+            const file = fileInput?.files?.[0];
+            if (file) {
+                const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+                const path = `${lcState.projectName}/${phaseCode}/${kind}/${itemId}/${Date.now()}.${ext}`;
+                const { error: uploadError } = await _supabase.storage.from('lifecycle-evidence').upload(path, file, { upsert: true });
+                if (uploadError) { alert('خطا در بارگذاری فایل: ' + uploadError.message); return; }
+                const { data: urlData } = _supabase.storage.from('lifecycle-evidence').getPublicUrl(path);
+                patch.evidence_file_url = urlData.publicUrl;
+            }
             const todayIso = new Date().toISOString().slice(0, 10);
-            if (status === 'completed' && kind === 'objective') patch.completion_date = todayIso;
             if (status === 'submitted' && kind === 'output') patch.submitted_by = currentUser.email;
             if (status === 'verified') { patch.verified_by = currentUser.email; patch.verification_date = todayIso; }
             const { data, error } = await _supabase.from('project_phase_items')
@@ -10587,6 +10716,7 @@
             root.querySelectorAll('[data-lc-strategy-start]').forEach(input => input.addEventListener('change', () => lcSetStrategyDraftStart(input.value.trim())));
             root.querySelectorAll('[data-lc-action="apply-master-schedule"]').forEach(btn => btn.addEventListener('click', lcApplyMasterSchedule));
             root.querySelectorAll('[data-lc-action="create-master-baseline"]').forEach(btn => btn.addEventListener('click', lcCreateMasterBaseline));
+            root.querySelectorAll('[data-lc-action="save-success-template"]').forEach(btn => btn.addEventListener('click', lcSaveAsSuccessTemplate));
             lcBindGanttDragEvents();
             root.querySelectorAll('[data-lc-phase]').forEach(el => el.addEventListener('click', () => lcSelectPhase(el.dataset.lcPhase)));
             const backBtn = root.querySelector('[data-lc-back-to-orbit]');
