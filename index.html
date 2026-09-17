@@ -9368,6 +9368,11 @@
             // before the phase has any children yet, so it's never a
             // surprise duplicate-creation trap once real editing has begun.
             const autoGenButton = (lcState.canEdit && row.isPhase && !row.hasChildren) ? `<button type="button" data-lc-action="auto-generate-objectives" data-phase="${esc(row.phaseCode)}" title="ایجاد خودکار زیرفعالیت‌ها از روی اهداف این مرحله" class="shrink-0 text-[9px] w-4 h-4 inline-flex items-center justify-center rounded hover:bg-white/10" style="color:#a78bfa;">🧩</button>` : '';
+            // «در صورت تاخیرات بیش از اندازه کاربر بتونه برنامه رو ری‌پلن
+            // بکنه» — always offered on any phase row that already has a
+            // planned window (lcReplanFromDelay itself is a no-op alert
+            // when that phase isn't actually overdue yet).
+            const replanButton = (lcState.canEdit && row.isPhase && lcState.projectPhases[row.phaseCode]?.planned_start) ? `<button type="button" data-lc-action="replan-from-delay" data-phase="${esc(row.phaseCode)}" title="ری‌پلن: در صورت تاخیر، این فاز و فازهای بعدی را از امروز جلو بکش" class="shrink-0 text-[9px] w-4 h-4 inline-flex items-center justify-center rounded hover:bg-white/10" style="color:#fb923c;">🔄</button>` : '';
             // Clicking the row itself (rather than adding separate icon
             // buttons, which the narrow label column has no room for) opens
             // the schedule editor drawer below the grid — for a phase row
@@ -9385,7 +9390,7 @@
             return `<div ${editAttrs} class="flex items-center gap-1.5 w-full px-1 overflow-hidden${lcState.canEdit ? ' cursor-pointer hover:bg-white/5 rounded' : ''}" style="padding-right:${row.depth * 14}px;">
                 ${caret}${gateDot}${statusBadge}
                 <span class="text-[10.5px] ${titleCls} truncate" title="${esc(row.title)}">${esc(row.title)}${durationSuffix}</span>
-                ${weightTag}${coverageBadge}${fitButtons}${autoGenButton}
+                ${weightTag}${coverageBadge}${fitButtons}${autoGenButton}${replanButton}
             </div>`;
         }
 
@@ -9398,37 +9403,140 @@
         // applied — so the generated sub-schedule can never run outside the
         // phase's own dates or contradict the chosen strategy. Purely
         // additive: never reads or writes lifecycle_objectives itself, only
-        // copies each objective's title into a new schedule row.
-        async function lcAutoGenerateScheduleFromObjectives(phaseCode) {
-            const phase = lcState.phases.find(p => p.code === phaseCode);
-            if (!phase) return;
+        // copies each objective's title into a new schedule row. Pulled out
+        // as its own pure (no-network) function so both the per-phase and
+        // the "همه فازها" bulk action below build rows the exact same way.
+        function lcBuildAutoGenRows(phase) {
             const objectives = (phase.lifecycle_objectives || []).filter(o => o.is_active !== false).slice().sort((a, b) => a.seq - b.seq);
-            if (!objectives.length) { alert('این مرحله هیچ هدفی در «اهداف مرحله» ندارد.'); return; }
-            const pp = lcState.projectPhases[phaseCode];
-            if (!pp?.planned_start || !pp?.planned_finish) {
-                alert('ابتدا باید بازه زمانی برنامه‌ای این فاز مشخص شده باشد (از طریق «برنامه زمان‌بندی اصلی» / استراتژی اجرا).');
-                return;
-            }
-            const existing = lcScheduleChildren(phaseCode, null);
-            if (existing.length && !confirm(`این فاز از قبل ${toPersianDigits(existing.length)} زیرفعالیت دارد. ${toPersianDigits(objectives.length)} زیرفعالیت جدید بر اساس اهداف مرحله اضافه شود؟`)) return;
-
+            const pp = lcState.projectPhases[phase.code];
+            if (!objectives.length || !pp?.planned_start || !pp?.planned_finish) return [];
             const totalDays = Math.max(1, lcDaysBetween(pp.planned_start, pp.planned_finish));
             const share = Math.max(1, Math.floor(totalDays / objectives.length));
             const weight = Math.round((100 / objectives.length) * 10) / 10;
             let cursor = pp.planned_start;
-            const rows = objectives.map((obj, i) => {
+            return objectives.map((obj, i) => {
                 const isLast = i === objectives.length - 1;
                 const start = cursor;
                 const finish = isLast ? pp.planned_finish : lcAddDays(cursor, share);
                 cursor = finish;
                 return {
-                    project_name: lcState.projectName, phase_code: phaseCode, parent_id: null, seq: i + 1,
+                    project_name: lcState.projectName, phase_code: phase.code, parent_id: null, seq: i + 1,
                     title: obj.title, planned_start: start, planned_finish: finish, weight_pct: weight,
                 };
             });
+        }
+
+        async function lcAutoGenerateScheduleFromObjectives(phaseCode) {
+            const phase = lcState.phases.find(p => p.code === phaseCode);
+            if (!phase) return;
+            if (!(phase.lifecycle_objectives || []).some(o => o.is_active !== false)) { alert('این مرحله هیچ هدفی در «اهداف مرحله» ندارد.'); return; }
+            const pp = lcState.projectPhases[phaseCode];
+            if (!pp?.planned_start || !pp?.planned_finish) {
+                alert('ابتدا باید بازه زمانی برنامه‌ای این فاز مشخص شده باشد (از طریق «برنامه زمان‌بندی اصلی» / استراتژی اجرا).');
+                return;
+            }
+            const rows = lcBuildAutoGenRows(phase);
+            const existing = lcScheduleChildren(phaseCode, null);
+            if (existing.length && !confirm(`این فاز از قبل ${toPersianDigits(existing.length)} زیرفعالیت دارد. ${toPersianDigits(rows.length)} زیرفعالیت جدید بر اساس اهداف مرحله اضافه شود؟`)) return;
             const { data, error } = await _supabase.from('lifecycle_schedule_items').insert(rows).select();
             if (error) { alert('خطا در ایجاد خودکار زیرفعالیت‌ها: ' + error.message); return; }
             lcState.scheduleItems.push(...data);
+            lcRenderAll();
+        }
+
+        // «همه گیت‌ها رو اصلاح کن» — the same generation as above, run once
+        // for every one of the 9 phases in a single pass, so the whole
+        // project's schedule tree gets seeded from its own gate objectives
+        // without clicking through each phase one at a time. Only ever
+        // touches a phase that has objectives, already has a planned
+        // window, and doesn't already have schedule items of its own — a
+        // phase someone has already started customizing is left alone.
+        async function lcAutoGenerateAllPhasesFromObjectives() {
+            const eligible = [], skippedHasChildren = [], skippedNoObjOrDates = [];
+            lcState.phases.forEach(phase => {
+                const hasObjectives = (phase.lifecycle_objectives || []).some(o => o.is_active !== false);
+                const pp = lcState.projectPhases[phase.code];
+                const hasChildren = lcScheduleChildren(phase.code, null).length > 0;
+                if (!hasObjectives || !pp?.planned_start || !pp?.planned_finish) { skippedNoObjOrDates.push(phase.title); return; }
+                if (hasChildren) { skippedHasChildren.push(phase.title); return; }
+                eligible.push(phase);
+            });
+            if (!eligible.length) {
+                alert('هیچ فازی برای ایجاد خودکار واجد شرایط نیست.'
+                    + (skippedHasChildren.length ? ` فازهای دارای زیرفعالیت از قبل: ${skippedHasChildren.join('، ')}.` : '')
+                    + (skippedNoObjOrDates.length ? ` فازهای بدون هدف یا بازه زمانی: ${skippedNoObjOrDates.join('، ')}.` : ''));
+                return;
+            }
+            if (!confirm(`زیرفعالیت‌ها برای ${toPersianDigits(eligible.length)} فاز (${eligible.map(p => p.title).join('، ')}) بر اساس اهداف مرحله ایجاد شود؟`
+                + (skippedHasChildren.length ? `\n(فازهای دارای زیرفعالیت از قبل رد می‌شوند: ${skippedHasChildren.join('، ')})` : ''))) return;
+            const rows = [];
+            eligible.forEach(phase => rows.push(...lcBuildAutoGenRows(phase)));
+            const { data, error } = await _supabase.from('lifecycle_schedule_items').insert(rows).select();
+            if (error) { alert('خطا در ایجاد خودکار زیرفعالیت‌ها: ' + error.message); return; }
+            lcState.scheduleItems.push(...data);
+            lcRenderAll();
+        }
+
+        // «در صورت تاخیرات بیش از اندازه کاربر بتونه برنامه رو ری‌پلن
+        // بکنه» — a delayed phase's planned window has already slipped
+        // relative to today; re-planning slides that phase AND every phase
+        // after it (in lifecycle_phases.sort_order — the same forward-only
+        // dependency direction the Execution Strategy engine itself
+        // assumes) forward by exactly the amount it's overdue, plus every
+        // schedule item already inside one of those phases, so the whole
+        // remaining plan stays internally consistent. Phases before the
+        // delayed one (already executed/gated) are never touched — this is
+        // a re-plan of what's still ahead, not a rewrite of history. Counts
+        // as a schedule revision, matching the same "revised" governance
+        // status lcApplyMasterSchedule already uses for a post-baseline change.
+        async function lcReplanFromDelay(phaseCode) {
+            const phase = lcState.phases.find(p => p.code === phaseCode);
+            const anchor = lcState.projectPhases[phaseCode];
+            if (!phase || !anchor?.planned_start) { alert('ابتدا باید بازه زمانی برنامه‌ای این فاز مشخص شده باشد.'); return; }
+            const todayIso = new Date().toISOString().slice(0, 10);
+            const delta = lcDaysBetween(anchor.planned_start, todayIso);
+            if (delta <= 0) { alert('این فاز هنوز به تاخیر نیفتاده — نیازی به ری‌پلن نیست.'); return; }
+            const order = lcState.phases.map(p => p.code);
+            const affected = order.slice(order.indexOf(phaseCode));
+            if (!confirm(`با این کار، تاریخ‌های برنامه‌ای «${phase.title}» و همه فازهای بعدی (${toPersianDigits(affected.length)} فاز)، به‌اندازه ${toPersianDigits(delta)} روز تاخیر به جلو منتقل می‌شود؛ زیرفعالیت‌های هرکدام هم به همین اندازه جابه‌جا می‌شوند. ادامه می‌دهید؟`)) return;
+
+            const phaseRows = affected
+                .map(code => lcState.projectPhases[code])
+                .filter(pp => pp && (pp.planned_start || pp.planned_finish))
+                .map(pp => ({
+                    project_name: lcState.projectName, phase_code: pp.phase_code,
+                    planned_start: pp.planned_start ? lcAddDays(pp.planned_start, delta) : null,
+                    planned_finish: pp.planned_finish ? lcAddDays(pp.planned_finish, delta) : null,
+                }));
+            const { data: newPhaseRows, error: phaseErr } = await _supabase.from('project_lifecycle_phases')
+                .upsert(phaseRows, { onConflict: 'project_name,phase_code' }).select();
+            if (phaseErr) { alert('خطا در ری‌پلن فازها: ' + phaseErr.message); return; }
+            newPhaseRows.forEach(row => { lcState.projectPhases[row.phase_code] = row; });
+
+            const affectedSet = new Set(affected);
+            const itemsToShift = lcState.scheduleItems.filter(si => affectedSet.has(si.phase_code) && (si.planned_start || si.planned_finish));
+            for (const si of itemsToShift) {
+                const patch = {
+                    planned_start: si.planned_start ? lcAddDays(si.planned_start, delta) : null,
+                    planned_finish: si.planned_finish ? lcAddDays(si.planned_finish, delta) : null,
+                };
+                const { data, error } = await _supabase.from('lifecycle_schedule_items').update(patch).eq('id', si.id).select().single();
+                if (!error && data) {
+                    const idx = lcState.scheduleItems.findIndex(x => x.id === si.id);
+                    if (idx >= 0) lcState.scheduleItems[idx] = data;
+                }
+            }
+
+            if (lcState.masterSchedule) {
+                const { data: msRow, error: msErr } = await _supabase.from('lifecycle_master_schedule')
+                    .update({ governance_status: 'revised', updated_at: new Date().toISOString(), updated_by: currentUser.email })
+                    .eq('project_name', lcState.projectName).select().single();
+                if (!msErr && msRow) lcState.masterSchedule = msRow;
+            }
+            await _supabase.from('lifecycle_audit_log').insert({
+                project_name: lcState.projectName, phase_code: phaseCode, action: 'replan_from_delay', field: 'planned_dates',
+                old_value: anchor.planned_start, new_value: lcAddDays(anchor.planned_start, delta), changed_by: currentUser.email,
+            });
             lcRenderAll();
         }
 
@@ -9964,7 +10072,10 @@
                 <div class="mt-4 pt-4" style="border-top:1px solid rgba(255,255,255,.08);">
                     <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
                         <h4 class="text-white font-extrabold text-xs">برنامه زمان‌بندی تفصیلی (Gantt)</h4>
-                        ${lcState.canEdit ? `<button type="button" data-lc-action="create-baseline" class="no-print text-[10.5px] font-bold px-3 py-1.5 rounded-lg border text-slate-200 hover:bg-white/5">📌 ثبت خط مبنا فعالیت‌ها (Baseline)</button>` : ''}
+                        <div class="flex flex-wrap items-center gap-2">
+                            ${lcState.canEdit ? `<button type="button" data-lc-action="auto-generate-all-objectives" class="no-print text-[10.5px] font-bold px-3 py-1.5 rounded-lg border text-slate-200 hover:bg-white/5">🧩 ایجاد خودکار زیرفعالیت‌های همه فازها از اهداف مرحله</button>` : ''}
+                            ${lcState.canEdit ? `<button type="button" data-lc-action="create-baseline" class="no-print text-[10.5px] font-bold px-3 py-1.5 rounded-lg border text-slate-200 hover:bg-white/5">📌 ثبت خط مبنا فعالیت‌ها (Baseline)</button>` : ''}
+                        </div>
                     </div>
                     ${lcBaselineVarianceSummaryHtml()}
                     ${lcGanttGridHtml(rows, range)}
@@ -10469,6 +10580,8 @@
             root.querySelectorAll('[data-lc-action="auto-fit"]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcAutoFitToChildren(lcRowFromRef(btn.dataset.rowKind, btn.dataset.phase, btn.dataset.itemId)); }));
             root.querySelectorAll('[data-lc-action="fit-children"]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcFitChildrenToPhase(lcRowFromRef(btn.dataset.rowKind, btn.dataset.phase, btn.dataset.itemId)); }));
             root.querySelectorAll('[data-lc-action="auto-generate-objectives"]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcAutoGenerateScheduleFromObjectives(btn.dataset.phase); }));
+            root.querySelectorAll('[data-lc-action="auto-generate-all-objectives"]').forEach(btn => btn.addEventListener('click', lcAutoGenerateAllPhasesFromObjectives));
+            root.querySelectorAll('[data-lc-action="replan-from-delay"]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcReplanFromDelay(btn.dataset.phase); }));
             root.querySelectorAll('[data-lc-action="create-baseline"]').forEach(btn => btn.addEventListener('click', lcCreateBaseline));
             root.querySelectorAll('[data-lc-set-strategy]').forEach(btn => btn.addEventListener('click', () => lcSetStrategyDraft(btn.dataset.lcSetStrategy)));
             root.querySelectorAll('[data-lc-strategy-start]').forEach(input => input.addEventListener('change', () => lcSetStrategyDraftStart(input.value.trim())));
