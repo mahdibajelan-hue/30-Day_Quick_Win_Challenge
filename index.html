@@ -8565,6 +8565,22 @@
             return { effective, readyForGate, criteriaOk, outputsOk, pendingMandatory };
         }
 
+        // «تایید خروجی‌ها هم ثبت بشود و ... تایید معیار عبور هم» — raw
+        // verified/total counts (not the weighted % lcPhaseCategoryBreakdown
+        // returns) for the orbit callout, so it reads like a checklist
+        // rather than another percentage next to the two already there.
+        function lcOutputCriterionCounts(phase) {
+            const it = lcState.items[phase.code] || { objective: {}, output: {}, criterion: {} };
+            const activeOutputs = (phase.lifecycle_outputs || []).filter(o => o.is_active !== false);
+            const activeCriteria = (phase.lifecycle_criteria || []).filter(c => c.is_active !== false);
+            return {
+                outputsVerified: activeOutputs.filter(o => it.output[o.id]?.status === 'verified').length,
+                outputsTotal: activeOutputs.length,
+                criteriaOk: activeCriteria.filter(c => ['verified', 'waived'].includes(it.criterion[c.id]?.status)).length,
+                criteriaTotal: activeCriteria.length,
+            };
+        }
+
         function lcOverallProgress() {
             let sumW = 0, sumActual = 0, sumPlanned = 0;
             const n = lcState.phases.length || 1;
@@ -8869,7 +8885,8 @@
             const labelsHtml = layout.map(({ phase: p, index: i, angle, nx, ny }) => {
                 const status = lcNodeStatus(p);
                 const meta = LC_NODE_STATUS_META[status];
-                const { actual } = lcPhaseProgress(p);
+                const { actual, planned } = lcPhaseProgress(p);
+                const counts = lcOutputCriterionCounts(p);
                 const isSelected = lcState.selectedPhase === p.code;
                 const leftPct = (nx / VB) * 100, topPct = (ny / VB) * 100;
                 const rad = angle * Math.PI / 180;
@@ -8890,6 +8907,9 @@
                 <div data-lc-phase="${p.code}" class="lc-node-hit" style="position:absolute; right:${100 - leftPct}%; top:${topPct}%; width:${nodeR * 2}px; height:${nodeR * 2}px; transform:translate(50%, -50%); pointer-events:auto; cursor:pointer;">
                     <div class="lc-node-title-wrap text-center pointer-events-none" style="position:absolute; right:${100 - titleLeftPct}%; top:${titleTopPct}%; transform:translate(50%, -50%); width:130px; z-index:2;">
                         <span class="lc-node-title" style="color:${meta.color};">${esc(p.title)}</span>
+                        <div class="text-[8px] font-bold leading-none mt-0.5" style="opacity:.85;" title="برنامه‌ای / واقعی">
+                            <span style="color:${LC_NODE_PLANNED_COLOR};">${toPersianDigits(Math.round(planned))}٪</span><span style="color:#64748b;"> / </span><span style="color:${LC_NEON_GREEN};">${toPersianDigits(Math.round(actual))}٪</span>
+                        </div>
                     </div>
                     ${delay ? `<div class="pointer-events-none text-center" style="position:absolute; right:${100 - titleLeftPct}%; top:${titleTopPct}%; transform:translate(50%, calc(-50% + 15px)); width:160px; z-index:6;">
                         <span class="animate-pulse text-[8px] font-extrabold px-1.5 py-0.5 rounded-full inline-block" style="background:#dc2626; color:#ffffff; box-shadow:0 0 6px rgba(220,38,38,.7);" title="زیرفعالیت تاخیردار">⚠ ${esc(lcTitleWithReviewFlag(delay.item.title).clean)} (+${toPersianDigits(delay.delayDays)} روز)</span>
@@ -8898,7 +8918,14 @@
                         <div class="rounded-xl px-3 py-2.5 text-center" style="background:rgba(8,15,30,.88); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.14); box-shadow:0 8px 24px rgba(0,0,0,.35);">
                             <p class="text-[10px] font-bold" style="color:${meta.color};">${toPersianDigits(i + 1)} · ${esc(meta.label)}</p>
                             <p class="text-[12px] font-extrabold text-white leading-snug mt-1">${esc(p.title)}</p>
-                            <p class="text-[11px] font-bold mt-1" style="color:${meta.color};">${toPersianDigits(Math.round(actual))}٪ تکمیل</p>
+                            <p class="text-[11px] font-bold mt-1" style="color:${LC_NEON_GREEN};">${toPersianDigits(Math.round(actual))}٪ واقعی</p>
+                            <p class="text-[10px] font-bold" style="color:${LC_NODE_PLANNED_COLOR};">${toPersianDigits(Math.round(planned))}٪ برنامه‌ای</p>
+                            <div class="flex items-center justify-between text-[10px] mt-1.5 pt-1.5" style="border-top:1px solid rgba(255,255,255,.14); color:#cbd5e1;">
+                                <span>خروجی‌های کلیدی</span><b style="color:${counts.outputsTotal && counts.outputsVerified === counts.outputsTotal ? LC_NEON_GREEN : '#fbbf24'};">${toPersianDigits(counts.outputsVerified)}/${toPersianDigits(counts.outputsTotal)} تایید</b>
+                            </div>
+                            <div class="flex items-center justify-between text-[10px] mt-0.5" style="color:#cbd5e1;">
+                                <span>معیار عبور</span><b style="color:${counts.criteriaTotal && counts.criteriaOk === counts.criteriaTotal ? LC_NEON_GREEN : '#fbbf24'};">${toPersianDigits(counts.criteriaOk)}/${toPersianDigits(counts.criteriaTotal)} تایید</b>
+                            </div>
                         </div>
                     </div>
                 </div>`;
@@ -9130,7 +9157,10 @@
             const stored = pp.gate_status || 'not_ready';
             let body;
             if (stored === 'passed') {
-                body = `<p class="text-[11px] text-emerald-700 font-bold">✓ این گیت تایید نهایی شده است.</p>`;
+                body = `<div class="space-y-2">
+                    <p class="text-[11px] text-emerald-700 font-bold">✓ این گیت تایید نهایی شده است.</p>
+                    ${isAdminUser() ? `<button type="button" data-lc-action="cancel-gate-pass" data-phase="${phase.code}" class="text-[10px] font-bold px-2.5 py-1.5 rounded-lg border border-red-400 text-red-500 hover:bg-red-50">لغو تایید نهایی (در صورت تایید اشتباه)</button>` : ''}
+                </div>`;
             } else if (stored === 'conditional') {
                 body = `<p class="text-[11px] text-purple-700 font-bold">این گیت با شرط عبور کرده — پیگیری شرط لازم است (به تاریخچه تصمیمات مراجعه کنید).</p>`;
             } else if (isAdminUser()) {
@@ -9154,7 +9184,7 @@
         function lcApprovalsHistoryHtml(phase) {
             const decisions = lcState.gateDecisions[phase.code] || [];
             if (!decisions.length) return '';
-            const labels = { pass: 'PASS', conditional: 'عبور مشروط', return: 'بازگشت جهت اقدام' };
+            const labels = { pass: 'PASS', conditional: 'عبور مشروط', return: 'بازگشت جهت اقدام', cancelled: 'لغو تایید نهایی' };
             return `<div>
                 <p class="text-[11px] font-extrabold text-slate-500 mb-1.5">تاریخچه تصمیمات Gate</p>
                 <div class="space-y-1.5">
@@ -10455,10 +10485,14 @@
                     <h4 class="text-white font-extrabold text-xs">${isEdit ? 'ویرایش' : 'افزودن زیرمجموعه به'} «${esc(parentTitle)}»</h4>
                     <button type="button" data-lc-action="close-schedule-editor" class="text-slate-400 hover:text-white text-lg leading-none">×</button>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-2">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-2 mb-1">
                     <input type="text" data-lc-sf="title" value="${isEdit ? esc(item.title) : ''}" placeholder="عنوان" class="text-[11px] border rounded-lg px-2 py-1.5 md:col-span-2">
                     <input type="text" data-lc-sf="start" value="${isEdit ? formatJalali(item.planned_start) : ''}" placeholder="شروع (۱۴۰۴/۰۱/۰۱)" class="text-[11px] border rounded-lg px-2 py-1.5">
                     <input type="text" data-lc-sf="finish" value="${isEdit ? formatJalali(item.planned_finish) : ''}" placeholder="پایان (۱۴۰۴/۰۱/۰۱)" class="text-[11px] border rounded-lg px-2 py-1.5">
+                    <input type="number" min="0" step="1" data-lc-sf="duration" value="${isEdit && item.planned_start && item.planned_finish ? lcDaysBetween(item.planned_start, item.planned_finish) : ''}" placeholder="تعداد روز" class="text-[11px] border rounded-lg px-2 py-1.5">
+                </div>
+                <p class="text-[9.5px] mb-2" style="color:#64748b;">هر ۲ مورد از «شروع/پایان/تعداد روز» را وارد کنید، مورد سوم خودکار محاسبه می‌شود.</p>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-2">
                     <input type="number" min="0" max="100" step="0.1" data-lc-sf="weight" value="${isEdit && item.weight_pct != null ? item.weight_pct : ''}" placeholder="وزن در بین هم‌سطح‌ها (٪)" class="text-[11px] border rounded-lg px-2 py-1.5">
                     ${isEdit && !hasChildren ? `<input type="number" min="0" max="100" step="1" data-lc-sf="actual" value="${item.manual_actual_pct != null ? item.manual_actual_pct : ''}" placeholder="٪ پیشرفت واقعی" class="text-[11px] border rounded-lg px-2 py-1.5 md:col-span-2">` : ''}
                 </div>
@@ -10474,10 +10508,26 @@
                     ${existingDeps.length ? existingDeps.map(d => {
                         const isPred = d.predecessor_id === item.id;
                         const other = lcState.scheduleItems.find(si => si.id === (isPred ? d.successor_id : d.predecessor_id));
+                        if (ed.editingDepId === d.id) {
+                            return `<div class="text-[10.5px] py-1.5 px-2 rounded-lg mb-1" style="background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12);">
+                                <p class="mb-1.5" style="color:#cbd5e1;">${isPred ? 'قبل از' : 'بعد از'} «${esc(other?.title || '—')}»</p>
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <select data-lc-edit-dep-type="${d.id}" class="text-[10px] border rounded-lg px-1.5 py-1">
+                                        ${Object.entries(depTypeLabels).map(([k, l]) => `<option value="${k}" ${d.dep_type === k ? 'selected' : ''}>${esc(l)}</option>`).join('')}
+                                    </select>
+                                    <input type="number" data-lc-edit-dep-lag="${d.id}" value="${d.lag_days || 0}" placeholder="تاخیر(+)/همپوشانی(-)" class="text-[10px] border rounded-lg px-1.5 py-1 w-28">
+                                    <button type="button" data-lc-action="save-dependency-edit" data-id="${d.id}" class="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-blue-900 text-white">ذخیره</button>
+                                    <button type="button" data-lc-action="cancel-dependency-edit" class="text-[10px] text-slate-400 hover:underline">انصراف</button>
+                                </div>
+                            </div>`;
+                        }
                         const lagLabel = d.lag_days ? ` — ${d.lag_days > 0 ? 'تاخیر' : 'همپوشانی'} ${toPersianDigits(Math.abs(d.lag_days))} روز` : '';
                         return `<div class="flex items-center justify-between text-[10.5px] py-1" style="color:#cbd5e1;">
                             <span>${isPred ? 'قبل از' : 'بعد از'} «${esc(other?.title || '—')}» — ${esc(depTypeLabels[d.dep_type] || d.dep_type)}${lagLabel}</span>
-                            <button type="button" data-lc-action="delete-dependency" data-id="${d.id}" class="text-red-400 hover:underline">حذف</button>
+                            <span class="flex items-center gap-2 shrink-0">
+                                <button type="button" data-lc-action="edit-dependency" data-id="${d.id}" class="text-blue-400 hover:underline">ویرایش</button>
+                                <button type="button" data-lc-action="delete-dependency" data-id="${d.id}" class="text-red-400 hover:underline">حذف</button>
+                            </span>
                         </div>`;
                     }).join('') : `<p class="text-[10px] text-slate-500 mb-2">وابستگی‌ای ثبت نشده.</p>`}
                     <p class="text-[10px] mt-2 mb-1" style="color:#93c5fd;">این فعالیت به فعالیت زیر وابسته است:</p>
@@ -10494,6 +10544,34 @@
                     <button type="button" data-lc-action="add-dependency" data-id="${item.id}" class="text-[10.5px] font-bold px-3 py-1.5 rounded-lg border text-slate-200 mt-2">+ افزودن وابستگی</button>
                 </div>` : ''}
             </div>`;
+        }
+
+        // «هر ۲ مورد از شروع/پایان/تعداد روز را وارد کنید، مورد سوم خودکار
+        // محاسبه می‌شود» — remembers which 2 of the 3 date fields were most
+        // recently touched (in this editor session) and fills the
+        // remaining one from them; edits the DOM inputs directly rather
+        // than re-rendering, so it doesn't fight the user's typing/focus.
+        function lcHandleScheduleDateTriad(root, changedField) {
+            const startEl = root.querySelector('[data-lc-sf="start"]');
+            const finishEl = root.querySelector('[data-lc-sf="finish"]');
+            const durationEl = root.querySelector('[data-lc-sf="duration"]');
+            const ed = lcState.scheduleEditor;
+            if (!startEl || !finishEl || !durationEl || !ed) return;
+            ed._dateTouch = (ed._dateTouch || []).filter(f => f !== changedField);
+            ed._dateTouch.push(changedField);
+            if (ed._dateTouch.length > 2) ed._dateTouch.shift();
+            if (ed._dateTouch.length < 2) return;
+            const startIso = jalaliInputToIso(startEl.value.trim());
+            const finishIso = jalaliInputToIso(finishEl.value.trim());
+            const durationRaw = durationEl.value.trim();
+            const durationDays = durationRaw === '' ? null : Number(durationRaw);
+            const has = { start: !!startIso, finish: !!finishIso, duration: durationDays != null && !isNaN(durationDays) && durationDays >= 0 };
+            const [a, b] = ed._dateTouch;
+            if (!has[a] || !has[b]) return;
+            const target = ['start', 'finish', 'duration'].find(f => f !== a && f !== b);
+            if (target === 'duration') durationEl.value = Math.max(0, lcDaysBetween(startIso, finishIso));
+            else if (target === 'finish') finishEl.value = formatJalali(lcAddDays(startIso, durationDays));
+            else if (target === 'start') startEl.value = formatJalali(lcAddDays(finishIso, -durationDays));
         }
 
         async function lcSaveScheduleItem() {
@@ -10554,6 +10632,29 @@
             lcRenderAll();
         }
 
+        // «علیرغم تعریف وابستگی‌ها ... تاخیر رو هم صفر ثبت کرده‌ام» — two
+        // items can be positioned before a dependency between them exists
+        // (or before its Lag/Lead is edited), so whatever gap/overlap they
+        // already had would otherwise survive even though the just-typed
+        // lag says otherwise. Unlike a drag (where the moved position is
+        // authoritative and lag is DERIVED from it — see
+        // lcActualLagForDep), here the typed lag is authoritative, so snap
+        // the successor onto it now, in either direction, then cascade
+        // like any other commit. Shared by both creating and editing a
+        // dependency. Returns true if a commit (and re-render) happened.
+        async function lcSnapDependencyIfNeeded(dep) {
+            const predItem = lcState.scheduleItems.find(si => si.id === dep.predecessor_id);
+            const succItem = lcState.scheduleItems.find(si => si.id === dep.successor_id);
+            if (!predItem || !succItem || !succItem.planned_start || !succItem.planned_finish) return false;
+            const required = lcRequiredSuccessorDate(dep, predItem);
+            const constrainsStart = (dep.dep_type === 'FS' || dep.dep_type === 'SS');
+            const current = constrainsStart ? succItem.planned_start : succItem.planned_finish;
+            if (!required || !current || required === current) return false;
+            const shiftDays = Math.round((new Date(required) - new Date(current)) / 86400000);
+            await lcCommitScheduleItemDates(succItem.id, lcAddDays(succItem.planned_start, shiftDays), lcAddDays(succItem.planned_finish, shiftDays));
+            return true;
+        }
+
         async function lcAddDependency(successorId) {
             const root = document.getElementById('lcBody');
             const predecessorId = Number(root.querySelector('[data-lc-sf="dep-other"]')?.value);
@@ -10565,26 +10666,22 @@
                 .select().single();
             if (error) { alert('خطا در ثبت وابستگی: ' + error.message); return; }
             lcState.scheduleDeps.push(data);
-            // «علیرغم تعریف وابستگی‌ها ... تاخیر رو هم صفر ثبت کرده‌ام» — the
-            // two items were positioned before this dependency existed, so
-            // whatever gap/overlap they already had would otherwise survive
-            // even though the just-typed Lag/Lead says otherwise. Unlike a
-            // drag (where the moved position is authoritative and lag is
-            // DERIVED from it — see lcActualLagForDep), here the typed lag
-            // is authoritative, so snap the successor onto it now, in
-            // either direction, then cascade like any other commit.
-            const predItem = lcState.scheduleItems.find(si => si.id === predecessorId);
-            const succItem = lcState.scheduleItems.find(si => si.id === successorId);
-            if (predItem && succItem && succItem.planned_start && succItem.planned_finish) {
-                const required = lcRequiredSuccessorDate(data, predItem);
-                const constrainsStart = (dep_type === 'FS' || dep_type === 'SS');
-                const current = constrainsStart ? succItem.planned_start : succItem.planned_finish;
-                if (required && current && required !== current) {
-                    const shiftDays = Math.round((new Date(required) - new Date(current)) / 86400000);
-                    await lcCommitScheduleItemDates(successorId, lcAddDays(succItem.planned_start, shiftDays), lcAddDays(succItem.planned_finish, shiftDays));
-                    return;
-                }
-            }
+            if (await lcSnapDependencyIfNeeded(data)) return;
+            lcRenderAll();
+        }
+
+        async function lcUpdateDependency(id) {
+            const idNum = Number(id);
+            const root = document.getElementById('lcBody');
+            const dep_type = root.querySelector(`[data-lc-edit-dep-type="${idNum}"]`)?.value || 'FS';
+            const lagRaw = root.querySelector(`[data-lc-edit-dep-lag="${idNum}"]`)?.value;
+            const { data, error } = await _supabase.from('lifecycle_schedule_dependencies')
+                .update({ dep_type, lag_days: lagRaw ? Number(lagRaw) : 0 }).eq('id', idNum).select().single();
+            if (error) { alert('خطا در ویرایش وابستگی: ' + error.message); return; }
+            const idx = lcState.scheduleDeps.findIndex(d => d.id === idNum);
+            if (idx >= 0) lcState.scheduleDeps[idx] = data;
+            if (lcState.scheduleEditor) lcState.scheduleEditor.editingDepId = null;
+            if (await lcSnapDependencyIfNeeded(data)) return;
             lcRenderAll();
         }
 
@@ -10922,6 +11019,30 @@
             lcRenderAll();
         }
 
+        // «اگر گیتی به اشتباه تایید نهایی شده بود ادمین قابلیت کنسل کردن
+        // آن را داشته باشد» — resets gate_status back to 'not_ready' rather
+        // than guessing a replacement status: lcGateReadiness already
+        // re-derives 'ready_for_review' vs 'not_ready' from the phase's
+        // real checklist state whenever stored is 'not_ready', so this
+        // naturally lands wherever the phase actually is right now.
+        async function lcCancelGatePass(phaseCode) {
+            if (!isAdminUser()) return;
+            const reason = prompt('دلیل لغو تایید نهایی این گیت را وارد کنید:');
+            if (!reason) return;
+            const { error: decErr } = await _supabase.from('lifecycle_gate_decisions').insert({
+                project_name: lcState.projectName, phase_code: phaseCode, decision: 'cancelled', reason, decided_by: currentUser.email,
+            });
+            if (decErr) { alert('خطا در ثبت لغو: ' + decErr.message); return; }
+            const { data, error } = await _supabase.from('project_lifecycle_phases')
+                .upsert({ project_name: lcState.projectName, phase_code: phaseCode, gate_status: 'not_ready' }, { onConflict: 'project_name,phase_code' })
+                .select().single();
+            if (error) { alert('خطا در به‌روزرسانی وضعیت گیت: ' + error.message); return; }
+            lcState.projectPhases[phaseCode] = data;
+            lcState.gateDecisions[phaseCode] = lcState.gateDecisions[phaseCode] || [];
+            lcState.gateDecisions[phaseCode].unshift({ project_name: lcState.projectName, phase_code: phaseCode, decision: 'cancelled', reason, decided_by: currentUser.email, decided_at: new Date().toISOString() });
+            lcRenderAll();
+        }
+
         async function lcRecordBasicDesignProgress(phaseCode) {
             const period = document.querySelector('[data-lc-field="bd-period"]')?.value.trim() || null;
             const pctRaw = document.querySelector('[data-lc-field="bd-pct"]')?.value;
@@ -10980,6 +11101,10 @@
             root.querySelectorAll('[data-lc-action="delete-schedule-item"]').forEach(btn => btn.addEventListener('click', () => lcDeleteScheduleItem(btn.dataset.id)));
             root.querySelectorAll('[data-lc-action="add-dependency"]').forEach(btn => btn.addEventListener('click', () => lcAddDependency(Number(btn.dataset.id))));
             root.querySelectorAll('[data-lc-action="delete-dependency"]').forEach(btn => btn.addEventListener('click', () => lcDeleteDependency(btn.dataset.id)));
+            root.querySelectorAll('[data-lc-action="edit-dependency"]').forEach(btn => btn.addEventListener('click', () => { if (lcState.scheduleEditor) lcState.scheduleEditor.editingDepId = Number(btn.dataset.id); lcRenderAll(); }));
+            root.querySelectorAll('[data-lc-action="cancel-dependency-edit"]').forEach(btn => btn.addEventListener('click', () => { if (lcState.scheduleEditor) lcState.scheduleEditor.editingDepId = null; lcRenderAll(); }));
+            root.querySelectorAll('[data-lc-action="save-dependency-edit"]').forEach(btn => btn.addEventListener('click', () => lcUpdateDependency(btn.dataset.id)));
+            root.querySelectorAll('[data-lc-sf="start"], [data-lc-sf="finish"], [data-lc-sf="duration"]').forEach(el => el.addEventListener('change', () => lcHandleScheduleDateTriad(root, el.dataset.lcSf)));
             root.querySelectorAll('[data-lc-action="auto-fit"]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcAutoFitToChildren(lcRowFromRef(btn.dataset.rowKind, btn.dataset.phase, btn.dataset.itemId)); }));
             root.querySelectorAll('[data-lc-action="fit-children"]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcFitChildrenToPhase(lcRowFromRef(btn.dataset.rowKind, btn.dataset.phase, btn.dataset.itemId)); }));
             root.querySelectorAll('[data-lc-action="auto-generate-objectives"]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcAutoGenerateScheduleFromObjectives(btn.dataset.phase); }));
@@ -11003,6 +11128,7 @@
             root.querySelectorAll('[data-lc-action="gate-pass"]').forEach(btn => btn.addEventListener('click', () => lcDecideGate(btn.dataset.phase, 'pass')));
             root.querySelectorAll('[data-lc-action="gate-conditional"]').forEach(btn => btn.addEventListener('click', () => lcDecideGate(btn.dataset.phase, 'conditional')));
             root.querySelectorAll('[data-lc-action="gate-return"]').forEach(btn => btn.addEventListener('click', () => lcDecideGate(btn.dataset.phase, 'return')));
+            root.querySelectorAll('[data-lc-action="cancel-gate-pass"]').forEach(btn => btn.addEventListener('click', () => lcCancelGatePass(btn.dataset.phase)));
             root.querySelectorAll('[data-lc-action="record-bd-progress"]').forEach(btn => btn.addEventListener('click', () => lcRecordBasicDesignProgress(btn.dataset.phase)));
             root.querySelectorAll('[data-lc-action="save-phase-weight"]').forEach(btn => btn.addEventListener('click', () => lcSavePhaseWeight(btn.dataset.phase, btn.previousElementSibling.value)));
             root.querySelectorAll('[data-lc-action="goto-client-report"]').forEach(btn => btn.addEventListener('click', () => switchView('clientReport')));
