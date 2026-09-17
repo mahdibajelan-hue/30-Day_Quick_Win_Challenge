@@ -790,6 +790,10 @@
                             <div><label class="block text-xs font-semibold mb-1">میزان جذب (ریالی)</label><input type="number" step="any" min="0" id="cr_amount_current_rial" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                             <div><label class="block text-xs font-semibold mb-1">میزان جذب (ارزی)</label><input type="number" step="any" min="0" id="cr_amount_current_eur" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                         </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="block text-xs font-semibold mb-1">سقف بودجه با آخرین اصلاحیه (ریالی، در صورت وجود)</label><input type="number" step="any" min="0" id="cr_revised_budget_rial" placeholder="در صورت عدم اصلاحیه خالی بگذارید" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">سقف بودجه با آخرین اصلاحیه (ارزی، در صورت وجود)</label><input type="number" step="any" min="0" id="cr_revised_budget_eur" placeholder="در صورت عدم اصلاحیه خالی بگذارید" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                        </div>
                         <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
                             <div><label class="block text-xs font-semibold mb-1">تاریخ شروع قرارداد *</label><input type="text" id="cr_start_date" required dir="ltr" placeholder="۱۴۰۴/۰۱/۰۱" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
                             <div><label class="block text-xs font-semibold mb-1">مدت قرارداد (ماه) *</label><input type="number" step="any" id="cr_duration" required min="0" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
@@ -3394,6 +3398,8 @@
             document.getElementById('cr_amount_initial_eur').value = row.contract_initial_amount_eur ?? '';
             document.getElementById('cr_amount_current_rial').value = row.contract_current_amount_rial ?? '';
             document.getElementById('cr_amount_current_eur').value = row.contract_current_amount_eur ?? '';
+            document.getElementById('cr_revised_budget_rial').value = row.revised_budget_amount_rial ?? '';
+            document.getElementById('cr_revised_budget_eur').value = row.revised_budget_amount_eur ?? '';
             document.getElementById('cr_start_date').value = formatJalali(row.contract_start_date);
             document.getElementById('cr_duration').value = row.contract_duration_months ?? '';
             updateEndDateFromStartAndDuration();
@@ -3961,6 +3967,8 @@
                 contract_initial_amount_eur: document.getElementById('cr_amount_initial_eur').value ? Number(document.getElementById('cr_amount_initial_eur').value) : null,
                 contract_current_amount_rial: document.getElementById('cr_amount_current_rial').value ? Number(document.getElementById('cr_amount_current_rial').value) : null,
                 contract_current_amount_eur: document.getElementById('cr_amount_current_eur').value ? Number(document.getElementById('cr_amount_current_eur').value) : null,
+                revised_budget_amount_rial: document.getElementById('cr_revised_budget_rial').value ? Number(document.getElementById('cr_revised_budget_rial').value) : null,
+                revised_budget_amount_eur: document.getElementById('cr_revised_budget_eur').value ? Number(document.getElementById('cr_revised_budget_eur').value) : null,
                 contract_start_date: startIso,
                 contract_end_date: endIso,
                 consultant_contract_end_date: jalaliInputToIso(document.getElementById('cr_consultant_end_date').value),
@@ -4098,28 +4106,67 @@
             return keys;
         }
 
+        // Uncapped sibling of psPct — for time/budget metrics that are
+        // MEANINGFUL past 100% (a project that's overrun its original
+        // schedule or budget), where clamping would silently hide the
+        // overrun instead of surfacing it.
+        function psPctUncapped(part, whole) {
+            if (part == null || !whole) return null;
+            return Math.round((part / whole) * 100);
+        }
+
         function psPct(part, whole) {
             if (part == null || !whole) return null;
             return Math.max(0, Math.min(100, Math.round((part / whole) * 100)));
         }
 
         // میزان جذب بودجه (cr_amount_current_rial/eur, labeled «میزان جذب»)
-        // against the initial contract amount; زمان سپری‌شده live from
+        // against whichever budget ceiling is currently active — the
+        // revised one (revised_budget_amount_*) once a بودجه اصلاحی has
+        // been recorded, otherwise the original contract_initial_amount_*,
+        // same fallback shape as extendedPct already uses for time against
+        // latest_extension_end_date. زمان سپری‌شده is live from
         // contract_start_date (not the possibly-stale stored elapsed_months)
         // against both the original duration and, when a تطویل has been
-        // approved, the extended one.
+        // approved, the extended one. Every percentage here is deliberately
+        // NOT clamped to 100 — an overrun project genuinely can be at 220%
+        // of its original schedule or budget, and hiding that behind a
+        // capped bar would defeat the whole point of tracking it.
         function computeProjectStatusMetrics(cr) {
-            const budgetPct = cr.contract_current_amount_rial != null && cr.contract_initial_amount_rial
-                ? psPct(cr.contract_current_amount_rial, cr.contract_initial_amount_rial)
-                : (cr.contract_current_amount_eur != null && cr.contract_initial_amount_eur ? psPct(cr.contract_current_amount_eur, cr.contract_initial_amount_eur) : null);
+            const budgetCeilingRial = cr.revised_budget_amount_rial ?? cr.contract_initial_amount_rial;
+            const budgetCeilingEur = cr.revised_budget_amount_eur ?? cr.contract_initial_amount_eur;
+            const budgetPct = cr.contract_current_amount_rial != null && budgetCeilingRial
+                ? psPctUncapped(cr.contract_current_amount_rial, budgetCeilingRial)
+                : (cr.contract_current_amount_eur != null && budgetCeilingEur ? psPctUncapped(cr.contract_current_amount_eur, budgetCeilingEur) : null);
+
             const elapsedMonths = cr.contract_start_date ? monthsBetween(cr.contract_start_date) : null;
-            const totalPct = (elapsedMonths != null && cr.contract_duration_months) ? psPct(elapsedMonths, cr.contract_duration_months) : null;
+            const totalPct = (elapsedMonths != null && cr.contract_duration_months) ? psPctUncapped(elapsedMonths, cr.contract_duration_months) : null;
             let extendedPct = null;
             if (elapsedMonths != null && cr.contract_start_date && cr.latest_extension_end_date) {
                 const extendedMonths = monthsBetween(cr.contract_start_date, new Date(cr.latest_extension_end_date));
-                extendedPct = extendedMonths ? psPct(elapsedMonths, extendedMonths) : null;
+                extendedPct = extendedMonths ? psPctUncapped(elapsedMonths, extendedMonths) : null;
             }
-            return { budgetPct, totalPct, extendedPct };
+            // Distinct from extendedPct (the whole project's elapsed% against
+            // the new total duration): this is how much of just the ADDED
+            // extension window itself — from the original contractual end
+            // date to the extended one — has elapsed, i.e. "چقدر از خودِ
+            // آخرین تطویل سپری شده".
+            let extensionWindowPct = null;
+            if (cr.contract_end_date && cr.latest_extension_end_date) {
+                const windowMonths = monthsBetween(cr.contract_end_date, new Date(cr.latest_extension_end_date));
+                const elapsedInWindowMonths = monthsBetween(cr.contract_end_date);
+                extensionWindowPct = windowMonths ? psPctUncapped(elapsedInWindowMonths, windowMonths) : null;
+            }
+
+            const activeTimePct = extendedPct != null ? extendedPct : totalPct;
+            // "در صورت نیاز" is an ongoing condition, not a one-time gate:
+            // even a project that already got one extension/revision needs
+            // ANOTHER the moment that extended/revised ceiling is itself
+            // exhausted — so this never checks whether one already exists.
+            const needsTimeExtension = activeTimePct != null && activeTimePct >= 100;
+            const needsBudgetRevision = budgetPct != null && budgetPct >= 100;
+
+            return { budgetPct, totalPct, extendedPct, extensionWindowPct, needsTimeExtension, needsBudgetRevision };
         }
 
         function psGaugeColor(v) {
@@ -4196,27 +4243,39 @@
         // Small, dense card — one headline needle gauge (پیشرفت کل) plus
         // thin bars for budget/schedule/discipline so a lot of projects fit
         // on screen at once. psGaugeColor doubles as the bar color so the
-        // whole card reads consistently at a glance.
+        // whole card reads consistently at a glance. A bar's WIDTH still
+        // clamps at the edge of its own box (there's nowhere else for it to
+        // go), but the number beside it never does — past 100% the bar
+        // turns solid red and pulses so an overrun reads as an overrun
+        // instead of looking identical to "right at the limit".
         function psMiniBarHtml(label, pct) {
             if (pct == null) return '';
-            const v = Math.max(0, Math.min(100, pct));
+            const over = pct > 100;
+            const color = over ? '#dc2626' : psGaugeColor(pct);
+            const width = Math.max(0, Math.min(100, pct));
             return `<div class="flex items-center gap-1.5 text-[10px]">
                 <span class="w-9 shrink-0 text-slate-400 truncate">${esc(label)}</span>
-                <div class="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full" style="width:${v}%; background:${psGaugeColor(v)};"></div></div>
-                <span class="w-8 shrink-0 text-left font-bold tabular-nums" style="color:${psGaugeColor(v)};">${toPersianDigits(String(Math.round(v)))}٪</span>
+                <div class="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full${over ? ' animate-pulse' : ''}" style="width:${width}%; background:${color};"></div></div>
+                <span class="w-10 shrink-0 text-left font-bold tabular-nums" style="color:${color};">${toPersianDigits(String(Math.round(pct)))}٪</span>
             </div>`;
         }
 
         function projectStatusCardHtml(cr, idx) {
             const disciplineKeys = psDisciplineKeysForType(cr.contract_type);
             const typeLabel = cr.contract_type === 'سایر' ? (cr.contract_type_other || 'سایر') : (cr.contract_type || '—');
-            const { budgetPct, totalPct, extendedPct } = computeProjectStatusMetrics(cr);
+            const { budgetPct, totalPct, extendedPct, extensionWindowPct, needsTimeExtension, needsBudgetRevision } = computeProjectStatusMetrics(cr);
             const displayName = displayProjectName(cr.project_name);
+
+            const alerts = [
+                needsTimeExtension ? 'نیاز به تطویل زمان' : null,
+                needsBudgetRevision ? 'نیاز به اصلاحیه بودجه' : null,
+            ].filter(Boolean);
 
             return `<div class="print-card bg-white rounded-2xl shadow-sm border p-3 space-y-1.5">
                 <div class="border-b pb-1.5">
                     <h3 class="text-[12px] font-extrabold text-slate-800 truncate" title="${esc(displayName)}">${esc(displayName)}</h3>
                     <p class="text-[10px] text-slate-400 truncate">${esc(typeLabel)}${cr.contract_number ? ' · ' + esc(cr.contract_number) : ''}</p>
+                    ${alerts.length ? `<div class="no-print flex flex-wrap gap-1 mt-1">${alerts.map(a => `<span class="animate-pulse text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-red-600 text-white">⚠ ${esc(a)}</span>`).join('')}</div>` : ''}
                 </div>
 
                 <div class="relative h-20 mx-auto" style="max-width:130px"><canvas id="psGaugeTotal${idx}"></canvas></div>
@@ -4226,8 +4285,10 @@
                 <div class="space-y-1 pt-1.5 border-t">
                     ${psMiniBarHtml('بودجه', budgetPct)}
                     ${psMiniBarHtml('زمان', extendedPct != null ? extendedPct : totalPct)}
+                    ${extensionWindowPct != null ? psMiniBarHtml('از تطویل', extensionWindowPct) : ''}
                     ${disciplineKeys.map(k => psMiniBarHtml(PS_DISCIPLINE_LABELS[k].split(' ')[0], cr['progress_' + k])).join('')}
                 </div>
+                ${cr.latest_extension_end_date ? `<p class="text-[9px] text-amber-600 text-center">آخرین تطویل تا ${formatJalali(cr.latest_extension_end_date)}</p>` : ''}
 
                 <p class="text-[9px] text-slate-400 text-center pt-1 border-t">به‌روزرسانی: ${formatJalali(cr.created_at)}</p>
             </div>`;
