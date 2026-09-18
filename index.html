@@ -1805,6 +1805,17 @@
             input.addEventListener('click', (e) => { e.stopPropagation(); openJalaliPicker(input); });
         }
 
+        // «از تقویم شمسی استفاده شود و نیازی به تایپ تاریخ نباشد اما در
+        // صورت تمایل کاربر با کیبورد هم بشود مقادیر را وارد نمود» — same
+        // click-to-open popup as attachJalaliDatePicker, but the field
+        // stays a normal editable text input (not readOnly), so typing a
+        // date directly still works — clicking to open the calendar is
+        // just the faster default.
+        function attachJalaliDatePickerKeyboardOk(input) {
+            input.classList.add('cursor-pointer');
+            input.addEventListener('click', (e) => { e.stopPropagation(); openJalaliPicker(input); });
+        }
+
         function openJalaliPicker(input) {
             if (activeJalaliPickerInput === input) { closeJalaliPicker(); return; }
             closeJalaliPicker();
@@ -8479,32 +8490,6 @@
         }
 
         // ---------------- Calculation engine ----------------
-        function lcItemFraction(kind, row) {
-            if (!row) return 0;
-            return (LC_KIND_FRACTION[kind] || {})[row.status] ?? 0;
-        }
-
-        function lcCategoryProgress(masterList, progressMap, kind) {
-            const active = (masterList || []).filter(m => m.is_active !== false);
-            if (!active.length) return 100;
-            const hasCustomWeight = active.some(m => typeof m.weight === 'number');
-            let sum = 0, totalW = 0;
-            active.forEach(m => {
-                const w = hasCustomWeight ? (Number(m.weight) || 0) : 1;
-                sum += lcItemFraction(kind, progressMap[m.id]) * w;
-                totalW += w;
-            });
-            return totalW ? (sum / totalW) * 100 : 0;
-        }
-
-        function lcPhaseCategoryBreakdown(phase) {
-            const it = lcState.items[phase.code] || { objective: {}, output: {}, criterion: {} };
-            return {
-                output: lcCategoryProgress(phase.lifecycle_outputs, it.output, 'output'),
-                criterion: lcCategoryProgress(phase.lifecycle_criteria, it.criterion, 'criterion'),
-            };
-        }
-
         function lcPlannedProgressByDate(plannedStart, plannedFinish, asOf) {
             if (!plannedStart || !plannedFinish) return null;
             const s = new Date(plannedStart).getTime(), f = new Date(plannedFinish).getTime(), n = (asOf || new Date()).getTime();
@@ -8538,17 +8523,18 @@
                 const planned = lcPlannedProgressByDate(pp?.planned_start, pp?.planned_finish);
                 return { actual, planned: planned == null ? actual : planned };
             }
-            const cat = lcPhaseCategoryBreakdown(phase);
-            // Objectives are no longer an independent checklist category —
-            // they're tracked via this phase's own schedule (Gantt)
-            // sub-items instead (see lcBuildAutoGenRows) — so a 'step'
-            // phase's progress and gate-readiness rest on its Key Outputs
-            // and Exit Criteria alone, re-normalized against just their own
-            // two weights.
-            const catWeight = (phase.outputs_weight_pct || 0) + (phase.criteria_weight_pct || 0);
-            const actual = catWeight ? (cat.output * phase.outputs_weight_pct + cat.criterion * phase.criteria_weight_pct) / catWeight : 0;
+            // «محاسبات پیشرفت واقعی بر اساس پیشرفت هر مجموعه فعالیت در
+            // جدول زمانی اون مرحله باشه» — a 'step' phase's actual progress
+            // is now the weighted rollup of its own schedule (Gantt)
+            // items' recorded %, the exact same number as that phase's
+            // Gantt bar fill (see lcPhaseScheduleActualPct). Key Outputs
+            // and Exit Criteria no longer feed into this number at all:
+            // Exit Criteria still gate whether the phase can PASS (see
+            // lcGateReadiness below), just without contributing a %, and
+            // Key Outputs are purely informational now (lcChecklistSectionHtml).
+            const actual = lcPhaseScheduleActualPct(phase.code) ?? 0;
             const planned = lcPlannedProgressByDate(pp?.planned_start, pp?.planned_finish);
-            return { actual, planned: planned == null ? actual : planned, cat };
+            return { actual, planned: planned == null ? actual : planned };
         }
 
         function lcGateReadiness(phase) {
@@ -8556,26 +8542,24 @@
             const it = lcState.items[phase.code] || { objective: {}, output: {}, criterion: {} };
             const mandatoryCriteria = (phase.lifecycle_criteria || []).filter(c => c.is_active !== false && c.is_mandatory);
             const criteriaOk = mandatoryCriteria.every(c => ['verified', 'waived'].includes(it.criterion[c.id]?.status));
-            const outputsOk = (phase.lifecycle_outputs || []).filter(o => o.is_active !== false).every(o => it.output[o.id]?.status === 'verified');
-            const readyForGate = criteriaOk && outputsOk;
+            // Key Outputs are informational-only now — no status to check,
+            // so only Exit Criteria gate the pass.
+            const readyForGate = criteriaOk;
             const stored = pp?.gate_status || 'not_ready';
             const pendingMandatory = mandatoryCriteria.filter(c => !['verified', 'waived'].includes(it.criterion[c.id]?.status));
             let effective = stored;
             if (stored === 'not_ready' || stored === 'ready_for_review') effective = readyForGate ? 'ready_for_review' : 'not_ready';
-            return { effective, readyForGate, criteriaOk, outputsOk, pendingMandatory };
+            return { effective, readyForGate, criteriaOk, pendingMandatory };
         }
 
-        // «تایید خروجی‌ها هم ثبت بشود و ... تایید معیار عبور هم» — raw
-        // verified/total counts (not the weighted % lcPhaseCategoryBreakdown
-        // returns) for the orbit callout, so it reads like a checklist
-        // rather than another percentage next to the two already there.
-        function lcOutputCriterionCounts(phase) {
+        // «تایید معیار عبور هم» — raw verified/total count for the orbit
+        // callout, so gate readiness reads like a checklist rather than
+        // another percentage. Key Outputs are informational-only now (no
+        // status to count), so this only covers Exit Criteria.
+        function lcCriterionCounts(phase) {
             const it = lcState.items[phase.code] || { objective: {}, output: {}, criterion: {} };
-            const activeOutputs = (phase.lifecycle_outputs || []).filter(o => o.is_active !== false);
             const activeCriteria = (phase.lifecycle_criteria || []).filter(c => c.is_active !== false);
             return {
-                outputsVerified: activeOutputs.filter(o => it.output[o.id]?.status === 'verified').length,
-                outputsTotal: activeOutputs.length,
                 criteriaOk: activeCriteria.filter(c => ['verified', 'waived'].includes(it.criterion[c.id]?.status)).length,
                 criteriaTotal: activeCriteria.length,
             };
@@ -8886,7 +8870,7 @@
                 const status = lcNodeStatus(p);
                 const meta = LC_NODE_STATUS_META[status];
                 const { actual, planned } = lcPhaseProgress(p);
-                const counts = lcOutputCriterionCounts(p);
+                const counts = lcCriterionCounts(p);
                 const isSelected = lcState.selectedPhase === p.code;
                 const leftPct = (nx / VB) * 100, topPct = (ny / VB) * 100;
                 const rad = angle * Math.PI / 180;
@@ -8907,8 +8891,9 @@
                 <div data-lc-phase="${p.code}" class="lc-node-hit" style="position:absolute; right:${100 - leftPct}%; top:${topPct}%; width:${nodeR * 2}px; height:${nodeR * 2}px; transform:translate(50%, -50%); pointer-events:auto; cursor:pointer;">
                     <div class="lc-node-title-wrap text-center pointer-events-none" style="position:absolute; right:${100 - titleLeftPct}%; top:${titleTopPct}%; transform:translate(50%, -50%); width:130px; z-index:2;">
                         <span class="lc-node-title" style="color:${meta.color};">${esc(p.title)}</span>
-                        <div class="text-[8px] font-bold leading-none mt-0.5" style="opacity:.85;" title="برنامه‌ای / واقعی">
-                            <span style="color:${LC_NODE_PLANNED_COLOR};">${toPersianDigits(Math.round(planned))}٪</span><span style="color:#64748b;"> / </span><span style="color:${LC_NEON_GREEN};">${toPersianDigits(Math.round(actual))}٪</span>
+                        <div class="flex items-center justify-center gap-1 mt-1">
+                            <span class="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full whitespace-nowrap" style="background:${LC_NODE_PLANNED_COLOR}26; color:${LC_NODE_PLANNED_COLOR};" title="پیشرفت برنامه‌ای">ب ${toPersianDigits(Math.round(planned))}٪</span>
+                            <span class="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full whitespace-nowrap" style="background:${LC_NEON_GREEN}26; color:${LC_NEON_GREEN};" title="پیشرفت واقعی">و ${toPersianDigits(Math.round(actual))}٪</span>
                         </div>
                     </div>
                     ${delay ? `<div class="pointer-events-none text-center" style="position:absolute; right:${100 - titleLeftPct}%; top:${titleTopPct}%; transform:translate(50%, calc(-50% + 15px)); width:160px; z-index:6;">
@@ -8918,12 +8903,17 @@
                         <div class="rounded-xl px-3 py-2.5 text-center" style="background:rgba(8,15,30,.88); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.14); box-shadow:0 8px 24px rgba(0,0,0,.35);">
                             <p class="text-[10px] font-bold" style="color:${meta.color};">${toPersianDigits(i + 1)} · ${esc(meta.label)}</p>
                             <p class="text-[12px] font-extrabold text-white leading-snug mt-1">${esc(p.title)}</p>
-                            <p class="text-[11px] font-bold mt-1" style="color:${LC_NEON_GREEN};">${toPersianDigits(Math.round(actual))}٪ واقعی</p>
-                            <p class="text-[10px] font-bold" style="color:${LC_NODE_PLANNED_COLOR};">${toPersianDigits(Math.round(planned))}٪ برنامه‌ای</p>
-                            <div class="flex items-center justify-between text-[10px] mt-1.5 pt-1.5" style="border-top:1px solid rgba(255,255,255,.14); color:#cbd5e1;">
-                                <span>خروجی‌های کلیدی</span><b style="color:${counts.outputsTotal && counts.outputsVerified === counts.outputsTotal ? LC_NEON_GREEN : '#fbbf24'};">${toPersianDigits(counts.outputsVerified)}/${toPersianDigits(counts.outputsTotal)} تایید</b>
+                            <div class="grid grid-cols-2 gap-1.5 mt-2">
+                                <div class="rounded-lg py-1.5" style="background:${LC_NODE_PLANNED_COLOR}22;">
+                                    <p class="text-[9px] font-bold" style="color:${LC_NODE_PLANNED_COLOR};">برنامه‌ای</p>
+                                    <p class="text-sm font-extrabold" style="color:${LC_NODE_PLANNED_COLOR};">${toPersianDigits(Math.round(planned))}٪</p>
+                                </div>
+                                <div class="rounded-lg py-1.5" style="background:${LC_NEON_GREEN}22;">
+                                    <p class="text-[9px] font-bold" style="color:${LC_NEON_GREEN};">واقعی</p>
+                                    <p class="text-sm font-extrabold" style="color:${LC_NEON_GREEN};">${toPersianDigits(Math.round(actual))}٪</p>
+                                </div>
                             </div>
-                            <div class="flex items-center justify-between text-[10px] mt-0.5" style="color:#cbd5e1;">
+                            <div class="flex items-center justify-between text-[10px] mt-2 pt-1.5" style="border-top:1px solid rgba(255,255,255,.14); color:#cbd5e1;">
                                 <span>معیار عبور</span><b style="color:${counts.criteriaTotal && counts.criteriaOk === counts.criteriaTotal ? LC_NEON_GREEN : '#fbbf24'};">${toPersianDigits(counts.criteriaOk)}/${toPersianDigits(counts.criteriaTotal)} تایید</b>
                             </div>
                         </div>
@@ -9000,16 +8990,12 @@
             const gate = activePhase ? lcGateReadiness(activePhase) : null;
             const gateMeta = gate ? LC_GATE_STATUS_META[gate.effective] : null;
 
-            let pendingMandatory = 0, pendingOutputs = 0, blockedItems = 0;
+            let pendingMandatory = 0, blockedItems = 0;
             lcState.phases.forEach(p => {
                 const it = lcState.items[p.code] || { objective: {}, output: {}, criterion: {} };
                 (p.lifecycle_criteria || []).filter(c => c.is_mandatory && c.is_active !== false).forEach(c => {
                     if (!['verified', 'waived'].includes(it.criterion[c.id]?.status)) pendingMandatory++;
                 });
-                (p.lifecycle_outputs || []).filter(o => o.is_active !== false).forEach(o => {
-                    if (it.output[o.id]?.status !== 'verified') pendingOutputs++;
-                });
-                Object.values(it.output).forEach(row => { if (row.status === 'rejected') blockedItems++; });
                 Object.values(it.criterion).forEach(row => { if (row.status === 'failed') blockedItems++; });
             });
 
@@ -9024,7 +9010,6 @@
                 <div class="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t" style="border-color:rgba(255,255,255,.1);">
                     ${gateMeta ? `<span class="text-[11px] px-2.5 py-1 rounded-full font-bold bg-${gateMeta.color}-100 text-${gateMeta.color}-700">گیت فاز جاری: ${esc(gateMeta.label)}</span>` : ''}
                     ${pendingMandatory ? `<span class="text-[11px] px-2.5 py-1 rounded-full font-bold bg-amber-100 text-amber-700">${toPersianDigits(pendingMandatory)} معیار الزامی معلق</span>` : ''}
-                    ${pendingOutputs ? `<span class="text-[11px] px-2.5 py-1 rounded-full font-bold bg-slate-100 text-slate-600">${toPersianDigits(pendingOutputs)} خروجی هنوز تاییدنشده</span>` : ''}
                     ${blockedItems ? `<span class="text-[11px] px-2.5 py-1 rounded-full font-bold bg-red-100 text-red-700">${toPersianDigits(blockedItems)} مورد مسدود</span>` : ''}
                 </div>
             </div>`;
@@ -9039,16 +9024,37 @@
             return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-${meta.color}-100 text-${meta.color}-700">${esc(meta.label)}</span>`;
         }
 
+        // «خروجی کلیدی رو در یک لیست برای اطلاع ... بیاور اما نیاز به ورود
+        // هیچ اطلاعاتی نداشته باشند و محاسبات هم بر اساس آن‌ها نباشد» —
+        // Key Outputs are purely informational now: no status, no evidence,
+        // no calc dependency, just a plain reference list. Exit Criteria
+        // keep their full interactive checklist (status/evidence/file),
+        // since they still gate whether the phase can PASS — they just no
+        // longer show an aggregate percentage either (see lcPhaseProgress).
+        function lcOutputListHtml(phase) {
+            const master = (phase.lifecycle_outputs || []).filter(m => m.is_active !== false).slice().sort((a, b) => a.seq - b.seq);
+            if (!master.length) return '';
+            return `
+            <div>
+                <p class="text-[11px] font-extrabold text-slate-500 mb-1.5">خروجی‌های کلیدی <span class="text-slate-400 font-normal">(اطلاع‌رسانی — بدون نیاز به ثبت)</span></p>
+                <ul class="space-y-1 list-disc pr-4">
+                    ${master.map(m => {
+                        const { clean, needsReview } = lcTitleWithReviewFlag(m.title);
+                        return `<li class="text-xs text-slate-600">${esc(clean)}${needsReview ? ' <span title="این مورد از استخراج تصویری سند مرجع است و باید توسط PMO تایید شود" class="text-amber-500 cursor-help">⚠</span>' : ''}</li>`;
+                    }).join('')}
+                </ul>
+            </div>`;
+        }
+
         function lcChecklistSectionHtml(phase, kind, label) {
             const masterKey = kind === 'objective' ? 'lifecycle_objectives' : kind === 'output' ? 'lifecycle_outputs' : 'lifecycle_criteria';
             const master = (phase[masterKey] || []).filter(m => m.is_active !== false).slice().sort((a, b) => a.seq - b.seq);
             if (!master.length) return '';
             const progressMap = (lcState.items[phase.code] || {})[kind] || {};
             const statuses = LC_KIND_STATUSES[kind];
-            const catPct = lcCategoryProgress(master, progressMap, kind);
             return `
             <div>
-                <p class="text-[11px] font-extrabold text-slate-500 mb-1.5">${esc(label)} <span class="text-slate-400 font-normal">(${toPersianDigits(Math.round(catPct))}٪)</span></p>
+                <p class="text-[11px] font-extrabold text-slate-500 mb-1.5">${esc(label)}</p>
                 <div class="space-y-1.5">
                     ${master.map(m => {
                         const row = progressMap[m.id] || { status: statuses[0][0] };
@@ -9201,7 +9207,6 @@
         function lcRisksSectionHtml(phase) {
             const it = lcState.items[phase.code] || { objective: {}, output: {}, criterion: {} };
             const risks = [];
-            (phase.lifecycle_outputs || []).forEach(o => { if (it.output[o.id]?.status === 'rejected') risks.push({ label: o.title, kind: 'خروجی ردشده', comment: it.output[o.id].comment }); });
             (phase.lifecycle_criteria || []).forEach(c => { if (it.criterion[c.id]?.status === 'failed') risks.push({ label: c.title, kind: 'معیار ناموفق', comment: it.criterion[c.id].comment }); });
             if (!risks.length) return '';
             return `<div class="bg-red-50 border border-red-200 rounded-xl p-3">
@@ -9258,7 +9263,7 @@
                 ${phase.progress_engine === 'epc' ? lcEpcDrilldownHtml() : ''}
                 ${phase.progress_engine === 'basic_design' ? lcBasicDesignHtml(phase, pp) : ''}
 
-                ${lcChecklistSectionHtml(phase, 'output', 'خروجی کلیدی')}
+                ${lcOutputListHtml(phase)}
                 ${lcChecklistSectionHtml(phase, 'criterion', 'معیار عبور (Exit Criteria)')}
 
                 ${lcGateActionsHtml(phase, gate)}
@@ -11104,7 +11109,11 @@
             root.querySelectorAll('[data-lc-action="edit-dependency"]').forEach(btn => btn.addEventListener('click', () => { if (lcState.scheduleEditor) lcState.scheduleEditor.editingDepId = Number(btn.dataset.id); lcRenderAll(); }));
             root.querySelectorAll('[data-lc-action="cancel-dependency-edit"]').forEach(btn => btn.addEventListener('click', () => { if (lcState.scheduleEditor) lcState.scheduleEditor.editingDepId = null; lcRenderAll(); }));
             root.querySelectorAll('[data-lc-action="save-dependency-edit"]').forEach(btn => btn.addEventListener('click', () => lcUpdateDependency(btn.dataset.id)));
-            root.querySelectorAll('[data-lc-sf="start"], [data-lc-sf="finish"], [data-lc-sf="duration"]').forEach(el => el.addEventListener('change', () => lcHandleScheduleDateTriad(root, el.dataset.lcSf)));
+            // 'change' covers typing-then-blur; 'input' also covers a
+            // calendar-picker pick (openJalaliPicker's selectDay only
+            // dispatches 'input', not 'change').
+            root.querySelectorAll('[data-lc-sf="start"], [data-lc-sf="finish"], [data-lc-sf="duration"]').forEach(el => ['change', 'input'].forEach(evt => el.addEventListener(evt, () => lcHandleScheduleDateTriad(root, el.dataset.lcSf))));
+            root.querySelectorAll('[data-lc-sf="start"], [data-lc-sf="finish"]').forEach(el => attachJalaliDatePickerKeyboardOk(el));
             root.querySelectorAll('[data-lc-action="auto-fit"]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcAutoFitToChildren(lcRowFromRef(btn.dataset.rowKind, btn.dataset.phase, btn.dataset.itemId)); }));
             root.querySelectorAll('[data-lc-action="fit-children"]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcFitChildrenToPhase(lcRowFromRef(btn.dataset.rowKind, btn.dataset.phase, btn.dataset.itemId)); }));
             root.querySelectorAll('[data-lc-action="auto-generate-objectives"]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); lcAutoGenerateScheduleFromObjectives(btn.dataset.phase); }));
