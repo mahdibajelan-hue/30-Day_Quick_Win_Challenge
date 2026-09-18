@@ -295,28 +295,35 @@
     <div class="flex min-h-screen">
 
         <!-- SIDEBAR (desktop) -->
-        <aside id="sidebar" class="hidden md:flex md:flex-col w-64 shrink-0 bg-white border-l border-slate-800 h-screen sticky top-0 overflow-y-auto scroll-thin" style="transition: width .2s ease, opacity .2s ease, border-width .2s ease;">
-            <div class="flex items-center gap-3 p-5 border-b border-slate-800">
-                <img src="logo.png" alt="لوگوی شرکت" class="h-9 w-9 object-contain shrink-0" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
-                <div class="min-w-0">
-                    <p class="font-bold text-sm text-slate-800 truncate">شرکت مهندسی و توسعه گاز ایران</p>
-                    <p class="text-[11px] text-slate-500 truncate">طرح خط لوله ششم سراسری</p>
+        <aside id="sidebar" class="hidden md:block w-64 shrink-0 h-screen sticky top-0 relative overflow-hidden" style="transition: width .2s ease; box-shadow: 1px 0 16px -6px rgba(15,23,42,.08);">
+            <!-- A direct child of #sidebar, outside the width-256px inner
+                 panel below — so collapsing (#sidebar -> 40px, clipped by
+                 its own overflow-hidden) never carries the one control that
+                 re-expands it off-screen along with everything else. -->
+            <button id="sidebarToggleBtn" type="button" title="نمایش/پنهان‌سازی نوار کناری" class="absolute top-2 right-2 z-10 h-7 w-7 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 text-sm leading-none">☰</button>
+            <div id="sidebarInner" class="flex flex-col bg-white h-full overflow-y-auto scroll-thin" style="width:256px; transition: opacity .15s ease;">
+                <div class="flex items-center gap-3 px-5 pt-9 pb-4">
+                    <img src="logo.png" alt="لوگوی شرکت" class="h-9 w-9 object-contain shrink-0" onerror="this.outerHTML = document.getElementById('logoFallbackTpl').innerHTML;">
+                    <div class="min-w-0">
+                        <p class="font-bold text-sm text-slate-800 truncate">شرکت مهندسی و توسعه گاز ایران</p>
+                        <p class="text-[11px] text-slate-500 truncate">طرح خط لوله ششم سراسری</p>
+                    </div>
                 </div>
-            </div>
-            <nav id="navButtons" class="flex-1 p-3 space-y-1"></nav>
-            <div class="p-3">
-                <!-- Fixed colors on purpose, not the theme-mapped Tailwind
-                     palette: this card's dark gradient never changes with
-                     the light/dark toggle, but slate-200/blue-300 do — in
-                     dark mode --c-slate-200 lands almost on top of this
-                     exact gradient, making the main line unreadable. -->
-                <div class="relative rounded-2xl overflow-hidden p-4" style="background: linear-gradient(155deg, #1e3a8a 0%, #0c1a3d 75%); box-shadow: 0 10px 24px -10px rgba(2,6,23,.6);">
-                    <div class="absolute -top-8 -left-8 h-28 w-28 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(251,191,36,.22), transparent 70%);"></div>
-                    <p class="relative text-[11px] font-extrabold tracking-wide mb-1.5" style="color:#fbbf24;">🎯 هدف ما</p>
-                    <p class="relative text-xs leading-relaxed font-medium" style="color:#f1f5f9;">تحقق پروژه‌ها، به‌موقع، با کیفیت و با کمترین هزینه</p>
-                    <div class="relative mt-2.5 pt-2.5 text-center" style="border-top:1px solid rgba(251,191,36,.25);">
-                        <p class="text-[10px] font-semibold mb-1" style="color:#bfdbfe;">توسعه‌دهنده: مهدی باجلان</p>
-                        <img src="signature.png" alt="امضای توسعه‌دهنده مهدی باجلان" class="h-12 mx-auto object-contain" onerror="this.style.display='none'">
+                <nav id="navButtons" class="flex-1 p-3 space-y-1"></nav>
+                <div class="p-3">
+                    <!-- Fixed colors on purpose, not the theme-mapped Tailwind
+                         palette: this card's dark gradient never changes with
+                         the light/dark toggle, but slate-200/blue-300 do — in
+                         dark mode --c-slate-200 lands almost on top of this
+                         exact gradient, making the main line unreadable. -->
+                    <div class="relative rounded-2xl overflow-hidden p-4" style="background: linear-gradient(155deg, #1e3a8a 0%, #0c1a3d 75%); box-shadow: 0 10px 24px -10px rgba(2,6,23,.6);">
+                        <div class="absolute -top-8 -left-8 h-28 w-28 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(251,191,36,.22), transparent 70%);"></div>
+                        <p class="relative text-[11px] font-extrabold tracking-wide mb-1.5" style="color:#fbbf24;">🎯 هدف ما</p>
+                        <p class="relative text-xs leading-relaxed font-medium" style="color:#f1f5f9;">تحقق پروژه‌ها، به‌موقع، با کیفیت و با کمترین هزینه</p>
+                        <div class="relative mt-2.5 pt-2.5 text-center" style="border-top:1px solid rgba(251,191,36,.25);">
+                            <p class="text-[10px] font-semibold mb-1" style="color:#bfdbfe;">توسعه‌دهنده: مهدی باجلان</p>
+                            <img src="signature.png" alt="امضای توسعه‌دهنده مهدی باجلان" class="h-12 mx-auto object-contain" onerror="this.style.display='none'">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -339,7 +346,6 @@
                     <span id="topbarUserEmail" class="hidden font-bold text-slate-700 border-l pl-2 md:pl-3 truncate max-w-[96px] sm:max-w-[160px] md:max-w-none" dir="ltr"></span>
                     <span id="topbarDate" class="hidden sm:inline font-bold text-slate-600"></span>
                     <span class="hidden sm:flex items-center gap-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="topbarClock"></span></span>
-                    <button id="sidebarToggleBtn" type="button" title="نمایش/پنهان‌سازی نوار کناری" class="hidden md:inline-flex text-base leading-none hover:opacity-70 shrink-0">☰</button>
                     <button id="themeToggleBtn" type="button" class="text-base leading-none hover:opacity-70 shrink-0"></button>
                     <button id="profileBtn" type="button" title="مشخصات من" class="text-base leading-none hover:opacity-70 shrink-0">👤</button>
                     <button id="logoutBtn" type="button" title="خروج" class="hover:opacity-70 hover:text-red-600 shrink-0">
@@ -1527,18 +1533,18 @@
                  render-everything-from-state pattern as لایف‌سایکل (pitState +
                  pitRenderAll() into #pitBody), not hand-authored per-element IDs. -->
             <div id="issueTrackingView" class="hidden space-y-5">
-                <div class="print-card bg-white rounded-2xl shadow-sm border p-5">
+                <div class="print-card rounded-2xl shadow-sm p-5" style="background:#141b2e;">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                         <div class="flex items-center gap-3">
-                            <span class="shrink-0 h-11 w-11 rounded-2xl flex items-center justify-center text-[#ffffff]" style="background: linear-gradient(135deg, #4338ca, #b45309);">
+                            <span class="shrink-0 h-11 w-11 rounded-2xl flex items-center justify-center" style="background: linear-gradient(135deg, #f5b248, #e85d4e); color:#1a1206;">
                                 <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                             </span>
                             <div>
-                                <h2 class="text-lg font-extrabold text-slate-800">پیگیری موانع پروژه‌ها</h2>
-                                <p class="text-xs text-slate-500 mt-0.5">تقویم، شاخص‌ها و گزارش‌های موانع اجرایی و تسک‌های دارای مهلت</p>
+                                <h2 class="text-lg font-extrabold" style="color:#edeff5;">پیگیری موانع پروژه‌ها</h2>
+                                <p class="text-xs mt-0.5" style="color:#8b93a7;">تقویم، شاخص‌ها و گزارش‌های موانع اجرایی و تسک‌های دارای مهلت</p>
                             </div>
                         </div>
-                        <button type="button" onclick="printPage()" class="no-print text-xs font-bold px-4 py-2 rounded-xl border text-slate-600 hover:bg-slate-50">🖨 چاپ / PDF</button>
+                        <button type="button" onclick="printPage()" class="no-print text-xs font-bold px-4 py-2 rounded-xl" style="background:#1b2439; color:#c8cedb;">🖨 چاپ / PDF</button>
                     </div>
                 </div>
 
@@ -2258,21 +2264,25 @@
         // only (mobile already collapses the sidebar into the bottom icon
         // strip on its own); persisted per-browser like the theme toggle
         // right above, so it stays collapsed across reloads.
+        // The toggle button lives inside #sidebar but OUTSIDE #sidebarInner
+        // (see the HTML comment on the button) — #sidebar itself only ever
+        // shrinks to 40px (never 0), just enough to keep the button clear
+        // of #sidebarInner's own clipped 256px panel, so the one control
+        // that re-expands the sidebar is never hidden along with it.
         function applySidebarCollapsed(collapsed) {
             const sidebar = document.getElementById('sidebar');
+            const inner = document.getElementById('sidebarInner');
             const btn = document.getElementById('sidebarToggleBtn');
-            if (!sidebar || !btn) return;
-            sidebar.style.width = collapsed ? '0px' : '';
-            sidebar.style.opacity = collapsed ? '0' : '';
-            sidebar.style.borderLeftWidth = collapsed ? '0px' : '';
-            sidebar.classList.toggle('overflow-hidden', collapsed);
-            sidebar.classList.toggle('pointer-events-none', collapsed);
+            if (!sidebar || !inner || !btn) return;
+            sidebar.style.width = collapsed ? '40px' : '';
+            inner.style.opacity = collapsed ? '0' : '1';
+            inner.style.pointerEvents = collapsed ? 'none' : '';
             btn.textContent = collapsed ? '☰' : '✕';
             btn.title = collapsed ? 'نمایش نوار کناری' : 'پنهان‌سازی نوار کناری';
         }
         applySidebarCollapsed(localStorage.getItem('lcSidebarCollapsed') === '1');
         document.getElementById('sidebarToggleBtn').addEventListener('click', () => {
-            const isCurrentlyCollapsed = document.getElementById('sidebar').style.width === '0px';
+            const isCurrentlyCollapsed = document.getElementById('sidebar').style.width === '40px';
             const nextCollapsed = !isCurrentlyCollapsed;
             localStorage.setItem('lcSidebarCollapsed', nextCollapsed ? '1' : '0');
             applySidebarCollapsed(nextCollapsed);
@@ -11184,9 +11194,21 @@
         // project/member registry like the ported reference build had.
         const PIT_SEVERITIES = ['کم', 'متوسط', 'زیاد', 'بحرانی'];
         const PIT_STATUSES = ['باز', 'در حال انجام', 'در انتظار تایید', 'انجام‌شده'];
-        const PIT_STATUS_COLOR = { 'باز': '#4338ca', 'در حال انجام': '#b45309', 'در انتظار تایید': '#7c3aed', 'انجام‌شده': '#16a34a' };
-        const PIT_SEVERITY_COLOR = { 'کم': '#64748b', 'متوسط': '#2563eb', 'زیاد': '#b45309', 'بحرانی': '#dc2626' };
-        const PIT_INDIGO = '#4338ca', PIT_AMBER = '#b45309', PIT_RED = '#dc2626', PIT_GREEN = '#16a34a';
+
+        // «رنگبندی سامانه رصد مناسب بود از اونم می‌تونی استفاده کنی» — this
+        // module's dark palette is lifted directly from the reference
+        // build's own CSS custom properties (im-bg/im-panel/im-amber/
+        // im-coral/im-mint/im-violet, …), not this app's light theme —
+        // like the lifecycle module's always-dark orbit, it keeps one
+        // deliberate identity regardless of the global light/dark toggle.
+        const PIT_BG = '#0b1220', PIT_PANEL = '#141b2e', PIT_PANEL2 = '#1b2439';
+        const PIT_LINE = 'rgba(200,206,219,.12)';
+        const PIT_TEXT = '#edeff5', PIT_MUTED = '#8b93a7', PIT_MUTED2 = '#c8cedb';
+        const PIT_AMBER = '#f5b248', PIT_CORAL = '#e85d4e', PIT_MINT = '#4ade9e', PIT_VIOLET = '#8b7cf6';
+        const PIT_RED = PIT_CORAL, PIT_GREEN = PIT_MINT;
+        const PIT_STATUS_COLOR = { 'باز': PIT_VIOLET, 'در حال انجام': PIT_AMBER, 'در انتظار تایید': PIT_MUTED2, 'انجام‌شده': PIT_MINT };
+        const PIT_SEVERITY_COLOR = { 'کم': PIT_MUTED2, 'متوسط': PIT_AMBER, 'زیاد': '#ff9d6e', 'بحرانی': PIT_CORAL };
+        function pitGoodnessColor(g) { return g >= 66 ? PIT_MINT : g >= 33 ? PIT_AMBER : PIT_CORAL; }
 
         let pitState = {
             projects: [],
@@ -11274,11 +11296,31 @@
             const overdue = open.filter(pitIsOverdue);
             const dueSoon = open.filter(it => !pitIsOverdue(it) && it.due_date && it.due_date <= in7);
             const critical = open.filter(it => it.severity === 'بحرانی');
-            const last30Start = lcAddDays(todayIso, -30);
-            const closedLast30 = items.filter(it => it.status === 'انجام‌شده' && it.completed_at && it.completed_at.slice(0, 10) >= last30Start);
-            const dueOrClosedLast30 = items.filter(it => (it.due_date && it.due_date >= last30Start && it.due_date <= todayIso) || closedLast30.includes(it));
-            const resolutionRate = dueOrClosedLast30.length ? Math.round(closedLast30.length / dueOrClosedLast30.length * 100) : null;
-            return { total: items.length, open: open.length, overdue: overdue.length, dueSoon: dueSoon.length, critical: critical.length, resolutionRate };
+
+            // Mirrors the reference build's computeIssueMetrics exactly:
+            // on-time rate and closed ratio over ALL items (not just a
+            // rolling window), average days-to-close, and a week-over-week
+            // trend on the *count* of items closed — feeds the three
+            // semi-gauges in pitKeyMetricsCardHtml.
+            const closed = items.filter(it => it.status === 'انجام‌شده' && it.completed_at);
+            const onTime = closed.filter(it => it.completed_at.slice(0, 10) <= it.due_date);
+            const onTimeRate = closed.length ? Math.round(onTime.length / closed.length * 100) : 0;
+            const closedRatio = items.length ? Math.round(closed.length / items.length * 100) : 0;
+            const avgDays = closed.length
+                ? closed.reduce((s, it) => s + Math.max(0, Math.round((new Date(it.completed_at) - new Date(it.created_at)) / 86400000)), 0) / closed.length
+                : 0;
+            const closedCountInWindow = (endIso, days) => {
+                const start = lcAddDays(endIso, -days + 1);
+                return closed.filter(it => { const d = it.completed_at.slice(0, 10); return d >= start && d <= endIso; }).length;
+            };
+            const lastWeek = closedCountInWindow(todayIso, 7);
+            const prevWeek = closedCountInWindow(lcAddDays(todayIso, -7), 7);
+            const trendClosedPct = prevWeek ? Math.round((lastWeek - prevWeek) / prevWeek * 100) : (lastWeek > 0 ? 100 : 0);
+
+            return {
+                total: items.length, open: open.length, overdue: overdue.length, dueSoon: dueSoon.length, critical: critical.length,
+                onTimeRate, closedRatio, avgDays, trendClosedPct,
+            };
         }
 
         // «رینگ شمارش‌معکوس مهلت» — this module's one signature visual:
@@ -11294,38 +11336,96 @@
             if (item.status === 'انجام‌شده') {
                 return `<div class="pit-ring" style="width:${size}px;height:${size}px;">
                     <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-                        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${PIT_GREEN}" stroke-width="3"/>
+                        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${PIT_MINT}" stroke-width="3"/>
                     </svg>
-                    <span class="pit-ring-label" style="color:${PIT_GREEN}; font-size:${fontSize}px;">✓</span>
+                    <span class="pit-ring-label" style="color:${PIT_MINT}; font-size:${fontSize}px;">✓</span>
                 </div>`;
             }
             const days = pitDaysUntilDue(item);
             const overdue = days < 0;
-            const color = overdue ? PIT_RED : days <= 3 ? PIT_AMBER : PIT_INDIGO;
+            const color = overdue ? PIT_CORAL : days <= 3 ? PIT_AMBER : PIT_VIOLET;
             const pct = overdue ? 100 : Math.max(8, 100 - Math.min(days, 30) / 30 * 100);
             const dash = circumference * pct / 100;
             return `<div class="pit-ring${overdue ? ' pit-pulse' : ''}" style="width:${size}px;height:${size}px;">
                 <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-                    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}22" stroke-width="3"/>
+                    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}33" stroke-width="3"/>
                     <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-dasharray="${dash} ${circumference - dash}" transform="rotate(-90 ${cx} ${cy})"/>
                 </svg>
                 <span class="pit-ring-label" style="color:${color}; font-size:${fontSize}px;">${toPersianDigits(Math.abs(days))}</span>
             </div>`;
         }
 
+        // «رنگ‌های متنوع و شیک» — semi-circle gauge (reference: Gauges.tsx
+        // SemiGauge), a conic-gradient status donut with a legend
+        // (StatusDonut), and severity bars (PriorityBars) — all three
+        // ported 1:1 from the رصد reference build's own math/markup, just
+        // as template strings instead of JSX.
+        function pitSemiGaugeSvg(pct, color, centerText, size) {
+            size = size || 96;
+            const r = size / 2 - 13, cx = size / 2, cy = size / 2;
+            const circ = Math.PI * r;
+            const clamped = Math.max(0, Math.min(100, pct));
+            const offset = circ * (1 - clamped / 100);
+            return `<svg width="${size}" height="${size / 2 + 16}" viewBox="0 0 ${size} ${size / 2 + 16}">
+                <path d="M 13 ${cy} A ${r} ${r} 0 0 1 ${size - 13} ${cy}" stroke="rgba(200,206,219,.14)" stroke-width="10" fill="none" stroke-linecap="round"/>
+                <path d="M 13 ${cy} A ${r} ${r} 0 0 1 ${size - 13} ${cy}" stroke="${color}" stroke-width="10" fill="none" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/>
+                <text x="${cx}" y="${cy - 1}" text-anchor="middle" font-size="19" font-weight="900" fill="${color}" font-family="Vazirmatn, sans-serif">${centerText}</text>
+            </svg>`;
+        }
+
+        function pitStatusDonutHtml(items) {
+            const total = items.length;
+            let acc = 0;
+            const stops = PIT_STATUSES.map(s => {
+                const count = items.filter(it => it.status === s).length;
+                const pct = total ? count / total * 100 : 0;
+                const start = acc; acc += pct;
+                return `${PIT_STATUS_COLOR[s]} ${start}% ${acc}%`;
+            }).join(', ');
+            return `
+            <div style="width:100px; margin:0 auto;">
+                <div style="width:100px; height:100px; border-radius:50%; background:conic-gradient(${total ? stops : PIT_PANEL2 + ' 0% 100%'}); position:relative;">
+                    <div style="position:absolute; inset:13px; border-radius:50%; background:${PIT_PANEL}; display:flex; align-items:center; justify-content:center; flex-direction:column;">
+                        <span style="font-weight:900; font-size:16px; color:${PIT_TEXT};">${toPersianDigits(total)}</span>
+                        <span style="font-size:9px; color:${PIT_MUTED};">کل</span>
+                    </div>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:6px 10px; justify-content:center; max-width:180px; margin:10px auto 0;">
+                    ${PIT_STATUSES.map(s => `<span style="display:flex; align-items:center; gap:4px; font-size:10px; color:${PIT_MUTED2};"><span style="width:6px; height:6px; border-radius:50%; background:${PIT_STATUS_COLOR[s]}; display:inline-block;"></span>${s}</span>`).join('')}
+                </div>
+            </div>`;
+        }
+
+        function pitSeverityBarsHtml(items) {
+            const open = items.filter(it => it.status !== 'انجام‌شده');
+            const counts = PIT_SEVERITIES.map(s => open.filter(it => it.severity === s).length);
+            const max = Math.max(1, ...counts);
+            return PIT_SEVERITIES.map((s, i) => `
+            <div style="margin-bottom:11px;">
+                <div style="display:flex; justify-content:space-between; font-size:11.5px; margin-bottom:4px; color:${PIT_TEXT};">
+                    <span>${s}</span><span style="font-weight:800;">${toPersianDigits(counts[i])}</span>
+                </div>
+                <div style="height:8px; border-radius:6px; background:${PIT_PANEL2}; overflow:hidden;">
+                    <div style="height:100%; width:${counts[i] / max * 100}%; background:${PIT_SEVERITY_COLOR[s]}; border-radius:6px;"></div>
+                </div>
+            </div>`).join('');
+        }
+
         function pitStyleBlock() {
             return `<style>
+                #pitBody { color:${PIT_TEXT}; }
                 .pit-ring { position:relative; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
                 .pit-ring-label { position:absolute; font-weight:800; font-variant-numeric:tabular-nums; }
                 .pit-pulse circle:last-child { animation: pit-pulse-ring 1.8s ease-in-out infinite; }
                 @keyframes pit-pulse-ring { 0%, 100% { opacity:1; } 50% { opacity:.45; } }
-                .pit-card { background:var(--pit-card-bg, #ffffff); border:1px solid var(--pit-line, #e8e9f3); border-radius:1rem; }
-                .pit-day-cell { transition: background .12s ease, transform .12s ease; cursor:pointer; }
-                .pit-day-cell:hover { background:rgba(67,56,202,.06); }
-                .pit-day-cell.pit-day-selected { background:rgba(67,56,202,.1); box-shadow: inset 0 0 0 1.5px ${PIT_INDIGO}; }
-                .pit-day-cell.pit-day-today .pit-day-num { background:${PIT_INDIGO}; color:#fff; }
-                .pit-day-num { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:9999px; font-weight:700; font-size:11px; }
-                :root[data-theme="dark"] .pit-card { --pit-card-bg: #1e293b; --pit-line: #334155; }
+                .pit-card { background:${PIT_PANEL}; border:1px solid ${PIT_LINE}; border-radius:1rem; }
+                .pit-input { background:${PIT_PANEL2}; border:1px solid ${PIT_LINE}; color:${PIT_TEXT}; }
+                .pit-input::placeholder { color:${PIT_MUTED}; }
+                .pit-day-cell { transition: background .12s ease; cursor:pointer; }
+                .pit-day-cell:hover { background:rgba(245,178,72,.08); }
+                .pit-day-cell.pit-day-selected { background:rgba(245,178,72,.12); box-shadow: inset 0 0 0 1.5px ${PIT_AMBER}; }
+                .pit-day-cell.pit-day-today .pit-day-num { background:${PIT_AMBER}; color:#1a1206; }
+                .pit-day-num { display:inline-flex; align-items:center; justify-content:center; width:23px; height:23px; border-radius:9999px; font-weight:700; font-size:11px; color:${PIT_MUTED2}; }
             </style>`;
         }
 
@@ -11346,81 +11446,117 @@
                 const isToday = iso === todayIso;
                 const isSelected = iso === pitState.selectedDate;
                 const worstColor = dayItems.length
-                    ? (dayItems.some(it => pitIsOverdue(it)) ? PIT_RED
+                    ? (dayItems.some(it => pitIsOverdue(it)) ? PIT_CORAL
                         : dayItems.some(it => it.status !== 'انجام‌شده' && pitDaysUntilDue(it) <= 3) ? PIT_AMBER
-                            : dayItems.every(it => it.status === 'انجام‌شده') ? PIT_GREEN : PIT_INDIGO)
+                            : dayItems.every(it => it.status === 'انجام‌شده') ? PIT_MINT : PIT_VIOLET)
                     : null;
                 cells.push(`
                 <div class="pit-day-cell rounded-xl p-1.5 flex flex-col items-center gap-1${isToday ? ' pit-day-today' : ''}${isSelected ? ' pit-day-selected' : ''}" style="min-height:58px;" data-pit-select-date="${iso}">
                     <span class="pit-day-num">${toPersianDigits(d)}</span>
-                    ${dayItems.length ? `<span class="text-[9.5px] font-extrabold px-1.5 rounded-full" style="background:${worstColor}1c; color:${worstColor};">${toPersianDigits(dayItems.length)}</span>` : ''}
+                    ${dayItems.length ? `<span class="text-[9.5px] font-extrabold px-1.5 rounded-full" style="background:${worstColor}26; color:${worstColor};">${toPersianDigits(dayItems.length)}</span>` : ''}
                 </div>`);
             }
 
             return `
             <div class="pit-card p-4 md:p-5">
                 <div class="flex items-center justify-between mb-3">
-                    <button type="button" data-pit-action="cal-next" class="w-8 h-8 rounded-lg border hover:bg-slate-50 flex items-center justify-center" style="border-color:var(--pit-line,#e8e9f3);">›</button>
+                    <button type="button" data-pit-action="cal-next" class="w-8 h-8 rounded-lg flex items-center justify-center pit-input hover:brightness-125">›</button>
                     <div class="text-center">
-                        <p class="font-extrabold text-sm">${JALALI_MONTH_NAMES[jm - 1]} ${toPersianDigits(jy)}</p>
-                        <button type="button" data-pit-action="cal-today" class="text-[10px] font-bold hover:underline" style="color:${PIT_INDIGO};">برو به امروز</button>
+                        <p class="font-extrabold text-sm tracking-wide">${JALALI_MONTH_NAMES[jm - 1]} ${toPersianDigits(jy)}</p>
+                        <button type="button" data-pit-action="cal-today" class="text-[10px] font-bold hover:underline" style="color:${PIT_AMBER};">برو به امروز</button>
                     </div>
-                    <button type="button" data-pit-action="cal-prev" class="w-8 h-8 rounded-lg border hover:bg-slate-50 flex items-center justify-center" style="border-color:var(--pit-line,#e8e9f3);">‹</button>
+                    <button type="button" data-pit-action="cal-prev" class="w-8 h-8 rounded-lg flex items-center justify-center pit-input hover:brightness-125">‹</button>
                 </div>
-                <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold mb-1.5" style="color:#94a3b8;">${JALALI_WEEKDAY_LABELS.map(w => `<span>${w}</span>`).join('')}</div>
+                <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold mb-1.5" style="color:${PIT_MUTED};">${JALALI_WEEKDAY_LABELS.map(w => `<span>${w}</span>`).join('')}</div>
                 <div class="grid grid-cols-7 gap-1">${cells.join('')}</div>
             </div>`;
         }
 
         function pitDayDetailHtml(items) {
             if (!pitState.selectedDate) {
-                return `<div class="pit-card p-6 text-center text-sm" style="color:#94a3b8;">یک روز از تقویم را انتخاب کنید تا موارد سررسید آن روز نمایش داده شود.</div>`;
+                return `<div class="pit-card p-6 text-center text-sm" style="color:${PIT_MUTED};">یک روز از تقویم را انتخاب کنید تا موارد سررسید آن روز نمایش داده شود.</div>`;
             }
             const dayItems = pitItemsForDate(items, pitState.selectedDate);
             return `
             <div class="pit-card p-4 md:p-5">
                 <div class="flex items-center justify-between mb-3">
                     <p class="font-extrabold text-sm">${formatJalali(pitState.selectedDate)}</p>
-                    ${pitState.canReport ? `<button type="button" data-pit-action="new-issue" data-date="${pitState.selectedDate}" class="text-[11px] font-bold px-3 py-1.5 rounded-lg text-white" style="background:${PIT_INDIGO};">+ ثبت مانع جدید</button>` : ''}
+                    ${pitState.canReport ? `<button type="button" data-pit-action="new-issue" data-date="${pitState.selectedDate}" class="text-[11px] font-bold px-3 py-1.5 rounded-lg" style="background:linear-gradient(135deg, ${PIT_AMBER}, #e8a13d); color:#1a1206;">+ ثبت مانع جدید</button>` : ''}
                 </div>
                 ${dayItems.length ? `<div class="space-y-2">${dayItems.map(it => pitItemRowHtml(it)).join('')}</div>`
-                    : `<p class="text-xs text-center py-6" style="color:#94a3b8;">هیچ مانع یا تسکی برای این روز سررسید ندارد.</p>`}
+                    : `<p class="text-xs text-center py-6" style="color:${PIT_MUTED};">هیچ مانع یا تسکی برای این روز سررسید ندارد.</p>`}
             </div>`;
         }
 
         function pitItemRowHtml(item) {
-            const sevColor = PIT_SEVERITY_COLOR[item.severity] || '#64748b';
-            const statColor = PIT_STATUS_COLOR[item.status] || '#64748b';
+            const sevColor = PIT_SEVERITY_COLOR[item.severity] || PIT_MUTED;
+            const statColor = PIT_STATUS_COLOR[item.status] || PIT_MUTED;
             return `
-            <div class="flex items-center gap-3 p-2.5 rounded-xl border hover:shadow-sm cursor-pointer" style="border-color:var(--pit-line,#e8e9f3);" data-pit-action="open-item" data-source="${item._source}" data-id="${item.id}">
+            <div class="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer hover:brightness-110" style="background:${PIT_PANEL2}; border:1px solid ${PIT_LINE};" data-pit-action="open-item" data-source="${item._source}" data-id="${item.id}">
                 ${pitCountdownBadge(item, 34)}
                 <div class="flex-1 min-w-0">
                     <p class="text-xs font-bold truncate">${esc(item.title)}</p>
-                    <p class="text-[10px] mt-0.5" style="color:#94a3b8;">${esc(item.project_name)} · ${esc(item.responsible_name)}</p>
+                    <p class="text-[10px] mt-0.5" style="color:${PIT_MUTED};">${esc(item.project_name)} · ${esc(item.responsible_name)}</p>
                 </div>
                 <div class="flex flex-col items-end gap-1 shrink-0">
-                    <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full" style="background:${statColor}1c; color:${statColor};">${esc(item.status)}</span>
-                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style="background:${sevColor}1c; color:${sevColor};">${esc(item.severity)}</span>
+                    <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full" style="background:${statColor}26; color:${statColor};">${esc(item.status)}</span>
+                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style="background:${sevColor}26; color:${sevColor};">${esc(item.severity)}</span>
                 </div>
             </div>`;
         }
 
         // ---------------- KPI strip ----------------
-        function pitKpiStripHtml(kpis) {
+        // Layout mirrors the reference dashboard exactly: a slim row of
+        // plain counts, a "شاخص‌های کلیدی" card with three semi-gauges,
+        // then a "توزیع وضعیت و اولویت" card pairing the status donut with
+        // severity bars (donut first in source so RTL puts it on the
+        // right, bars on the left — same order the reference JSX uses).
+        function pitKpiStripHtml(items, kpis) {
             const tiles = [
-                { label: 'موانع باز', value: kpis.open, color: PIT_INDIGO },
-                { label: 'دارای تاخیر', value: kpis.overdue, color: PIT_RED },
+                { label: 'موانع باز', value: kpis.open, color: PIT_VIOLET },
+                { label: 'دارای تاخیر', value: kpis.overdue, color: PIT_CORAL },
                 { label: 'سررسید تا ۷ روز آینده', value: kpis.dueSoon, color: PIT_AMBER },
-                { label: 'بحرانی باز', value: kpis.critical, color: '#be123c' },
-                { label: 'نرخ حل‌شدن (۳۰ روز اخیر)', value: kpis.resolutionRate == null ? '—' : toPersianDigits(kpis.resolutionRate) + '٪', color: PIT_GREEN },
+                { label: 'بحرانی باز', value: kpis.critical, color: PIT_CORAL },
             ];
+            const gAvg = Math.min(100, kpis.avgDays / 14 * 100);
+            const colorAvg = pitGoodnessColor(100 - gAvg);
+            const colorOnTime = pitGoodnessColor(kpis.onTimeRate);
+            const colorClosed = pitGoodnessColor(kpis.closedRatio);
+
             return `
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                 ${tiles.map(t => `
                 <div class="pit-card p-3.5 text-center">
-                    <p class="text-[10.5px] font-bold mb-1" style="color:#94a3b8;">${esc(t.label)}</p>
-                    <p class="text-2xl font-extrabold" style="color:${t.color}; font-variant-numeric:tabular-nums;">${typeof t.value === 'number' ? toPersianDigits(t.value) : t.value}</p>
+                    <p class="text-[10.5px] font-bold mb-1" style="color:${PIT_MUTED};">${esc(t.label)}</p>
+                    <p class="text-2xl font-extrabold" style="color:${t.color}; font-variant-numeric:tabular-nums;">${toPersianDigits(t.value)}</p>
                 </div>`).join('')}
+            </div>
+
+            <div class="pit-card p-4 md:p-5 mt-3">
+                <p class="text-[12.5px] font-extrabold mb-2">شاخص‌های کلیدی</p>
+                <div class="flex flex-wrap gap-2" style="justify-content:space-between;">
+                    <div style="flex:1; min-width:110px; text-align:center;">
+                        ${pitSemiGaugeSvg(kpis.onTimeRate, colorOnTime, toPersianDigits(kpis.onTimeRate) + '%')}
+                        <p class="text-[10.5px] font-bold mt-1" style="color:${PIT_MUTED2};">تایید به‌موقع</p>
+                    </div>
+                    <div style="flex:1; min-width:110px; text-align:center;">
+                        ${pitSemiGaugeSvg(kpis.closedRatio, colorClosed, toPersianDigits(kpis.closedRatio) + '%')}
+                        <p class="text-[10.5px] font-bold mt-1" style="color:${PIT_MUTED2};">نسبت بسته‌شده</p>
+                    </div>
+                    <div style="flex:1; min-width:110px; text-align:center;">
+                        ${pitSemiGaugeSvg(gAvg, colorAvg, toPersianDigits(kpis.avgDays.toFixed(1)))}
+                        <p class="text-[10.5px] font-bold mt-1" style="color:${PIT_MUTED2};">میانگین بستن (روز)</p>
+                        <p class="text-[9.5px] mt-0.5" style="color:${kpis.trendClosedPct >= 0 ? PIT_MINT : PIT_CORAL};">${kpis.trendClosedPct >= 0 ? '▲' : '▼'} ${toPersianDigits(Math.abs(kpis.trendClosedPct))}٪ نسبت به هفته قبل</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pit-card p-4 md:p-5 mt-3">
+                <p class="text-[12.5px] font-extrabold mb-3">توزیع وضعیت و اولویت</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                    ${pitStatusDonutHtml(items)}
+                    <div>${pitSeverityBarsHtml(items)}</div>
+                </div>
             </div>`;
         }
 
@@ -11436,19 +11572,19 @@
             const project = isEdit ? item.project_name : (ed.projectName || pitState.projects[0]?.name || '');
             const users = pitState.usersByProject[project] || [];
             return `
-            <div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(15,23,42,.45);" data-pit-action="editor-backdrop">
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,.55);" data-pit-action="editor-backdrop">
                 <div class="pit-card w-full p-5 space-y-3" style="max-width:480px; max-height:90vh; overflow-y:auto;" onclick="event.stopPropagation()">
                     <div class="flex items-center justify-between">
                         <h4 class="font-extrabold text-sm">${isEdit ? 'ویرایش مانع' : 'ثبت مانع جدید'}</h4>
-                        <button type="button" data-pit-action="close-editor" class="text-slate-400 hover:text-slate-700 text-lg leading-none">×</button>
+                        <button type="button" data-pit-action="close-editor" class="text-lg leading-none" style="color:${PIT_MUTED};">×</button>
                     </div>
-                    <select data-pit-f="project" class="w-full text-xs border rounded-lg px-2.5 py-2" ${isEdit ? 'disabled' : ''}>
+                    <select data-pit-f="project" class="pit-input w-full text-xs rounded-lg px-2.5 py-2" ${isEdit ? 'disabled' : ''}>
                         ${pitState.projects.map(p => `<option value="${esc(p.name)}" ${p.name === project ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}
                     </select>
-                    <input type="text" data-pit-f="title" value="${isEdit ? esc(item.title) : ''}" placeholder="عنوان مانع" class="w-full text-xs border rounded-lg px-2.5 py-2">
-                    <textarea data-pit-f="description" placeholder="توضیحات (اختیاری)" rows="2" class="w-full text-xs border rounded-lg px-2.5 py-2">${isEdit ? esc(item.description || '') : ''}</textarea>
+                    <input type="text" data-pit-f="title" value="${isEdit ? esc(item.title) : ''}" placeholder="عنوان مانع" class="pit-input w-full text-xs rounded-lg px-2.5 py-2">
+                    <textarea data-pit-f="description" placeholder="توضیحات (اختیاری)" rows="2" class="pit-input w-full text-xs rounded-lg px-2.5 py-2">${isEdit ? esc(item.description || '') : ''}</textarea>
                     <div class="grid grid-cols-2 gap-2">
-                        <select data-pit-f="responsible" class="text-xs border rounded-lg px-2.5 py-2">
+                        <select data-pit-f="responsible" class="pit-input text-xs rounded-lg px-2.5 py-2">
                             <option value="">-- مسئول پیگیری --</option>
                             ${users.map(u => {
                                 const label = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email;
@@ -11456,15 +11592,15 @@
                                 return `<option value="${esc(u.email)}|${esc(label)}" ${selected}>${esc(label)}</option>`;
                             }).join('')}
                         </select>
-                        <select data-pit-f="severity" class="text-xs border rounded-lg px-2.5 py-2">
+                        <select data-pit-f="severity" class="pit-input text-xs rounded-lg px-2.5 py-2">
                             ${PIT_SEVERITIES.map(s => `<option value="${s}" ${isEdit && item.severity === s ? 'selected' : ''}>${s}</option>`).join('')}
                         </select>
                     </div>
-                    <input type="text" data-pit-f="due" value="${isEdit ? formatJalali(item.due_date) : (pitState.editor.date ? formatJalali(pitState.editor.date) : '')}" placeholder="مهلت اقدام (۱۴۰۴/۰۱/۰۱)" class="w-full text-xs border rounded-lg px-2.5 py-2">
+                    <input type="text" data-pit-f="due" value="${isEdit ? formatJalali(item.due_date) : (pitState.editor.date ? formatJalali(pitState.editor.date) : '')}" placeholder="مهلت اقدام (۱۴۰۴/۰۱/۰۱)" class="pit-input w-full text-xs rounded-lg px-2.5 py-2">
                     ${!users.length ? `<p class="text-[10px]" style="color:${PIT_AMBER};">این پروژه در «مدیریت کاربران» هنوز کاربری ندارد.</p>` : ''}
                     <div class="flex items-center gap-2 pt-1">
-                        <button type="button" data-pit-action="save-issue" class="flex-1 text-xs font-bold px-3 py-2 rounded-lg text-white" style="background:${PIT_INDIGO};">ذخیره</button>
-                        ${isEdit ? `<button type="button" data-pit-action="delete-issue" data-id="${item.id}" class="text-xs font-bold px-3 py-2 rounded-lg border border-red-300 text-red-500">حذف</button>` : ''}
+                        <button type="button" data-pit-action="save-issue" class="flex-1 text-xs font-bold px-3 py-2 rounded-lg" style="background:linear-gradient(135deg, ${PIT_AMBER}, #e8a13d); color:#1a1206;">ذخیره</button>
+                        ${isEdit ? `<button type="button" data-pit-action="delete-issue" data-id="${item.id}" class="text-xs font-bold px-3 py-2 rounded-lg" style="background:rgba(232,93,78,.14); color:${PIT_CORAL};">حذف</button>` : ''}
                     </div>
                 </div>
             </div>`;
@@ -11481,45 +11617,46 @@
             const canAct = pitState.isAdmin || isResponsible;
             const overdue = pitIsOverdue(item);
             return `
-            <div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(15,23,42,.45);" data-pit-action="detail-backdrop">
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,.55);" data-pit-action="detail-backdrop">
                 <div class="pit-card w-full p-5 space-y-3" style="max-width:460px; max-height:90vh; overflow-y:auto;" onclick="event.stopPropagation()">
                     <div class="flex items-start justify-between gap-2">
                         <div class="flex items-center gap-3">
                             ${pitCountdownBadge(item, 46)}
                             <div>
                                 <h4 class="font-extrabold text-sm leading-snug">${esc(item.title)}</h4>
-                                <p class="text-[10.5px] mt-0.5" style="color:#94a3b8;">${esc(item.project_name)} · ${item._source === 'task' ? 'تسک اجرایی (پایش اقدامات)' : 'مانع پروژه'}</p>
+                                <p class="text-[10.5px] mt-0.5" style="color:${PIT_MUTED};">${esc(item.project_name)} · ${item._source === 'task' ? 'تسک اجرایی (پایش اقدامات)' : 'مانع پروژه'}</p>
                             </div>
                         </div>
-                        <button type="button" data-pit-action="close-detail" class="text-slate-400 hover:text-slate-700 text-lg leading-none">×</button>
+                        <button type="button" data-pit-action="close-detail" class="text-lg leading-none" style="color:${PIT_MUTED};">×</button>
                     </div>
-                    ${item.description ? `<p class="text-xs leading-relaxed" style="color:#475569;">${esc(item.description)}</p>` : ''}
+                    ${item.description ? `<p class="text-xs leading-relaxed" style="color:${PIT_MUTED2};">${esc(item.description)}</p>` : ''}
                     <div class="grid grid-cols-2 gap-2 text-[11px]">
-                        <div class="pit-card p-2.5"><p style="color:#94a3b8;">مسئول پیگیری</p><p class="font-bold mt-0.5">${esc(item.responsible_name)}</p></div>
-                        <div class="pit-card p-2.5"><p style="color:#94a3b8;">مهلت اقدام</p><p class="font-bold mt-0.5" style="${overdue ? `color:${PIT_RED};` : ''}">${formatJalali(item.due_date)}</p></div>
-                        <div class="pit-card p-2.5"><p style="color:#94a3b8;">وضعیت</p><p class="font-bold mt-0.5" style="color:${PIT_STATUS_COLOR[item.status]};">${esc(item.status)}</p></div>
-                        <div class="pit-card p-2.5"><p style="color:#94a3b8;">اولویت</p><p class="font-bold mt-0.5" style="color:${PIT_SEVERITY_COLOR[item.severity]};">${esc(item.severity)}</p></div>
+                        <div class="rounded-xl p-2.5" style="background:${PIT_PANEL2};"><p style="color:${PIT_MUTED};">مسئول پیگیری</p><p class="font-bold mt-0.5">${esc(item.responsible_name)}</p></div>
+                        <div class="rounded-xl p-2.5" style="background:${PIT_PANEL2};"><p style="color:${PIT_MUTED};">مهلت اقدام</p><p class="font-bold mt-0.5" style="${overdue ? `color:${PIT_CORAL};` : ''}">${formatJalali(item.due_date)}</p></div>
+                        <div class="rounded-xl p-2.5" style="background:${PIT_PANEL2};"><p style="color:${PIT_MUTED};">وضعیت</p><p class="font-bold mt-0.5" style="color:${PIT_STATUS_COLOR[item.status]};">${esc(item.status)}</p></div>
+                        <div class="rounded-xl p-2.5" style="background:${PIT_PANEL2};"><p style="color:${PIT_MUTED};">اولویت</p><p class="font-bold mt-0.5" style="color:${PIT_SEVERITY_COLOR[item.severity]};">${esc(item.severity)}</p></div>
                     </div>
-                    ${item.submitted_note ? `<p class="text-[10.5px] p-2.5 rounded-lg" style="background:rgba(124,58,237,.08); color:#7c3aed;">یادداشت اقدام: ${esc(item.submitted_note)}</p>` : ''}
+                    ${item.submitted_note ? `<p class="text-[10.5px] p-2.5 rounded-lg" style="background:rgba(139,124,246,.12); color:${PIT_VIOLET};">یادداشت اقدام: ${esc(item.submitted_note)}</p>` : ''}
                     ${canAct ? pitDetailActionsHtml(item) : ''}
-                    ${item._source === 'task' ? `<button type="button" data-pit-action="goto-task-tower" class="w-full text-[11px] font-bold text-center py-2 rounded-lg border" style="color:${PIT_INDIGO}; border-color:${PIT_INDIGO}55;">ویرایش کامل در «پایش اقدامات» ‹</button>` : ''}
+                    ${item._source === 'task' ? `<button type="button" data-pit-action="goto-task-tower" class="w-full text-[11px] font-bold text-center py-2 rounded-lg" style="color:${PIT_AMBER}; background:rgba(245,178,72,.1);">ویرایش کامل در «پایش اقدامات» ‹</button>` : ''}
                 </div>
             </div>`;
         }
 
         function pitDetailActionsHtml(item) {
             const src = item._source;
-            const btn = (action, label, cls) => `<button type="button" data-pit-action="${action}" data-source="${src}" data-id="${item.id}" class="text-[11px] font-bold px-3 py-1.5 rounded-lg ${cls}">${label}</button>`;
+            const btn = (action, label, style) => `<button type="button" data-pit-action="${action}" data-source="${src}" data-id="${item.id}" class="text-[11px] font-bold px-3 py-1.5 rounded-lg" style="${style}">${label}</button>`;
+            const ghost = `background:${PIT_PANEL2}; color:${PIT_MUTED2};`;
             if (item.status === 'انجام‌شده') {
-                return pitState.isAdmin ? `<div class="flex flex-wrap gap-1.5 pt-1">${btn('reopen', 'بازگردانی به «باز»', 'border text-slate-500')}</div>` : '';
+                return pitState.isAdmin ? `<div class="flex flex-wrap gap-1.5 pt-1">${btn('reopen', 'بازگردانی به «باز»', ghost)}</div>` : '';
             }
             let html = '';
             if (item.status === 'باز' || item.status === 'در حال انجام') {
-                html += `<button type="button" data-pit-action="submit" data-source="${src}" data-id="${item.id}" class="text-[11px] font-bold px-3 py-1.5 rounded-lg text-white" style="background:${PIT_INDIGO};">ارسال برای تایید</button>`;
+                html += btn('submit', 'ارسال برای تایید', `background:linear-gradient(135deg, ${PIT_AMBER}, #e8a13d); color:#1a1206;`);
             }
             if (pitState.isAdmin && item.status === 'در انتظار تایید') {
-                html += `<button type="button" data-pit-action="approve" data-source="${src}" data-id="${item.id}" class="text-[11px] font-bold px-3 py-1.5 rounded-lg text-white" style="background:${PIT_GREEN};">تایید نهایی</button>`;
-                html += `<button type="button" data-pit-action="reject" data-source="${src}" data-id="${item.id}" class="text-[11px] font-bold px-3 py-1.5 rounded-lg border border-red-300 text-red-500">بازگشت جهت اصلاح</button>`;
+                html += btn('approve', 'تایید نهایی', `background:${PIT_MINT}; color:#06281c;`);
+                html += btn('reject', 'بازگشت جهت اصلاح', `background:rgba(232,93,78,.14); color:${PIT_CORAL};`);
             }
             return html ? `<div class="flex flex-wrap gap-1.5 pt-1">${html}</div>` : '';
         }
@@ -11543,42 +11680,42 @@
             return `
             <div class="pit-card p-4 md:p-5 space-y-3">
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
-                    <select data-pit-filter="project" class="text-[11px] border rounded-lg px-2 py-1.5"><option value="">همه پروژه‌ها</option>${pitState.projects.map(p => `<option value="${esc(p.name)}" ${f.project === p.name ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select>
-                    <select data-pit-filter="responsible" class="text-[11px] border rounded-lg px-2 py-1.5"><option value="">همه مسئولین</option>${responsibleOptions.map(r => `<option value="${esc(r)}" ${f.responsible === r ? 'selected' : ''}>${esc(r)}</option>`).join('')}</select>
-                    <select data-pit-filter="status" class="text-[11px] border rounded-lg px-2 py-1.5"><option value="">همه وضعیت‌ها</option>${PIT_STATUSES.map(s => `<option value="${s}" ${f.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
-                    <select data-pit-filter="severity" class="text-[11px] border rounded-lg px-2 py-1.5"><option value="">همه اولویت‌ها</option>${PIT_SEVERITIES.map(s => `<option value="${s}" ${f.severity === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
-                    <select data-pit-filter="source" class="text-[11px] border rounded-lg px-2 py-1.5"><option value="">مانع + تسک</option><option value="issue" ${f.source === 'issue' ? 'selected' : ''}>فقط موانع</option><option value="task" ${f.source === 'task' ? 'selected' : ''}>فقط تسک‌ها</option></select>
+                    <select data-pit-filter="project" class="pit-input text-[11px] rounded-lg px-2 py-1.5"><option value="">همه پروژه‌ها</option>${pitState.projects.map(p => `<option value="${esc(p.name)}" ${f.project === p.name ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select>
+                    <select data-pit-filter="responsible" class="pit-input text-[11px] rounded-lg px-2 py-1.5"><option value="">همه مسئولین</option>${responsibleOptions.map(r => `<option value="${esc(r)}" ${f.responsible === r ? 'selected' : ''}>${esc(r)}</option>`).join('')}</select>
+                    <select data-pit-filter="status" class="pit-input text-[11px] rounded-lg px-2 py-1.5"><option value="">همه وضعیت‌ها</option>${PIT_STATUSES.map(s => `<option value="${s}" ${f.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+                    <select data-pit-filter="severity" class="pit-input text-[11px] rounded-lg px-2 py-1.5"><option value="">همه اولویت‌ها</option>${PIT_SEVERITIES.map(s => `<option value="${s}" ${f.severity === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+                    <select data-pit-filter="source" class="pit-input text-[11px] rounded-lg px-2 py-1.5"><option value="">مانع + تسک</option><option value="issue" ${f.source === 'issue' ? 'selected' : ''}>فقط موانع</option><option value="task" ${f.source === 'task' ? 'selected' : ''}>فقط تسک‌ها</option></select>
                 </div>
 
                 ${Object.keys(byProject).length ? `<div class="space-y-1.5 pt-1">
-                    <p class="text-[10.5px] font-extrabold" style="color:#94a3b8;">توزیع بر حسب پروژه</p>
+                    <p class="text-[10.5px] font-extrabold" style="color:${PIT_MUTED};">توزیع بر حسب پروژه</p>
                     ${Object.entries(byProject).sort((a, b) => b[1] - a[1]).map(([pn, count]) => `
                     <div class="flex items-center gap-2 text-[11px]">
                         <span class="w-28 truncate shrink-0">${esc(pn)}</span>
-                        <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full" style="width:${count / maxByProject * 100}%; background:${PIT_INDIGO};"></div></div>
+                        <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:${PIT_PANEL2};"><div class="h-full rounded-full" style="width:${count / maxByProject * 100}%; background:${PIT_AMBER};"></div></div>
                         <span class="w-6 text-left font-bold shrink-0">${toPersianDigits(count)}</span>
                     </div>`).join('')}
                 </div>` : ''}
 
-                <div class="flex items-center justify-between pt-2 border-t" style="border-color:var(--pit-line,#e8e9f3);">
-                    <p class="text-[10.5px]" style="color:#94a3b8;">${toPersianDigits(filtered.length)} مورد</p>
-                    <button type="button" data-pit-action="export-csv" class="text-[10.5px] font-bold px-2.5 py-1 rounded-lg border">خروجی CSV</button>
+                <div class="flex items-center justify-between pt-2" style="border-top:1px solid ${PIT_LINE};">
+                    <p class="text-[10.5px]" style="color:${PIT_MUTED};">${toPersianDigits(filtered.length)} مورد</p>
+                    <button type="button" data-pit-action="export-csv" class="text-[10.5px] font-bold px-2.5 py-1 rounded-lg pit-input">خروجی CSV</button>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-[11px]">
-                        <thead><tr class="text-right" style="color:#94a3b8;"><th class="py-1.5 font-bold">عنوان</th><th class="py-1.5 font-bold">پروژه</th><th class="py-1.5 font-bold">مسئول</th><th class="py-1.5 font-bold">اولویت</th><th class="py-1.5 font-bold">وضعیت</th><th class="py-1.5 font-bold">مهلت</th></tr></thead>
+                        <thead><tr class="text-right" style="color:${PIT_MUTED};"><th class="py-1.5 font-bold">عنوان</th><th class="py-1.5 font-bold">پروژه</th><th class="py-1.5 font-bold">مسئول</th><th class="py-1.5 font-bold">اولویت</th><th class="py-1.5 font-bold">وضعیت</th><th class="py-1.5 font-bold">مهلت</th></tr></thead>
                         <tbody>
-                            ${filtered.map(it => `<tr class="border-t cursor-pointer hover:bg-slate-50" style="border-color:var(--pit-line,#e8e9f3);" data-pit-action="open-item" data-source="${it._source}" data-id="${it.id}">
+                            ${filtered.map(it => `<tr class="cursor-pointer hover:brightness-125" style="border-top:1px solid ${PIT_LINE};" data-pit-action="open-item" data-source="${it._source}" data-id="${it.id}">
                                 <td class="py-1.5 max-w-[160px] truncate">${esc(it.title)}</td>
                                 <td class="py-1.5">${esc(it.project_name)}</td>
                                 <td class="py-1.5">${esc(it.responsible_name)}</td>
                                 <td class="py-1.5"><span style="color:${PIT_SEVERITY_COLOR[it.severity]};">${esc(it.severity)}</span></td>
                                 <td class="py-1.5"><span style="color:${PIT_STATUS_COLOR[it.status]};">${esc(it.status)}</span></td>
-                                <td class="py-1.5" style="${pitIsOverdue(it) ? `color:${PIT_RED};` : ''}">${formatJalali(it.due_date)}</td>
+                                <td class="py-1.5" style="${pitIsOverdue(it) ? `color:${PIT_CORAL};` : ''}">${formatJalali(it.due_date)}</td>
                             </tr>`).join('')}
                         </tbody>
                     </table>
-                    ${!filtered.length ? `<p class="text-xs text-center py-6" style="color:#94a3b8;">موردی با این فیلترها یافت نشد.</p>` : ''}
+                    ${!filtered.length ? `<p class="text-xs text-center py-6" style="color:${PIT_MUTED};">موردی با این فیلترها یافت نشد.</p>` : ''}
                 </div>
             </div>`;
         }
@@ -11591,18 +11728,20 @@
             const kpis = pitKpis(items);
             body.innerHTML = `
             ${pitStyleBlock()}
-            ${pitKpiStripHtml(kpis)}
-            <div class="flex items-center gap-1 mt-4 mb-3">
-                <button type="button" data-pit-tab="calendar" class="text-[11.5px] font-bold px-3 py-1.5 rounded-lg" style="${pitState.activeTab === 'calendar' ? `background:${PIT_INDIGO}; color:#fff;` : 'color:#64748b;'}">تقویم</button>
-                <button type="button" data-pit-tab="reports" class="text-[11.5px] font-bold px-3 py-1.5 rounded-lg" style="${pitState.activeTab === 'reports' ? `background:${PIT_INDIGO}; color:#fff;` : 'color:#64748b;'}">گزارش‌ها</button>
+            <div class="rounded-2xl p-4 md:p-5" style="background:${PIT_BG};">
+                ${pitKpiStripHtml(items, kpis)}
+                <div class="flex items-center gap-1 mt-4 mb-3">
+                    <button type="button" data-pit-tab="calendar" class="text-[11.5px] font-bold px-3 py-1.5 rounded-lg" style="${pitState.activeTab === 'calendar' ? `background:linear-gradient(135deg, ${PIT_AMBER}, ${PIT_CORAL}); color:#1a1206;` : `color:${PIT_MUTED};`}">تقویم</button>
+                    <button type="button" data-pit-tab="reports" class="text-[11.5px] font-bold px-3 py-1.5 rounded-lg" style="${pitState.activeTab === 'reports' ? `background:linear-gradient(135deg, ${PIT_AMBER}, ${PIT_CORAL}); color:#1a1206;` : `color:${PIT_MUTED};`}">گزارش‌ها</button>
+                </div>
+                ${pitState.activeTab === 'calendar' ? `
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                    <div class="lg:col-span-3">${pitCalendarHtml(items)}</div>
+                    <div class="lg:col-span-2">${pitDayDetailHtml(items)}</div>
+                </div>` : pitReportsHtml(items)}
+                ${pitIssueEditorHtml()}
+                ${pitItemDetailHtml()}
             </div>
-            ${pitState.activeTab === 'calendar' ? `
-            <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
-                <div class="lg:col-span-3">${pitCalendarHtml(items)}</div>
-                <div class="lg:col-span-2">${pitDayDetailHtml(items)}</div>
-            </div>` : pitReportsHtml(items)}
-            ${pitIssueEditorHtml()}
-            ${pitItemDetailHtml()}
             `;
             pitBindEvents();
         }
