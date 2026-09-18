@@ -1520,6 +1520,30 @@
             </div>
 
         </div>
+
+            <!-- پیگیری موانع پروژه‌ها — obstacle/issue tracker: reads both its
+                 own project_issues rows and پایش اقدامات's case_updates
+                 (kind='task') rows as one calendar/KPI/report surface, same
+                 render-everything-from-state pattern as لایف‌سایکل (pitState +
+                 pitRenderAll() into #pitBody), not hand-authored per-element IDs. -->
+            <div id="issueTrackingView" class="hidden space-y-5">
+                <div class="print-card bg-white rounded-2xl shadow-sm border p-5">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                        <div class="flex items-center gap-3">
+                            <span class="shrink-0 h-11 w-11 rounded-2xl flex items-center justify-center text-[#ffffff]" style="background: linear-gradient(135deg, #4338ca, #b45309);">
+                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            </span>
+                            <div>
+                                <h2 class="text-lg font-extrabold text-slate-800">پیگیری موانع پروژه‌ها</h2>
+                                <p class="text-xs text-slate-500 mt-0.5">تقویم، شاخص‌ها و گزارش‌های موانع اجرایی و تسک‌های دارای مهلت</p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="printPage()" class="no-print text-xs font-bold px-4 py-2 rounded-xl border text-slate-600 hover:bg-slate-50">🖨 چاپ / PDF</button>
+                    </div>
+                </div>
+
+                <div id="pitBody"></div>
+            </div>
             </main>
         </div>
     </div>
@@ -1998,7 +2022,7 @@
             return `<svg class="${cls || 'w-5 h-5'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name] || ''}</svg>`;
         }
 
-        const NAV_ICON = { overview: 'grid', lifecycle: 'trendingUp', aiAnalysis: 'activity', admin: 'tool', selection: 'zap', execReport: 'fileText', checkin: 'edit', clientReport: 'clipboard', qwProposal: 'target', tasks: 'checklist', projectsStatus: 'gauge', approvalRequest: 'fileText' };
+        const NAV_ICON = { overview: 'grid', lifecycle: 'trendingUp', aiAnalysis: 'activity', admin: 'tool', selection: 'zap', execReport: 'fileText', checkin: 'edit', clientReport: 'clipboard', qwProposal: 'target', tasks: 'checklist', projectsStatus: 'gauge', approvalRequest: 'fileText', issueTracking: 'alertTriangle' };
         const SIDEBAR_ACTIVE_CLASS = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold bg-blue-900/10 text-blue-900 transition';
         const SIDEBAR_INACTIVE_CLASS = 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition';
         const MOBILE_ACTIVE_CLASS = 'flex flex-col items-center gap-0.5 px-3 py-2 shrink-0 text-blue-900';
@@ -2142,7 +2166,7 @@
             mobileNav.innerHTML = '';
 
             const buttons = currentProfile.role === 'admin'
-                ? [['overview', 'نمای کلی'], ['lifecycle', 'چرخه عمر پروژه'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب اقدام زودبازده'], ['tasks', 'پایش اقدامات'], ['execReport', 'گزارش تحلیلی مدیریتی'], ['approvalRequest', 'متن درخواست مصوبه'], ['admin', 'مدیریت کاربران']]
+                ? [['overview', 'نمای کلی'], ['lifecycle', 'چرخه عمر پروژه'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['aiAnalysis', 'تحلیل هوشمند'], ['selection', 'انتخاب اقدام زودبازده'], ['tasks', 'پایش اقدامات'], ['issueTracking', 'پیگیری موانع پروژه‌ها'], ['execReport', 'گزارش تحلیلی مدیریتی'], ['approvalRequest', 'متن درخواست مصوبه'], ['admin', 'مدیریت کاربران']]
                 // تیم پشتیبانی کارفرما gets a deliberately minimal nav: only the
                 // project-status overview and پایش اقدامات (their actual job —
                 // working assigned tasks). Every other tab here submits data as
@@ -2151,8 +2175,8 @@
                 : currentProfile.is_support_team
                     ? [['overview', 'وضعیت پروژه'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['tasks', 'پایش اقدامات']]
                     : hasOrganization('کارفرما')
-                        ? [['overview', 'وضعیت پروژه'], ['lifecycle', 'چرخه عمر پروژه'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['selection', 'پیشنهادها'], ['tasks', 'پایش اقدامات'], ['approvalRequest', 'متن درخواست مصوبه']]
-                        : [['overview', 'وضعیت پروژه'], ['lifecycle', 'چرخه عمر پروژه'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['tasks', 'پایش اقدامات'], ['approvalRequest', 'متن درخواست مصوبه']];
+                        ? [['overview', 'وضعیت پروژه'], ['lifecycle', 'چرخه عمر پروژه'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['selection', 'پیشنهادها'], ['tasks', 'پایش اقدامات'], ['issueTracking', 'پیگیری موانع پروژه‌ها'], ['approvalRequest', 'متن درخواست مصوبه']]
+                        : [['overview', 'وضعیت پروژه'], ['lifecycle', 'چرخه عمر پروژه'], ['projectsStatus', 'آخرین وضعیت پروژه‌ها'], ['clientReport', 'اطلاعات پایه پروژه'], ['checkin', 'اطلاعات تکمیلی'], ['qwProposal', 'پیشنهاد اقدام زودبازده'], ['tasks', 'پایش اقدامات'], ['issueTracking', 'پیگیری موانع پروژه‌ها'], ['approvalRequest', 'متن درخواست مصوبه']];
 
             buttons.forEach(([view, label], i) => {
                 const iconName = NAV_ICON[view] || 'grid';
@@ -2174,7 +2198,7 @@
             switchView(buttons[0][0]);
         }
 
-        const ALL_VIEWS = ['overview', 'lifecycle', 'checkin', 'clientReport', 'qwProposal', 'admin', 'selection', 'aiAnalysis', 'execReport', 'tasks', 'projectsStatus', 'approvalRequest'];
+        const ALL_VIEWS = ['overview', 'lifecycle', 'checkin', 'clientReport', 'qwProposal', 'admin', 'selection', 'aiAnalysis', 'execReport', 'tasks', 'issueTracking', 'projectsStatus', 'approvalRequest'];
 
         function switchView(view) {
             ALL_VIEWS.forEach(v => {
@@ -2198,6 +2222,7 @@
             if (view === 'aiAnalysis') loadAiAnalysisView();
             if (view === 'execReport') loadExecReport();
             if (view === 'tasks') loadTasksView();
+            if (view === 'issueTracking') loadIssueTrackingView();
             if (view === 'projectsStatus') loadProjectsStatusView();
             if (view === 'approvalRequest') prefillApprovalRequestView();
         }
@@ -11141,6 +11166,566 @@
             root.querySelectorAll('[data-lc-action="record-bd-progress"]').forEach(btn => btn.addEventListener('click', () => lcRecordBasicDesignProgress(btn.dataset.phase)));
             root.querySelectorAll('[data-lc-action="save-phase-weight"]').forEach(btn => btn.addEventListener('click', () => lcSavePhaseWeight(btn.dataset.phase, btn.previousElementSibling.value)));
             root.querySelectorAll('[data-lc-action="goto-client-report"]').forEach(btn => btn.addEventListener('click', () => switchView('clientReport')));
+        }
+
+        // ============================================================
+        // پیگیری موانع پروژه‌ها (PROJECT ISSUE TRACKING)
+        // ============================================================
+        // A calendar/KPI/report surface over TWO sources, not a second
+        // task system: this module's own project_issues rows (reportable
+        // by any project member, unlike admin-only task creation — see
+        // tasksNewBtn gating) UNIONED with پایش اقدامات's existing
+        // case_updates (kind='task') rows that carry a due_date — «آن
+        // تسک‌ها به این بخش منتقل بشه» means read them here too, not copy
+        // them into a new table (same "one source of truth, new lens"
+        // precedent as the task tower's own comment about itself).
+        // Projects and people are pulled from what already exists
+        // (projects table, list_project_users RPC) — no separate
+        // project/member registry like the ported reference build had.
+        const PIT_SEVERITIES = ['کم', 'متوسط', 'زیاد', 'بحرانی'];
+        const PIT_STATUSES = ['باز', 'در حال انجام', 'در انتظار تایید', 'انجام‌شده'];
+        const PIT_STATUS_COLOR = { 'باز': '#4338ca', 'در حال انجام': '#b45309', 'در انتظار تایید': '#7c3aed', 'انجام‌شده': '#16a34a' };
+        const PIT_SEVERITY_COLOR = { 'کم': '#64748b', 'متوسط': '#2563eb', 'زیاد': '#b45309', 'بحرانی': '#dc2626' };
+        const PIT_INDIGO = '#4338ca', PIT_AMBER = '#b45309', PIT_RED = '#dc2626', PIT_GREEN = '#16a34a';
+
+        let pitState = {
+            projects: [],
+            usersByProject: {},
+            issues: [],
+            tasks: [],
+            isAdmin: false,
+            canReport: false,
+            activeTab: 'calendar',
+            calYear: null,
+            calMonth: null,
+            selectedDate: null,
+            editor: null,
+            detailItem: null,
+            filters: { project: '', responsible: '', status: '', severity: '', source: '' },
+        };
+
+        async function loadIssueTrackingView() {
+            pitState.isAdmin = currentProfile.role === 'admin';
+            const { data: projects } = await _supabase.from('projects').select('*').order('name');
+            pitState.projects = (projects || []).filter(p => p.is_guide || pitState.isAdmin || myProjectAccess.some(a => a.project_name === p.name));
+            pitState.canReport = pitState.isAdmin || myProjectAccess.length > 0;
+
+            const [{ data: issuesData, error: issuesErr }, { data: tasksData }] = await Promise.all([
+                _supabase.from('project_issues').select('*').order('due_date'),
+                _supabase.from('case_updates').select('*').eq('kind', 'task').not('due_date', 'is', null).order('due_date'),
+            ]);
+            if (issuesErr) { document.getElementById('pitBody').innerHTML = lcEmptyStateHtml('جدول موانع پروژه هنوز ایجاد نشده — migration مربوطه را روی Supabase اجرا کنید.'); return; }
+            pitState.issues = issuesData || [];
+            pitState.tasks = tasksData || [];
+
+            const uniqueProjectNames = [...new Set(pitState.projects.map(p => p.name))];
+            const entries = await Promise.all(uniqueProjectNames.map(async pn => {
+                const { data } = await _supabase.rpc('list_project_users', { p_project_name: pn });
+                return [pn, data || []];
+            }));
+            pitState.usersByProject = {};
+            entries.forEach(([pn, users]) => { pitState.usersByProject[pn] = users; });
+
+            if (pitState.calYear == null) {
+                const today = new Date();
+                const [jy, jm] = gregorianToJalali(today.getFullYear(), today.getMonth() + 1, today.getDate());
+                pitState.calYear = jy; pitState.calMonth = jm;
+            }
+            pitRenderAll();
+        }
+
+        // One shared shape for a project_issues row or a case_updates task
+        // row, so the calendar/KPIs/reports never need to branch on which
+        // table something came from — only the status-action buttons do
+        // (they call back into the source-specific update function).
+        function pitUnifiedItems() {
+            const fromIssues = pitState.issues.map(r => ({
+                _source: 'issue', id: r.id, project_name: r.project_name, title: r.title, description: r.description,
+                responsible_name: r.responsible_name, responsible_email: r.responsible_email,
+                severity: r.severity, status: r.status, due_date: r.due_date,
+                created_at: r.created_at, completed_at: r.completed_at, submitted_at: r.submitted_at, submitted_note: r.submitted_note,
+                created_by: r.created_by, _raw: r,
+            }));
+            const fromTasks = pitState.tasks.map(r => ({
+                _source: 'task', id: r.id, project_name: r.project_name, title: r.title, description: r.submitted_note || null,
+                responsible_name: r.responsible_name, responsible_email: r.responsible_email,
+                severity: r.severity || 'متوسط', status: r.task_status, due_date: r.due_date,
+                created_at: r.created_at, completed_at: r.completed_at, submitted_at: r.submitted_at, submitted_note: r.submitted_note,
+                created_by: r.created_by, _raw: r,
+            }));
+            return [...fromIssues, ...fromTasks];
+        }
+
+        function pitIsOverdue(item) {
+            return item.status !== 'انجام‌شده' && !!item.due_date && item.due_date < new Date().toISOString().slice(0, 10);
+        }
+        function pitDaysUntilDue(item) {
+            if (!item.due_date) return null;
+            return Math.round((new Date(item.due_date) - new Date(new Date().toISOString().slice(0, 10))) / 86400000);
+        }
+        function pitItemsForDate(items, iso) {
+            return items.filter(it => it.due_date === iso);
+        }
+
+        function pitKpis(items) {
+            const todayIso = new Date().toISOString().slice(0, 10);
+            const in7 = lcAddDays(todayIso, 7);
+            const open = items.filter(it => it.status !== 'انجام‌شده');
+            const overdue = open.filter(pitIsOverdue);
+            const dueSoon = open.filter(it => !pitIsOverdue(it) && it.due_date && it.due_date <= in7);
+            const critical = open.filter(it => it.severity === 'بحرانی');
+            const last30Start = lcAddDays(todayIso, -30);
+            const closedLast30 = items.filter(it => it.status === 'انجام‌شده' && it.completed_at && it.completed_at.slice(0, 10) >= last30Start);
+            const dueOrClosedLast30 = items.filter(it => (it.due_date && it.due_date >= last30Start && it.due_date <= todayIso) || closedLast30.includes(it));
+            const resolutionRate = dueOrClosedLast30.length ? Math.round(closedLast30.length / dueOrClosedLast30.length * 100) : null;
+            return { total: items.length, open: open.length, overdue: overdue.length, dueSoon: dueSoon.length, critical: critical.length, resolutionRate };
+        }
+
+        // «رینگ شمارش‌معکوس مهلت» — this module's one signature visual:
+        // a thin ring whose fill/colour encode urgency (indigo -> amber
+        // inside 3 days -> red once overdue), with the exact day count in
+        // the centre — reused at both the small size (calendar day cells,
+        // list rows) and the larger size (detail panel).
+        function pitCountdownBadge(item, size) {
+            size = size || 40;
+            const r = size / 2 - 3, cx = size / 2, cy = size / 2;
+            const circumference = 2 * Math.PI * r;
+            const fontSize = size <= 28 ? 9.5 : 12.5;
+            if (item.status === 'انجام‌شده') {
+                return `<div class="pit-ring" style="width:${size}px;height:${size}px;">
+                    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+                        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${PIT_GREEN}" stroke-width="3"/>
+                    </svg>
+                    <span class="pit-ring-label" style="color:${PIT_GREEN}; font-size:${fontSize}px;">✓</span>
+                </div>`;
+            }
+            const days = pitDaysUntilDue(item);
+            const overdue = days < 0;
+            const color = overdue ? PIT_RED : days <= 3 ? PIT_AMBER : PIT_INDIGO;
+            const pct = overdue ? 100 : Math.max(8, 100 - Math.min(days, 30) / 30 * 100);
+            const dash = circumference * pct / 100;
+            return `<div class="pit-ring${overdue ? ' pit-pulse' : ''}" style="width:${size}px;height:${size}px;">
+                <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+                    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}22" stroke-width="3"/>
+                    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-dasharray="${dash} ${circumference - dash}" transform="rotate(-90 ${cx} ${cy})"/>
+                </svg>
+                <span class="pit-ring-label" style="color:${color}; font-size:${fontSize}px;">${toPersianDigits(Math.abs(days))}</span>
+            </div>`;
+        }
+
+        function pitStyleBlock() {
+            return `<style>
+                .pit-ring { position:relative; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+                .pit-ring-label { position:absolute; font-weight:800; font-variant-numeric:tabular-nums; }
+                .pit-pulse circle:last-child { animation: pit-pulse-ring 1.8s ease-in-out infinite; }
+                @keyframes pit-pulse-ring { 0%, 100% { opacity:1; } 50% { opacity:.45; } }
+                .pit-card { background:var(--pit-card-bg, #ffffff); border:1px solid var(--pit-line, #e8e9f3); border-radius:1rem; }
+                .pit-day-cell { transition: background .12s ease, transform .12s ease; cursor:pointer; }
+                .pit-day-cell:hover { background:rgba(67,56,202,.06); }
+                .pit-day-cell.pit-day-selected { background:rgba(67,56,202,.1); box-shadow: inset 0 0 0 1.5px ${PIT_INDIGO}; }
+                .pit-day-cell.pit-day-today .pit-day-num { background:${PIT_INDIGO}; color:#fff; }
+                .pit-day-num { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:9999px; font-weight:700; font-size:11px; }
+                :root[data-theme="dark"] .pit-card { --pit-card-bg: #1e293b; --pit-line: #334155; }
+            </style>`;
+        }
+
+        // ---------------- Calendar ----------------
+        function pitCalendarHtml(items) {
+            const { calYear: jy, calMonth: jm } = pitState;
+            const dim = daysInJalaliMonth(jy, jm);
+            const [gy1, gm1, gd1] = jalaliToGregorian(jy, jm, 1);
+            const startOffset = (new Date(gy1, gm1 - 1, gd1).getDay() + 1) % 7;
+            const todayIso = new Date().toISOString().slice(0, 10);
+
+            const cells = [];
+            for (let i = 0; i < startOffset; i++) cells.push('<div></div>');
+            for (let d = 1; d <= dim; d++) {
+                const [gy, gm, gd] = jalaliToGregorian(jy, jm, d);
+                const iso = `${gy}-${String(gm).padStart(2, '0')}-${String(gd).padStart(2, '0')}`;
+                const dayItems = pitItemsForDate(items, iso);
+                const isToday = iso === todayIso;
+                const isSelected = iso === pitState.selectedDate;
+                const worstColor = dayItems.length
+                    ? (dayItems.some(it => pitIsOverdue(it)) ? PIT_RED
+                        : dayItems.some(it => it.status !== 'انجام‌شده' && pitDaysUntilDue(it) <= 3) ? PIT_AMBER
+                            : dayItems.every(it => it.status === 'انجام‌شده') ? PIT_GREEN : PIT_INDIGO)
+                    : null;
+                cells.push(`
+                <div class="pit-day-cell rounded-xl p-1.5 flex flex-col items-center gap-1${isToday ? ' pit-day-today' : ''}${isSelected ? ' pit-day-selected' : ''}" style="min-height:58px;" data-pit-select-date="${iso}">
+                    <span class="pit-day-num">${toPersianDigits(d)}</span>
+                    ${dayItems.length ? `<span class="text-[9.5px] font-extrabold px-1.5 rounded-full" style="background:${worstColor}1c; color:${worstColor};">${toPersianDigits(dayItems.length)}</span>` : ''}
+                </div>`);
+            }
+
+            return `
+            <div class="pit-card p-4 md:p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <button type="button" data-pit-action="cal-next" class="w-8 h-8 rounded-lg border hover:bg-slate-50 flex items-center justify-center" style="border-color:var(--pit-line,#e8e9f3);">›</button>
+                    <div class="text-center">
+                        <p class="font-extrabold text-sm">${JALALI_MONTH_NAMES[jm - 1]} ${toPersianDigits(jy)}</p>
+                        <button type="button" data-pit-action="cal-today" class="text-[10px] font-bold hover:underline" style="color:${PIT_INDIGO};">برو به امروز</button>
+                    </div>
+                    <button type="button" data-pit-action="cal-prev" class="w-8 h-8 rounded-lg border hover:bg-slate-50 flex items-center justify-center" style="border-color:var(--pit-line,#e8e9f3);">‹</button>
+                </div>
+                <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold mb-1.5" style="color:#94a3b8;">${JALALI_WEEKDAY_LABELS.map(w => `<span>${w}</span>`).join('')}</div>
+                <div class="grid grid-cols-7 gap-1">${cells.join('')}</div>
+            </div>`;
+        }
+
+        function pitDayDetailHtml(items) {
+            if (!pitState.selectedDate) {
+                return `<div class="pit-card p-6 text-center text-sm" style="color:#94a3b8;">یک روز از تقویم را انتخاب کنید تا موارد سررسید آن روز نمایش داده شود.</div>`;
+            }
+            const dayItems = pitItemsForDate(items, pitState.selectedDate);
+            return `
+            <div class="pit-card p-4 md:p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="font-extrabold text-sm">${formatJalali(pitState.selectedDate)}</p>
+                    ${pitState.canReport ? `<button type="button" data-pit-action="new-issue" data-date="${pitState.selectedDate}" class="text-[11px] font-bold px-3 py-1.5 rounded-lg text-white" style="background:${PIT_INDIGO};">+ ثبت مانع جدید</button>` : ''}
+                </div>
+                ${dayItems.length ? `<div class="space-y-2">${dayItems.map(it => pitItemRowHtml(it)).join('')}</div>`
+                    : `<p class="text-xs text-center py-6" style="color:#94a3b8;">هیچ مانع یا تسکی برای این روز سررسید ندارد.</p>`}
+            </div>`;
+        }
+
+        function pitItemRowHtml(item) {
+            const sevColor = PIT_SEVERITY_COLOR[item.severity] || '#64748b';
+            const statColor = PIT_STATUS_COLOR[item.status] || '#64748b';
+            return `
+            <div class="flex items-center gap-3 p-2.5 rounded-xl border hover:shadow-sm cursor-pointer" style="border-color:var(--pit-line,#e8e9f3);" data-pit-action="open-item" data-source="${item._source}" data-id="${item.id}">
+                ${pitCountdownBadge(item, 34)}
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold truncate">${esc(item.title)}</p>
+                    <p class="text-[10px] mt-0.5" style="color:#94a3b8;">${esc(item.project_name)} · ${esc(item.responsible_name)}</p>
+                </div>
+                <div class="flex flex-col items-end gap-1 shrink-0">
+                    <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full" style="background:${statColor}1c; color:${statColor};">${esc(item.status)}</span>
+                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style="background:${sevColor}1c; color:${sevColor};">${esc(item.severity)}</span>
+                </div>
+            </div>`;
+        }
+
+        // ---------------- KPI strip ----------------
+        function pitKpiStripHtml(kpis) {
+            const tiles = [
+                { label: 'موانع باز', value: kpis.open, color: PIT_INDIGO },
+                { label: 'دارای تاخیر', value: kpis.overdue, color: PIT_RED },
+                { label: 'سررسید تا ۷ روز آینده', value: kpis.dueSoon, color: PIT_AMBER },
+                { label: 'بحرانی باز', value: kpis.critical, color: '#be123c' },
+                { label: 'نرخ حل‌شدن (۳۰ روز اخیر)', value: kpis.resolutionRate == null ? '—' : toPersianDigits(kpis.resolutionRate) + '٪', color: PIT_GREEN },
+            ];
+            return `
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                ${tiles.map(t => `
+                <div class="pit-card p-3.5 text-center">
+                    <p class="text-[10.5px] font-bold mb-1" style="color:#94a3b8;">${esc(t.label)}</p>
+                    <p class="text-2xl font-extrabold" style="color:${t.color}; font-variant-numeric:tabular-nums;">${typeof t.value === 'number' ? toPersianDigits(t.value) : t.value}</p>
+                </div>`).join('')}
+            </div>`;
+        }
+
+        // ---------------- Issue editor (add/edit NATIVE issues only —
+        // reflected tasks are edited from پایش اقدامات; here they only get
+        // status-transition buttons via pitItemDetailHtml). ----------------
+        function pitIssueEditorHtml() {
+            const ed = pitState.editor;
+            if (!ed) return '';
+            const isEdit = ed.mode === 'edit';
+            const item = isEdit ? pitState.issues.find(i => i.id === ed.id) : null;
+            if (isEdit && !item) return '';
+            const project = isEdit ? item.project_name : (ed.projectName || pitState.projects[0]?.name || '');
+            const users = pitState.usersByProject[project] || [];
+            return `
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(15,23,42,.45);" data-pit-action="editor-backdrop">
+                <div class="pit-card w-full p-5 space-y-3" style="max-width:480px; max-height:90vh; overflow-y:auto;" onclick="event.stopPropagation()">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-extrabold text-sm">${isEdit ? 'ویرایش مانع' : 'ثبت مانع جدید'}</h4>
+                        <button type="button" data-pit-action="close-editor" class="text-slate-400 hover:text-slate-700 text-lg leading-none">×</button>
+                    </div>
+                    <select data-pit-f="project" class="w-full text-xs border rounded-lg px-2.5 py-2" ${isEdit ? 'disabled' : ''}>
+                        ${pitState.projects.map(p => `<option value="${esc(p.name)}" ${p.name === project ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}
+                    </select>
+                    <input type="text" data-pit-f="title" value="${isEdit ? esc(item.title) : ''}" placeholder="عنوان مانع" class="w-full text-xs border rounded-lg px-2.5 py-2">
+                    <textarea data-pit-f="description" placeholder="توضیحات (اختیاری)" rows="2" class="w-full text-xs border rounded-lg px-2.5 py-2">${isEdit ? esc(item.description || '') : ''}</textarea>
+                    <div class="grid grid-cols-2 gap-2">
+                        <select data-pit-f="responsible" class="text-xs border rounded-lg px-2.5 py-2">
+                            <option value="">-- مسئول پیگیری --</option>
+                            ${users.map(u => {
+                                const label = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email;
+                                const selected = isEdit && item.responsible_email === u.email ? 'selected' : '';
+                                return `<option value="${esc(u.email)}|${esc(label)}" ${selected}>${esc(label)}</option>`;
+                            }).join('')}
+                        </select>
+                        <select data-pit-f="severity" class="text-xs border rounded-lg px-2.5 py-2">
+                            ${PIT_SEVERITIES.map(s => `<option value="${s}" ${isEdit && item.severity === s ? 'selected' : ''}>${s}</option>`).join('')}
+                        </select>
+                    </div>
+                    <input type="text" data-pit-f="due" value="${isEdit ? formatJalali(item.due_date) : (pitState.editor.date ? formatJalali(pitState.editor.date) : '')}" placeholder="مهلت اقدام (۱۴۰۴/۰۱/۰۱)" class="w-full text-xs border rounded-lg px-2.5 py-2">
+                    ${!users.length ? `<p class="text-[10px]" style="color:${PIT_AMBER};">این پروژه در «مدیریت کاربران» هنوز کاربری ندارد.</p>` : ''}
+                    <div class="flex items-center gap-2 pt-1">
+                        <button type="button" data-pit-action="save-issue" class="flex-1 text-xs font-bold px-3 py-2 rounded-lg text-white" style="background:${PIT_INDIGO};">ذخیره</button>
+                        ${isEdit ? `<button type="button" data-pit-action="delete-issue" data-id="${item.id}" class="text-xs font-bold px-3 py-2 rounded-lg border border-red-300 text-red-500">حذف</button>` : ''}
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        // ---------------- Item detail (status workflow) ----------------
+        function pitItemDetailHtml() {
+            const sel = pitState.detailItem;
+            if (!sel) return '';
+            const items = pitUnifiedItems();
+            const item = items.find(it => it._source === sel.source && it.id === sel.id);
+            if (!item) return '';
+            const isResponsible = item.responsible_email === currentUser.email;
+            const canAct = pitState.isAdmin || isResponsible;
+            const overdue = pitIsOverdue(item);
+            return `
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(15,23,42,.45);" data-pit-action="detail-backdrop">
+                <div class="pit-card w-full p-5 space-y-3" style="max-width:460px; max-height:90vh; overflow-y:auto;" onclick="event.stopPropagation()">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-center gap-3">
+                            ${pitCountdownBadge(item, 46)}
+                            <div>
+                                <h4 class="font-extrabold text-sm leading-snug">${esc(item.title)}</h4>
+                                <p class="text-[10.5px] mt-0.5" style="color:#94a3b8;">${esc(item.project_name)} · ${item._source === 'task' ? 'تسک اجرایی (پایش اقدامات)' : 'مانع پروژه'}</p>
+                            </div>
+                        </div>
+                        <button type="button" data-pit-action="close-detail" class="text-slate-400 hover:text-slate-700 text-lg leading-none">×</button>
+                    </div>
+                    ${item.description ? `<p class="text-xs leading-relaxed" style="color:#475569;">${esc(item.description)}</p>` : ''}
+                    <div class="grid grid-cols-2 gap-2 text-[11px]">
+                        <div class="pit-card p-2.5"><p style="color:#94a3b8;">مسئول پیگیری</p><p class="font-bold mt-0.5">${esc(item.responsible_name)}</p></div>
+                        <div class="pit-card p-2.5"><p style="color:#94a3b8;">مهلت اقدام</p><p class="font-bold mt-0.5" style="${overdue ? `color:${PIT_RED};` : ''}">${formatJalali(item.due_date)}</p></div>
+                        <div class="pit-card p-2.5"><p style="color:#94a3b8;">وضعیت</p><p class="font-bold mt-0.5" style="color:${PIT_STATUS_COLOR[item.status]};">${esc(item.status)}</p></div>
+                        <div class="pit-card p-2.5"><p style="color:#94a3b8;">اولویت</p><p class="font-bold mt-0.5" style="color:${PIT_SEVERITY_COLOR[item.severity]};">${esc(item.severity)}</p></div>
+                    </div>
+                    ${item.submitted_note ? `<p class="text-[10.5px] p-2.5 rounded-lg" style="background:rgba(124,58,237,.08); color:#7c3aed;">یادداشت اقدام: ${esc(item.submitted_note)}</p>` : ''}
+                    ${canAct ? pitDetailActionsHtml(item) : ''}
+                    ${item._source === 'task' ? `<button type="button" data-pit-action="goto-task-tower" class="w-full text-[11px] font-bold text-center py-2 rounded-lg border" style="color:${PIT_INDIGO}; border-color:${PIT_INDIGO}55;">ویرایش کامل در «پایش اقدامات» ‹</button>` : ''}
+                </div>
+            </div>`;
+        }
+
+        function pitDetailActionsHtml(item) {
+            const src = item._source;
+            const btn = (action, label, cls) => `<button type="button" data-pit-action="${action}" data-source="${src}" data-id="${item.id}" class="text-[11px] font-bold px-3 py-1.5 rounded-lg ${cls}">${label}</button>`;
+            if (item.status === 'انجام‌شده') {
+                return pitState.isAdmin ? `<div class="flex flex-wrap gap-1.5 pt-1">${btn('reopen', 'بازگردانی به «باز»', 'border text-slate-500')}</div>` : '';
+            }
+            let html = '';
+            if (item.status === 'باز' || item.status === 'در حال انجام') {
+                html += `<button type="button" data-pit-action="submit" data-source="${src}" data-id="${item.id}" class="text-[11px] font-bold px-3 py-1.5 rounded-lg text-white" style="background:${PIT_INDIGO};">ارسال برای تایید</button>`;
+            }
+            if (pitState.isAdmin && item.status === 'در انتظار تایید') {
+                html += `<button type="button" data-pit-action="approve" data-source="${src}" data-id="${item.id}" class="text-[11px] font-bold px-3 py-1.5 rounded-lg text-white" style="background:${PIT_GREEN};">تایید نهایی</button>`;
+                html += `<button type="button" data-pit-action="reject" data-source="${src}" data-id="${item.id}" class="text-[11px] font-bold px-3 py-1.5 rounded-lg border border-red-300 text-red-500">بازگشت جهت اصلاح</button>`;
+            }
+            return html ? `<div class="flex flex-wrap gap-1.5 pt-1">${html}</div>` : '';
+        }
+
+        // ---------------- Reports ----------------
+        function pitReportsHtml(items) {
+            const f = pitState.filters;
+            const responsibleOptions = [...new Set(items.map(it => it.responsible_name))].sort();
+            let filtered = items;
+            if (f.project) filtered = filtered.filter(it => it.project_name === f.project);
+            if (f.responsible) filtered = filtered.filter(it => it.responsible_name === f.responsible);
+            if (f.status) filtered = filtered.filter(it => it.status === f.status);
+            if (f.severity) filtered = filtered.filter(it => it.severity === f.severity);
+            if (f.source) filtered = filtered.filter(it => it._source === f.source);
+            filtered = filtered.slice().sort((a, b) => (a.due_date || '').localeCompare(b.due_date || ''));
+
+            const byProject = {};
+            filtered.forEach(it => { byProject[it.project_name] = (byProject[it.project_name] || 0) + 1; });
+            const maxByProject = Math.max(1, ...Object.values(byProject));
+
+            return `
+            <div class="pit-card p-4 md:p-5 space-y-3">
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+                    <select data-pit-filter="project" class="text-[11px] border rounded-lg px-2 py-1.5"><option value="">همه پروژه‌ها</option>${pitState.projects.map(p => `<option value="${esc(p.name)}" ${f.project === p.name ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select>
+                    <select data-pit-filter="responsible" class="text-[11px] border rounded-lg px-2 py-1.5"><option value="">همه مسئولین</option>${responsibleOptions.map(r => `<option value="${esc(r)}" ${f.responsible === r ? 'selected' : ''}>${esc(r)}</option>`).join('')}</select>
+                    <select data-pit-filter="status" class="text-[11px] border rounded-lg px-2 py-1.5"><option value="">همه وضعیت‌ها</option>${PIT_STATUSES.map(s => `<option value="${s}" ${f.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+                    <select data-pit-filter="severity" class="text-[11px] border rounded-lg px-2 py-1.5"><option value="">همه اولویت‌ها</option>${PIT_SEVERITIES.map(s => `<option value="${s}" ${f.severity === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+                    <select data-pit-filter="source" class="text-[11px] border rounded-lg px-2 py-1.5"><option value="">مانع + تسک</option><option value="issue" ${f.source === 'issue' ? 'selected' : ''}>فقط موانع</option><option value="task" ${f.source === 'task' ? 'selected' : ''}>فقط تسک‌ها</option></select>
+                </div>
+
+                ${Object.keys(byProject).length ? `<div class="space-y-1.5 pt-1">
+                    <p class="text-[10.5px] font-extrabold" style="color:#94a3b8;">توزیع بر حسب پروژه</p>
+                    ${Object.entries(byProject).sort((a, b) => b[1] - a[1]).map(([pn, count]) => `
+                    <div class="flex items-center gap-2 text-[11px]">
+                        <span class="w-28 truncate shrink-0">${esc(pn)}</span>
+                        <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full" style="width:${count / maxByProject * 100}%; background:${PIT_INDIGO};"></div></div>
+                        <span class="w-6 text-left font-bold shrink-0">${toPersianDigits(count)}</span>
+                    </div>`).join('')}
+                </div>` : ''}
+
+                <div class="flex items-center justify-between pt-2 border-t" style="border-color:var(--pit-line,#e8e9f3);">
+                    <p class="text-[10.5px]" style="color:#94a3b8;">${toPersianDigits(filtered.length)} مورد</p>
+                    <button type="button" data-pit-action="export-csv" class="text-[10.5px] font-bold px-2.5 py-1 rounded-lg border">خروجی CSV</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-[11px]">
+                        <thead><tr class="text-right" style="color:#94a3b8;"><th class="py-1.5 font-bold">عنوان</th><th class="py-1.5 font-bold">پروژه</th><th class="py-1.5 font-bold">مسئول</th><th class="py-1.5 font-bold">اولویت</th><th class="py-1.5 font-bold">وضعیت</th><th class="py-1.5 font-bold">مهلت</th></tr></thead>
+                        <tbody>
+                            ${filtered.map(it => `<tr class="border-t cursor-pointer hover:bg-slate-50" style="border-color:var(--pit-line,#e8e9f3);" data-pit-action="open-item" data-source="${it._source}" data-id="${it.id}">
+                                <td class="py-1.5 max-w-[160px] truncate">${esc(it.title)}</td>
+                                <td class="py-1.5">${esc(it.project_name)}</td>
+                                <td class="py-1.5">${esc(it.responsible_name)}</td>
+                                <td class="py-1.5"><span style="color:${PIT_SEVERITY_COLOR[it.severity]};">${esc(it.severity)}</span></td>
+                                <td class="py-1.5"><span style="color:${PIT_STATUS_COLOR[it.status]};">${esc(it.status)}</span></td>
+                                <td class="py-1.5" style="${pitIsOverdue(it) ? `color:${PIT_RED};` : ''}">${formatJalali(it.due_date)}</td>
+                            </tr>`).join('')}
+                        </tbody>
+                    </table>
+                    ${!filtered.length ? `<p class="text-xs text-center py-6" style="color:#94a3b8;">موردی با این فیلترها یافت نشد.</p>` : ''}
+                </div>
+            </div>`;
+        }
+
+        // ---------------- Orchestrator ----------------
+        function pitRenderAll() {
+            const body = document.getElementById('pitBody');
+            if (!body) return;
+            const items = pitUnifiedItems();
+            const kpis = pitKpis(items);
+            body.innerHTML = `
+            ${pitStyleBlock()}
+            ${pitKpiStripHtml(kpis)}
+            <div class="flex items-center gap-1 mt-4 mb-3">
+                <button type="button" data-pit-tab="calendar" class="text-[11.5px] font-bold px-3 py-1.5 rounded-lg" style="${pitState.activeTab === 'calendar' ? `background:${PIT_INDIGO}; color:#fff;` : 'color:#64748b;'}">تقویم</button>
+                <button type="button" data-pit-tab="reports" class="text-[11.5px] font-bold px-3 py-1.5 rounded-lg" style="${pitState.activeTab === 'reports' ? `background:${PIT_INDIGO}; color:#fff;` : 'color:#64748b;'}">گزارش‌ها</button>
+            </div>
+            ${pitState.activeTab === 'calendar' ? `
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                <div class="lg:col-span-3">${pitCalendarHtml(items)}</div>
+                <div class="lg:col-span-2">${pitDayDetailHtml(items)}</div>
+            </div>` : pitReportsHtml(items)}
+            ${pitIssueEditorHtml()}
+            ${pitItemDetailHtml()}
+            `;
+            pitBindEvents();
+        }
+
+        // ---------------- Mutations ----------------
+        async function pitSaveIssue() {
+            const root = document.getElementById('pitBody');
+            const ed = pitState.editor;
+            const project = root.querySelector('[data-pit-f="project"]').value;
+            const title = root.querySelector('[data-pit-f="title"]').value.trim();
+            const description = root.querySelector('[data-pit-f="description"]').value.trim();
+            const respRaw = root.querySelector('[data-pit-f="responsible"]').value;
+            const [responsibleEmail, responsibleName] = respRaw.split('|');
+            const severity = root.querySelector('[data-pit-f="severity"]').value;
+            const dueIso = jalaliInputToIso(root.querySelector('[data-pit-f="due"]').value.trim());
+            if (!project || !title || !responsibleEmail || !dueIso) { alert('عنوان، مسئول پیگیری و مهلت اقدام الزامی است.'); return; }
+            if (ed.mode === 'new') {
+                const { error } = await _supabase.from('project_issues').insert({
+                    project_name: project, title, description: description || null,
+                    responsible_name: responsibleName, responsible_email: responsibleEmail,
+                    severity, due_date: dueIso, created_by: currentUser.email,
+                });
+                if (error) { alert('خطا در ثبت مانع: ' + error.message); return; }
+            } else {
+                const { error } = await _supabase.from('project_issues').update({
+                    title, description: description || null, responsible_name: responsibleName, responsible_email: responsibleEmail,
+                    severity, due_date: dueIso, updated_at: new Date().toISOString(),
+                }).eq('id', ed.id);
+                if (error) { alert('خطا در ذخیره: ' + error.message); return; }
+            }
+            pitState.editor = null;
+            await loadIssueTrackingView();
+        }
+
+        async function pitDeleteIssue(id) {
+            if (!confirm('این مانع حذف شود؟')) return;
+            const { error } = await _supabase.from('project_issues').delete().eq('id', Number(id));
+            if (error) { alert('خطا در حذف: ' + error.message); return; }
+            pitState.editor = null;
+            await loadIssueTrackingView();
+        }
+
+        async function pitTransition(source, id, action) {
+            const idNum = Number(id);
+            if (source === 'task') {
+                if (action === 'submit') await submitQuickWinTask(idNum);
+                else if (action === 'approve') await completeQuickWinTask(idNum);
+                else if (action === 'reject') await rejectQuickWinTask(idNum);
+                else if (action === 'reopen') await reopenQuickWinTask(idNum);
+                await loadIssueTrackingView();
+                return;
+            }
+            if (action === 'submit') {
+                const note = prompt('توضیح اقدام انجام‌شده (اختیاری):', '');
+                if (note === null) return;
+                const { error } = await _supabase.from('project_issues').update({ status: 'در انتظار تایید', submitted_at: new Date().toISOString(), submitted_note: note || null }).eq('id', idNum);
+                if (error) { alert('خطا: ' + error.message); return; }
+            } else if (action === 'approve') {
+                const { error } = await _supabase.from('project_issues').update({ status: 'انجام‌شده', completed_at: new Date().toISOString() }).eq('id', idNum);
+                if (error) { alert('خطا: ' + error.message); return; }
+            } else if (action === 'reject') {
+                if (!confirm('این مانع به «در حال انجام» بازگردانده شود؟')) return;
+                const { error } = await _supabase.from('project_issues').update({ status: 'در حال انجام', submitted_at: null, submitted_note: null }).eq('id', idNum);
+                if (error) { alert('خطا: ' + error.message); return; }
+            } else if (action === 'reopen') {
+                if (!confirm('این مانع به حالت «باز» بازگردانده شود؟')) return;
+                const { error } = await _supabase.from('project_issues').update({ status: 'باز', completed_at: null }).eq('id', idNum);
+                if (error) { alert('خطا: ' + error.message); return; }
+            }
+            await loadIssueTrackingView();
+        }
+
+        function pitExportCsv(items) {
+            const header = ['عنوان', 'پروژه', 'مسئول', 'اولویت', 'وضعیت', 'مهلت'];
+            const rows = items.map(it => [it.title, it.project_name, it.responsible_name, it.severity, it.status, it.due_date]);
+            const csv = [header, ...rows].map(r => r.map(c => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+            const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'project-issues.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function pitBindEvents() {
+            const root = document.getElementById('pitBody');
+            if (!root) return;
+            root.querySelectorAll('[data-pit-tab]').forEach(btn => btn.addEventListener('click', () => { pitState.activeTab = btn.dataset.pitTab; pitRenderAll(); }));
+            root.querySelectorAll('[data-pit-select-date]').forEach(el => el.addEventListener('click', () => { pitState.selectedDate = el.dataset.pitSelectDate; pitRenderAll(); }));
+            const nav = (delta) => { pitState.calMonth += delta; if (pitState.calMonth > 12) { pitState.calMonth = 1; pitState.calYear++; } if (pitState.calMonth < 1) { pitState.calMonth = 12; pitState.calYear--; } pitRenderAll(); };
+            root.querySelectorAll('[data-pit-action="cal-next"]').forEach(btn => btn.addEventListener('click', () => nav(1)));
+            root.querySelectorAll('[data-pit-action="cal-prev"]').forEach(btn => btn.addEventListener('click', () => nav(-1)));
+            root.querySelectorAll('[data-pit-action="cal-today"]').forEach(btn => btn.addEventListener('click', () => {
+                const today = new Date();
+                const [jy, jm] = gregorianToJalali(today.getFullYear(), today.getMonth() + 1, today.getDate());
+                pitState.calYear = jy; pitState.calMonth = jm;
+                pitState.selectedDate = today.toISOString().slice(0, 10);
+                pitRenderAll();
+            }));
+            root.querySelectorAll('[data-pit-action="new-issue"]').forEach(btn => btn.addEventListener('click', () => { pitState.editor = { mode: 'new', date: btn.dataset.date || null, projectName: pitState.projects[0]?.name }; pitRenderAll(); }));
+            root.querySelectorAll('[data-pit-action="close-editor"]').forEach(btn => btn.addEventListener('click', () => { pitState.editor = null; pitRenderAll(); }));
+            root.querySelectorAll('[data-pit-action="editor-backdrop"]').forEach(el => el.addEventListener('click', () => { pitState.editor = null; pitRenderAll(); }));
+            root.querySelectorAll('[data-pit-action="save-issue"]').forEach(btn => btn.addEventListener('click', pitSaveIssue));
+            root.querySelectorAll('[data-pit-action="delete-issue"]').forEach(btn => btn.addEventListener('click', () => pitDeleteIssue(btn.dataset.id)));
+            root.querySelectorAll('[data-pit-f="due"]').forEach(el => attachJalaliDatePickerKeyboardOk(el));
+            root.querySelectorAll('[data-pit-action="open-item"]').forEach(el => el.addEventListener('click', () => { pitState.detailItem = { source: el.dataset.source, id: Number(el.dataset.id) }; pitRenderAll(); }));
+            root.querySelectorAll('[data-pit-action="close-detail"]').forEach(btn => btn.addEventListener('click', () => { pitState.detailItem = null; pitRenderAll(); }));
+            root.querySelectorAll('[data-pit-action="detail-backdrop"]').forEach(el => el.addEventListener('click', () => { pitState.detailItem = null; pitRenderAll(); }));
+            root.querySelectorAll('[data-pit-action="goto-task-tower"]').forEach(btn => btn.addEventListener('click', () => switchView('tasks')));
+            ['submit', 'approve', 'reject', 'reopen'].forEach(action => {
+                root.querySelectorAll(`[data-pit-action="${action}"]`).forEach(btn => btn.addEventListener('click', () => pitTransition(btn.dataset.source, btn.dataset.id, action)));
+            });
+            root.querySelectorAll('[data-pit-filter]').forEach(sel => sel.addEventListener('change', () => { pitState.filters[sel.dataset.pitFilter] = sel.value; pitRenderAll(); }));
+            root.querySelectorAll('[data-pit-action="export-csv"]').forEach(btn => btn.addEventListener('click', () => {
+                let items = pitUnifiedItems();
+                const f = pitState.filters;
+                if (f.project) items = items.filter(it => it.project_name === f.project);
+                if (f.responsible) items = items.filter(it => it.responsible_name === f.responsible);
+                if (f.status) items = items.filter(it => it.status === f.status);
+                if (f.severity) items = items.filter(it => it.severity === f.severity);
+                if (f.source) items = items.filter(it => it._source === f.source);
+                pitExportCsv(items);
+            }));
         }
 
         initApp();
