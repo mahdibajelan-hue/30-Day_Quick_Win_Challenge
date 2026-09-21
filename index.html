@@ -11223,6 +11223,17 @@
         const PIT_RED = PIT_CORAL, PIT_GREEN = PIT_MINT;
         const PIT_STATUS_COLOR = { 'باز': PIT_VIOLET, 'در حال انجام': PIT_AMBER, 'در انتظار تایید': PIT_MUTED2, 'انجام‌شده': PIT_MINT };
         const PIT_SEVERITY_COLOR = { 'کم': PIT_MUTED2, 'متوسط': PIT_AMBER, 'زیاد': '#ff9d6e', 'بحرانی': PIT_CORAL };
+        // «رنگ مانع و تسک رو توش عوض کن» — the calendar's day-cell badge
+        // used to collapse every item on a day into one merged
+        // "worst status" pill, so a موانع-only day and a تسک-only day
+        // looked identical. These two are a separate color CHANNEL from
+        // status/severity above (kept out of the amber/coral/mint family
+        // those already own) so a pill's fill always answers "task or
+        // obstacle?" on its own, independent of whatever urgency ring
+        // pitCalDayBadges layers on top of it.
+        const PIT_ISSUE_COLOR = '#f472b6', PIT_TASK_COLOR = '#60a5fa';
+        const PIT_SOURCE_COLOR = { issue: PIT_ISSUE_COLOR, task: PIT_TASK_COLOR };
+        const PIT_SOURCE_LABEL = { issue: 'مانع', task: 'تسک' };
         function pitGoodnessColor(g) { return g >= 66 ? PIT_MINT : g >= 33 ? PIT_AMBER : PIT_CORAL; }
 
         let pitState = {
@@ -11441,10 +11452,55 @@
                 .pit-day-cell.pit-day-selected { background:rgba(245,178,72,.12); box-shadow: inset 0 0 0 1.5px ${PIT_AMBER}; }
                 .pit-day-cell.pit-day-today .pit-day-num { background:${PIT_AMBER}; color:#1a1206; }
                 .pit-day-num { display:inline-flex; align-items:center; justify-content:center; width:23px; height:23px; border-radius:9999px; font-weight:700; font-size:11px; color:${PIT_MUTED2}; }
+                .pit-day-badge { font-size:9.5px; font-weight:800; line-height:1.5; padding:0 5px; border-radius:9999px; font-variant-numeric:tabular-nums; }
+                .pit-badge-overdue { animation: pit-pulse-badge 1.8s ease-in-out infinite; }
+                @keyframes pit-pulse-badge { 0%, 100% { filter:brightness(1); } 50% { filter:brightness(1.5); } }
+
+                /* «تقویم شکل و شمایل تقویم نداره»: a تخته زیرتقویمی (backing
+                   board) peeking out behind the month sheet, plus two
+                   punched-hole spiral rings straddling its top edge — the
+                   same silhouette as the paper tear-off calendars on a desk,
+                   built from CSS only (no image assets). */
+                .pit-cal-wrap { position:relative; padding:20px 6px 16px; }
+                .pit-cal-backing {
+                    position:absolute; top:30px; left:-7px; right:-7px; bottom:2px;
+                    background:linear-gradient(160deg, #52381f, #26170c);
+                    border-radius:16px;
+                    box-shadow:0 10px 22px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.05);
+                }
+                .pit-cal-sheet { position:relative; z-index:2; margin-top:20px; border-radius:12px 12px 9px 9px; }
+                .pit-cal-ring {
+                    position:absolute; top:8px; width:24px; height:24px; border-radius:50%; z-index:3;
+                    background:radial-gradient(circle at 32% 28%, #f8fafc, #9aa5b4 55%, #667085 100%);
+                    box-shadow:0 2px 5px rgba(0,0,0,.5), inset 0 0 0 6px ${PIT_BG};
+                }
+                .pit-cal-legend { display:flex; justify-content:center; gap:14px; margin-top:10px; padding-top:8px; border-top:1px solid ${PIT_LINE}; font-size:10px; font-weight:700; color:${PIT_MUTED2}; }
+                .pit-cal-legend span { display:inline-flex; align-items:center; gap:5px; }
+                .pit-legend-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
             </style>`;
         }
 
         // ---------------- Calendar ----------------
+        // A day cell's pill(s) now answer "obstacle or task?" by fill color
+        // (PIT_SOURCE_COLOR) first — that's the one thing the merged
+        // "worst status across everything due today" badge this replaced
+        // could never show. Urgency (overdue / due soon) rides along as a
+        // ring + pulse on the same pill instead of taking over its fill,
+        // so neither signal erases the other.
+        function pitCalDayBadges(dayItems) {
+            const bySource = { issue: dayItems.filter(it => it._source === 'issue'), task: dayItems.filter(it => it._source === 'task') };
+            return ['issue', 'task'].map(src => {
+                const group = bySource[src];
+                if (!group.length) return '';
+                const color = PIT_SOURCE_COLOR[src];
+                const overdue = group.some(pitIsOverdue);
+                const soon = !overdue && group.some(it => it.status !== 'انجام‌شده' && pitDaysUntilDue(it) <= 3);
+                const ringClass = overdue ? ' pit-badge-overdue' : '';
+                const ringColor = overdue ? PIT_CORAL : soon ? PIT_AMBER : color;
+                return `<span class="pit-day-badge${ringClass}" style="background:${color}26; color:${color}; box-shadow:inset 0 0 0 1.5px ${ringColor};" title="${PIT_SOURCE_LABEL[src]}">${toPersianDigits(group.length)}</span>`;
+            }).join('');
+        }
+
         function pitCalendarHtml(items) {
             const { calYear: jy, calMonth: jm } = pitState;
             const dim = daysInJalaliMonth(jy, jm);
@@ -11460,30 +11516,34 @@
                 const dayItems = pitItemsForDate(items, iso);
                 const isToday = iso === todayIso;
                 const isSelected = iso === pitState.selectedDate;
-                const worstColor = dayItems.length
-                    ? (dayItems.some(it => pitIsOverdue(it)) ? PIT_CORAL
-                        : dayItems.some(it => it.status !== 'انجام‌شده' && pitDaysUntilDue(it) <= 3) ? PIT_AMBER
-                            : dayItems.every(it => it.status === 'انجام‌شده') ? PIT_MINT : PIT_VIOLET)
-                    : null;
                 cells.push(`
                 <div class="pit-day-cell rounded-xl p-1.5 flex flex-col items-center gap-1${isToday ? ' pit-day-today' : ''}${isSelected ? ' pit-day-selected' : ''}" style="min-height:58px;" data-pit-select-date="${iso}">
                     <span class="pit-day-num">${toPersianDigits(d)}</span>
-                    ${dayItems.length ? `<span class="text-[9.5px] font-extrabold px-1.5 rounded-full" style="background:${worstColor}26; color:${worstColor};">${toPersianDigits(dayItems.length)}</span>` : ''}
+                    <span class="flex items-center gap-0.5">${pitCalDayBadges(dayItems)}</span>
                 </div>`);
             }
 
             return `
-            <div class="pit-card p-4 md:p-5">
-                <div class="flex items-center justify-between mb-3">
-                    <button type="button" data-pit-action="cal-next" class="w-8 h-8 rounded-lg flex items-center justify-center pit-input hover:brightness-125">›</button>
-                    <div class="text-center">
-                        <p class="font-extrabold text-sm tracking-wide">${JALALI_MONTH_NAMES[jm - 1]} ${toPersianDigits(jy)}</p>
-                        <button type="button" data-pit-action="cal-today" class="text-[10px] font-bold hover:underline" style="color:${PIT_AMBER};">برو به امروز</button>
+            <div class="pit-cal-wrap">
+                <div class="pit-cal-backing"></div>
+                <div class="pit-cal-ring" style="right:32%;"></div>
+                <div class="pit-cal-ring" style="left:32%;"></div>
+                <div class="pit-card pit-cal-sheet p-4 md:p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <button type="button" data-pit-action="cal-next" class="w-8 h-8 rounded-lg flex items-center justify-center pit-input hover:brightness-125">›</button>
+                        <div class="text-center">
+                            <p class="font-extrabold text-sm tracking-wide">${JALALI_MONTH_NAMES[jm - 1]} ${toPersianDigits(jy)}</p>
+                            <button type="button" data-pit-action="cal-today" class="text-[10px] font-bold hover:underline" style="color:${PIT_AMBER};">برو به امروز</button>
+                        </div>
+                        <button type="button" data-pit-action="cal-prev" class="w-8 h-8 rounded-lg flex items-center justify-center pit-input hover:brightness-125">‹</button>
                     </div>
-                    <button type="button" data-pit-action="cal-prev" class="w-8 h-8 rounded-lg flex items-center justify-center pit-input hover:brightness-125">‹</button>
+                    <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold mb-1.5" style="color:${PIT_MUTED};">${JALALI_WEEKDAY_LABELS.map(w => `<span>${w}</span>`).join('')}</div>
+                    <div class="grid grid-cols-7 gap-1">${cells.join('')}</div>
+                    <div class="pit-cal-legend">
+                        <span><span class="pit-legend-dot" style="background:${PIT_TASK_COLOR};"></span>تسک</span>
+                        <span><span class="pit-legend-dot" style="background:${PIT_ISSUE_COLOR};"></span>مانع</span>
+                    </div>
                 </div>
-                <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold mb-1.5" style="color:${PIT_MUTED};">${JALALI_WEEKDAY_LABELS.map(w => `<span>${w}</span>`).join('')}</div>
-                <div class="grid grid-cols-7 gap-1">${cells.join('')}</div>
             </div>`;
         }
 
