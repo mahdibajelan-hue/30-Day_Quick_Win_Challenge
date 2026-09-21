@@ -1616,8 +1616,23 @@
             // window.print() blocks until the dialog closes, so the
             // override is in effect for exactly the print itself and
             // reverts before the user sees the screen again.
+            //
+            // approvalRequestView is deliberately skipped here: its
+            // «مصوبات، تعهدات پیمانکار...» table header cells (gradient
+            // background, set inline by arResolutionsTableHtml) printed
+            // blank/white — reproduced headlessly by dumping the DOM right
+            // before print, which showed the forced color WAS present as
+            // `color: ... !important` on those cells, so the browser had
+            // the right value and still didn't paint it. The forcing loop
+            // itself is what triggers this: with it skipped for this view
+            // entirely (confirmed by re-rendering the same content through
+            // headless --print-to-pdf both ways), the view's own static
+            // @media print rules above — which already list every tag in
+            // it, th included — render every cell correctly on their own.
+            // Whatever real bug PR #113 was chasing elsewhere evidently
+            // doesn't need this view revisiting the same fix.
             const restores = [];
-            PRINT_VIEW_IDS.forEach(id => {
+            PRINT_VIEW_IDS.filter(id => id !== 'approvalRequestView').forEach(id => {
                 const view = document.getElementById(id);
                 if (!view) return;
                 view.querySelectorAll('*').forEach(el => {
