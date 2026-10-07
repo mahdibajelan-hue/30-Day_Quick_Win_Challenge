@@ -801,6 +801,20 @@
                             <div><label class="block text-xs font-semibold mb-1">سقف بودجه با آخرین اصلاحیه (ریالی، در صورت وجود)</label><input type="number" step="any" min="0" id="cr_revised_budget_rial" placeholder="در صورت عدم اصلاحیه خالی بگذارید" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                             <div><label class="block text-xs font-semibold mb-1">سقف بودجه با آخرین اصلاحیه (ارزی، در صورت وجود)</label><input type="number" step="any" min="0" id="cr_revised_budget_eur" placeholder="در صورت عدم اصلاحیه خالی بگذارید" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                         </div>
+                        <p class="text-[11px] text-slate-500">تفکیک میزان جذب کل به بدون‌تعدیل / فقط‌تعدیل (در صورت وجود اصلاحیه)</p>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div><label class="block text-xs font-semibold mb-1">جذب کل، بدون تعدیل (ریالی)</label><input type="number" step="any" min="0" id="cr_absorption_base_rial" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">جذب کل، بدون تعدیل (ارزی)</label><input type="number" step="any" min="0" id="cr_absorption_base_eur" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">جذب کل، فقط تعدیل (ریالی)</label><input type="number" step="any" min="0" id="cr_absorption_revision_rial" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">جذب کل، فقط تعدیل (ارزی)</label><input type="number" step="any" min="0" id="cr_absorption_revision_eur" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                        </div>
+                        <p class="text-[11px] text-slate-500">بودجه سالانه (سال جاری — نه تجمعی)</p>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div><label class="block text-xs font-semibold mb-1">پیش‌بینی بودجه سالانه (ریالی)</label><input type="number" step="any" min="0" id="cr_budget_annual_forecast_rial" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">پیش‌بینی بودجه سالانه (ارزی)</label><input type="number" step="any" min="0" id="cr_budget_annual_forecast_eur" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">میزان جذب سالانه (ریالی)</label><input type="number" step="any" min="0" id="cr_budget_annual_absorption_rial" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">میزان جذب سالانه (ارزی)</label><input type="number" step="any" min="0" id="cr_budget_annual_absorption_eur" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                        </div>
                         <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
                             <div><label class="block text-xs font-semibold mb-1">تاریخ شروع قرارداد *</label><input type="text" id="cr_start_date" required dir="ltr" placeholder="۱۴۰۴/۰۱/۰۱" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
                             <div><label class="block text-xs font-semibold mb-1">مدت قرارداد (ماه) *</label><input type="number" step="any" id="cr_duration" required min="0" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
@@ -3489,6 +3503,14 @@
             document.getElementById('cr_amount_current_eur').value = row.contract_current_amount_eur ?? '';
             document.getElementById('cr_revised_budget_rial').value = row.revised_budget_amount_rial ?? '';
             document.getElementById('cr_revised_budget_eur').value = row.revised_budget_amount_eur ?? '';
+            document.getElementById('cr_absorption_base_rial').value = row.budget_absorption_base_rial ?? '';
+            document.getElementById('cr_absorption_base_eur').value = row.budget_absorption_base_eur ?? '';
+            document.getElementById('cr_absorption_revision_rial').value = row.budget_absorption_revision_rial ?? '';
+            document.getElementById('cr_absorption_revision_eur').value = row.budget_absorption_revision_eur ?? '';
+            document.getElementById('cr_budget_annual_forecast_rial').value = row.budget_annual_forecast_rial ?? '';
+            document.getElementById('cr_budget_annual_forecast_eur').value = row.budget_annual_forecast_eur ?? '';
+            document.getElementById('cr_budget_annual_absorption_rial').value = row.budget_annual_absorption_rial ?? '';
+            document.getElementById('cr_budget_annual_absorption_eur').value = row.budget_annual_absorption_eur ?? '';
             document.getElementById('cr_start_date').value = formatJalali(row.contract_start_date);
             document.getElementById('cr_duration').value = row.contract_duration_months ?? '';
             updateEndDateFromStartAndDuration();
@@ -4058,6 +4080,14 @@
                 contract_current_amount_eur: document.getElementById('cr_amount_current_eur').value ? Number(document.getElementById('cr_amount_current_eur').value) : null,
                 revised_budget_amount_rial: document.getElementById('cr_revised_budget_rial').value ? Number(document.getElementById('cr_revised_budget_rial').value) : null,
                 revised_budget_amount_eur: document.getElementById('cr_revised_budget_eur').value ? Number(document.getElementById('cr_revised_budget_eur').value) : null,
+                budget_absorption_base_rial: document.getElementById('cr_absorption_base_rial').value ? Number(document.getElementById('cr_absorption_base_rial').value) : null,
+                budget_absorption_base_eur: document.getElementById('cr_absorption_base_eur').value ? Number(document.getElementById('cr_absorption_base_eur').value) : null,
+                budget_absorption_revision_rial: document.getElementById('cr_absorption_revision_rial').value ? Number(document.getElementById('cr_absorption_revision_rial').value) : null,
+                budget_absorption_revision_eur: document.getElementById('cr_absorption_revision_eur').value ? Number(document.getElementById('cr_absorption_revision_eur').value) : null,
+                budget_annual_forecast_rial: document.getElementById('cr_budget_annual_forecast_rial').value ? Number(document.getElementById('cr_budget_annual_forecast_rial').value) : null,
+                budget_annual_forecast_eur: document.getElementById('cr_budget_annual_forecast_eur').value ? Number(document.getElementById('cr_budget_annual_forecast_eur').value) : null,
+                budget_annual_absorption_rial: document.getElementById('cr_budget_annual_absorption_rial').value ? Number(document.getElementById('cr_budget_annual_absorption_rial').value) : null,
+                budget_annual_absorption_eur: document.getElementById('cr_budget_annual_absorption_eur').value ? Number(document.getElementById('cr_budget_annual_absorption_eur').value) : null,
                 contract_start_date: startIso,
                 contract_end_date: endIso,
                 consultant_contract_end_date: jalaliInputToIso(document.getElementById('cr_consultant_end_date').value),
