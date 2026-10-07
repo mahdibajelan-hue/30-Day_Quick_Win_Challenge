@@ -801,28 +801,32 @@
                             <div><label class="block text-xs font-semibold mb-1">سقف بودجه با آخرین اصلاحیه (ریالی، در صورت وجود)</label><input type="number" step="any" min="0" id="cr_revised_budget_rial" placeholder="در صورت عدم اصلاحیه خالی بگذارید" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                             <div><label class="block text-xs font-semibold mb-1">سقف بودجه با آخرین اصلاحیه (ارزی، در صورت وجود)</label><input type="number" step="any" min="0" id="cr_revised_budget_eur" placeholder="در صورت عدم اصلاحیه خالی بگذارید" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                         </div>
-                        <p class="text-[11px] text-slate-500">تفکیک میزان جذب کل به بدون‌تعدیل / فقط‌تعدیل (در صورت وجود اصلاحیه)</p>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="block text-xs font-semibold mb-1">نرخ تسعیر ارز در پیمان (ریال به ازای ۱ یورو)</label><input type="number" step="any" min="0" id="cr_exchange_rate" placeholder="برای یکسان‌سازی مبالغ ارزی و ریالی در محاسبه درصدها" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                        </div>
+                        <p class="text-[11px] text-slate-500">تفکیک میزان جذب بودجه کل — جمع این دو بخش = سرمایه‌گذاری کل پروژه</p>
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                            <div><label class="block text-xs font-semibold mb-1">جذب کل، بدون تعدیل (ریالی)</label><input type="number" step="any" min="0" id="cr_absorption_base_rial" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">جذب کل، بدون تعدیل (ارزی)</label><input type="number" step="any" min="0" id="cr_absorption_base_eur" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">جذب کل، فقط تعدیل (ریالی)</label><input type="number" step="any" min="0" id="cr_absorption_revision_rial" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">جذب کل، فقط تعدیل (ارزی)</label><input type="number" step="any" min="0" id="cr_absorption_revision_eur" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">مبلغ جذب بودجه کل ریالی (اصل و اضافه‌کاری)</label><input type="number" step="any" min="0" id="cr_absorption_base_rial" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">مبلغ جذب بودجه کل ارزی (اصل و اضافه‌کاری)</label><input type="number" step="any" min="0" id="cr_absorption_base_eur" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">مبلغ جذب بودجه کل ریالی (تعدیل، توقف، خسارت و ...)</label><input type="number" step="any" min="0" id="cr_absorption_revision_rial" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">مبلغ جذب بودجه کل ارزی (تعدیل، توقف، خسارت و ...)</label><input type="number" step="any" min="0" id="cr_absorption_revision_eur" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                         </div>
                         <p class="text-[11px] text-slate-500">بودجه سالانه (سال جاری — نه تجمعی)</p>
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                            <div><label class="block text-xs font-semibold mb-1">پیش‌بینی بودجه سالانه (ریالی)</label><input type="number" step="any" min="0" id="cr_budget_annual_forecast_rial" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">پیش‌بینی بودجه سالانه (ارزی)</label><input type="number" step="any" min="0" id="cr_budget_annual_forecast_eur" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">میزان جذب سالانه (ریالی)</label><input type="number" step="any" min="0" id="cr_budget_annual_absorption_rial" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
-                            <div><label class="block text-xs font-semibold mb-1">میزان جذب سالانه (ارزی)</label><input type="number" step="any" min="0" id="cr_budget_annual_absorption_eur" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">میزان جذب سالانه بودجه ریالی</label><input type="number" step="any" min="0" id="cr_budget_annual_absorption_rial" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">میزان جذب سالانه بودجه ارزی</label><input type="number" step="any" min="0" id="cr_budget_annual_absorption_eur" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">پیش‌بینی بودجه سالانه ریالی</label><input type="number" step="any" min="0" id="cr_budget_annual_forecast_rial" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
+                            <div><label class="block text-xs font-semibold mb-1">پیش‌بینی بودجه سالانه ارزی</label><input type="number" step="any" min="0" id="cr_budget_annual_forecast_eur" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                         </div>
                         <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
                             <div><label class="block text-xs font-semibold mb-1">تاریخ شروع قرارداد *</label><input type="text" id="cr_start_date" required dir="ltr" placeholder="۱۴۰۴/۰۱/۰۱" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
                             <div><label class="block text-xs font-semibold mb-1">مدت قرارداد (ماه) *</label><input type="number" step="any" id="cr_duration" required min="0" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900"></div>
                             <div><label class="block text-xs font-semibold mb-1">تاریخ پایان قراردادی پیمانکار</label><input type="text" id="cr_end_date" readonly dir="ltr" title="به‌صورت خودکار از تاریخ شروع و مدت قرارداد محاسبه می‌شود" placeholder="۱۴۰۶/۰۱/۰۱" class="w-full p-2 border rounded-lg text-sm outline-none bg-slate-50 text-slate-500 text-center"></div>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
                             <div><label class="block text-xs font-semibold mb-1">تاریخ پایان قرارداد مشاور</label><input type="text" id="cr_consultant_end_date" dir="ltr" placeholder="۱۴۰۶/۰۱/۰۱" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
                             <div><label class="block text-xs font-semibold mb-1">تاریخ پایان با آخرین تطویل (در صورت وجود)</label><input type="text" id="cr_latest_extension_end_date" dir="ltr" placeholder="در صورت عدم تطویل خالی بگذارید" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
+                            <div><label class="block text-xs font-semibold mb-1">تاریخ آخرین تمدید (در صورت وجود)</label><input type="text" id="cr_latest_renewal_date" dir="ltr" placeholder="در صورت عدم تمدید خالی بگذارید" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-900 text-center"></div>
                         </div>
                     </div>
 
@@ -3503,6 +3507,7 @@
             document.getElementById('cr_amount_current_eur').value = row.contract_current_amount_eur ?? '';
             document.getElementById('cr_revised_budget_rial').value = row.revised_budget_amount_rial ?? '';
             document.getElementById('cr_revised_budget_eur').value = row.revised_budget_amount_eur ?? '';
+            document.getElementById('cr_exchange_rate').value = row.contract_exchange_rate_rial_per_eur ?? '';
             document.getElementById('cr_absorption_base_rial').value = row.budget_absorption_base_rial ?? '';
             document.getElementById('cr_absorption_base_eur').value = row.budget_absorption_base_eur ?? '';
             document.getElementById('cr_absorption_revision_rial').value = row.budget_absorption_revision_rial ?? '';
@@ -3516,6 +3521,7 @@
             updateEndDateFromStartAndDuration();
             document.getElementById('cr_consultant_end_date').value = row.consultant_contract_end_date ? formatJalali(row.consultant_contract_end_date) : '';
             document.getElementById('cr_latest_extension_end_date').value = row.latest_extension_end_date ? formatJalali(row.latest_extension_end_date) : '';
+            document.getElementById('cr_latest_renewal_date').value = row.latest_renewal_date ? formatJalali(row.latest_renewal_date) : '';
             document.getElementById('cr_forecast_date').value = formatJalali(row.forecast_completion_date);
             document.getElementById('cr_progress_eng_weight').value = row.progress_engineering_weight ?? '';
             document.getElementById('cr_progress_eng_planned').value = row.progress_engineering_planned ?? '';
@@ -4080,6 +4086,7 @@
                 contract_current_amount_eur: document.getElementById('cr_amount_current_eur').value ? Number(document.getElementById('cr_amount_current_eur').value) : null,
                 revised_budget_amount_rial: document.getElementById('cr_revised_budget_rial').value ? Number(document.getElementById('cr_revised_budget_rial').value) : null,
                 revised_budget_amount_eur: document.getElementById('cr_revised_budget_eur').value ? Number(document.getElementById('cr_revised_budget_eur').value) : null,
+                contract_exchange_rate_rial_per_eur: document.getElementById('cr_exchange_rate').value ? Number(document.getElementById('cr_exchange_rate').value) : null,
                 budget_absorption_base_rial: document.getElementById('cr_absorption_base_rial').value ? Number(document.getElementById('cr_absorption_base_rial').value) : null,
                 budget_absorption_base_eur: document.getElementById('cr_absorption_base_eur').value ? Number(document.getElementById('cr_absorption_base_eur').value) : null,
                 budget_absorption_revision_rial: document.getElementById('cr_absorption_revision_rial').value ? Number(document.getElementById('cr_absorption_revision_rial').value) : null,
@@ -4092,6 +4099,7 @@
                 contract_end_date: endIso,
                 consultant_contract_end_date: jalaliInputToIso(document.getElementById('cr_consultant_end_date').value),
                 latest_extension_end_date: jalaliInputToIso(document.getElementById('cr_latest_extension_end_date').value),
+                latest_renewal_date: jalaliInputToIso(document.getElementById('cr_latest_renewal_date').value),
                 contract_duration_months: Number(document.getElementById('cr_duration').value),
                 elapsed_months: monthsBetween(startIso),
                 forecast_completion_date: forecastIso,
@@ -4240,16 +4248,42 @@
         }
 
         // Same as psPct but with a caller-chosen ceiling instead of a fixed
-        // 100 — «از اصل پیمان بیشتر از ۱۲۵٪ نشود»: جذب بدون‌تعدیل compared
-        // against the ORIGINAL contract ceiling can run a little over 100
-        // before the paperwork for a تعدیل catches up, but much past that
-        // reads as stale/inconsistent data rather than a real number worth
-        // showing uncapped (unlike budgetPct/totalPct, which track overrun
-        // against whichever ceiling is CURRENTLY active and so are expected
-        // to climb well past 100 on a genuinely delayed project).
+        // 100 — «از اصل پیمان بیشتر از ۱۲۵٪ نشود»: جذب اصل‌و‌اضافه‌کاری
+        // compared against the ORIGINAL contract ceiling can run a little
+        // over 100 before the paperwork for a تعدیل catches up, but much
+        // past that reads as stale/inconsistent data rather than a real
+        // number worth showing uncapped (unlike budgetPct/totalPct, which
+        // track overrun against whichever ceiling is CURRENTLY active and
+        // so are expected to climb well past 100 on a genuinely delayed
+        // project).
         function psPctCapped(part, whole, maxPct) {
             if (part == null || !whole) return null;
             return Math.max(0, Math.min(maxPct, Math.round((part / whole) * 100)));
+        }
+
+        // «برای تعیین درصد مصرف بودجه ... از نرخ تسعیر برای همسنگ‌سازی ارز
+        // با ریال استفاده کن» — converts a million-EUR amount to its
+        // billion-Rial equivalent using the contract's own exchange rate
+        // (contract_exchange_rate_rial_per_eur, plain Rial per 1 EUR):
+        // eur(million) × rate(Rial/EUR) ÷ 1000 = rial(billion). Null when
+        // there's no rate to convert with — the caller decides whether that
+        // means dropping this currency or returning no figure at all.
+        function psEurToRialEq(eurAmount, rateRialPerEur) {
+            if (eurAmount == null || !rateRialPerEur) return null;
+            return eurAmount * rateRialPerEur / 1000;
+        }
+
+        // Combines a Rial amount with an EUR amount (converted via the
+        // contract exchange rate) into ONE Rial-equivalent total, so a
+        // percentage against it doesn't come out as two separate,
+        // hard-to-reconcile Rial/EUR numbers. Null only when NEITHER
+        // currency has data — an EUR amount that exists but can't yet be
+        // converted (no rate entered) is dropped from the sum rather than
+        // poisoning a Rial-only project's total with null.
+        function psCombineRialEq(rialAmount, eurAmount, rateRialPerEur) {
+            const eurEq = psEurToRialEq(eurAmount, rateRialPerEur);
+            if (rialAmount == null && eurEq == null) return null;
+            return (rialAmount ?? 0) + (eurEq ?? 0);
         }
 
         // میزان جذب بودجه (cr_amount_current_rial/eur, labeled «میزان جذب»)
@@ -4309,34 +4343,40 @@
             const needsBudgetRevision = budgetPct != null && budgetPct >= 100;
 
             // «چند درصد از اصل پیمان از نظر مالی تکمیل شده، بیشتر از ۱۲۵٪
-            // نشود» — budget_absorption_base (migration 046, «بدون تعدیل»)
-            // against the ORIGINAL ceiling only, never revised_budget_amount_*:
+            // نشود» — مبلغ جذب بودجه کل (اصل و اضافه‌کاری) [budget_absorption_base]
+            // against contract_initial_amount ONLY, never revised_budget_amount_*:
             // mixing in the revised ceiling here would silently turn this
-            // back into budgetPct. Rial-preferred-with-EUR-fallback, same
-            // shape as budgetPct above.
-            const baseCompletionPct = cr.budget_absorption_base_rial != null && cr.contract_initial_amount_rial
-                ? psPctCapped(cr.budget_absorption_base_rial, cr.contract_initial_amount_rial, 125)
-                : (cr.budget_absorption_base_eur != null && cr.contract_initial_amount_eur ? psPctCapped(cr.budget_absorption_base_eur, cr.contract_initial_amount_eur, 125) : null);
+            // back into budgetPct. Rial and EUR are equalized into ONE
+            // Rial-equivalent total via contract_exchange_rate_rial_per_eur
+            // before dividing, so a contract with both a Rial and an FX line
+            // gets a single percentage instead of two that are hard to
+            // reconcile mentally.
+            const baseAbsorptionEq = psCombineRialEq(cr.budget_absorption_base_rial, cr.budget_absorption_base_eur, cr.contract_exchange_rate_rial_per_eur);
+            const initialAmountEq = psCombineRialEq(cr.contract_initial_amount_rial, cr.contract_initial_amount_eur, cr.contract_exchange_rate_rial_per_eur);
+            const baseCompletionPct = psPctCapped(baseAbsorptionEq, initialAmountEq, 125);
 
-            // «کل سرمایه‌گذاری پروژه به‌روز» — the raw cumulative amounts
-            // themselves (contract_current_amount_*, already labeled «میزان
-            // جذب» in the form), not a percentage; the card shows these
-            // alongside its bars rather than feeding them into one.
-            const totalInvestedRial = cr.contract_current_amount_rial ?? null;
-            const totalInvestedEur = cr.contract_current_amount_eur ?? null;
+            // «جمع مبلغ جذب بودجه کل (اصل‌واضافه‌کاری + تعدیل‌وتوقف‌وخسارت)
+            // می‌شود سرمایه‌گذاری کل پروژه» — unlike baseCompletionPct/
+            // annualAbsorptionPct above, this is a raw amount shown
+            // per-currency on the card (never run through the exchange
+            // rate), so budget_absorption_base_* and _revision_* are simply
+            // summed within each currency.
+            const totalInvestedRial = (cr.budget_absorption_base_rial != null || cr.budget_absorption_revision_rial != null)
+                ? (cr.budget_absorption_base_rial ?? 0) + (cr.budget_absorption_revision_rial ?? 0) : null;
+            const totalInvestedEur = (cr.budget_absorption_base_eur != null || cr.budget_absorption_revision_eur != null)
+                ? (cr.budget_absorption_base_eur ?? 0) + (cr.budget_absorption_revision_eur ?? 0) : null;
 
-            // «میزان درصد جذب بودجه سالانه، ریالی و ارزی» — this year's
-            // actual (budget_annual_absorption_*) against this year's own
-            // forecast (budget_annual_forecast_*). Kept as two separate
-            // figures rather than one rial-or-eur fallback like budgetPct:
-            // a project can carry both a Rial and an FX annual line at
-            // once, and collapsing them into one would hide whichever
-            // currency lost. Left uncapped, same reasoning as budgetPct —
-            // this is actual-year-to-date tracking, not a sanity check.
-            const annualAbsorptionPctRial = psPctUncapped(cr.budget_annual_absorption_rial, cr.budget_annual_forecast_rial);
-            const annualAbsorptionPctEur = psPctUncapped(cr.budget_annual_absorption_eur, cr.budget_annual_forecast_eur);
+            // «میزان مصرف بودجه سالانه به‌صورت درصد» — this year's actual
+            // (budget_annual_absorption_*) against this year's own forecast
+            // (budget_annual_forecast_*), equalized into ONE percentage the
+            // same way as baseCompletionPct above. Left uncapped, same
+            // reasoning as budgetPct — this is actual-year-to-date tracking,
+            // not a sanity check.
+            const annualAbsorptionEq = psCombineRialEq(cr.budget_annual_absorption_rial, cr.budget_annual_absorption_eur, cr.contract_exchange_rate_rial_per_eur);
+            const annualForecastEq = psCombineRialEq(cr.budget_annual_forecast_rial, cr.budget_annual_forecast_eur, cr.contract_exchange_rate_rial_per_eur);
+            const annualAbsorptionPct = psPctUncapped(annualAbsorptionEq, annualForecastEq);
 
-            return { budgetPct, totalPct, extendedPct, extensionWindowPct, needsTimeExtension, needsBudgetRevision, baseCompletionPct, totalInvestedRial, totalInvestedEur, annualAbsorptionPctRial, annualAbsorptionPctEur };
+            return { budgetPct, totalPct, extendedPct, extensionWindowPct, needsTimeExtension, needsBudgetRevision, baseCompletionPct, totalInvestedRial, totalInvestedEur, annualAbsorptionPct };
         }
 
         function psGaugeColor(v) {
@@ -4433,7 +4473,7 @@
         function projectStatusCardHtml(cr, idx) {
             const disciplineKeys = psDisciplineKeysForType(cr.contract_type);
             const typeLabel = cr.contract_type === 'سایر' ? (cr.contract_type_other || 'سایر') : (cr.contract_type || '—');
-            const { budgetPct, totalPct, extendedPct, extensionWindowPct, needsTimeExtension, needsBudgetRevision, baseCompletionPct, totalInvestedRial, totalInvestedEur, annualAbsorptionPctRial, annualAbsorptionPctEur } = computeProjectStatusMetrics(cr);
+            const { budgetPct, totalPct, extendedPct, extensionWindowPct, needsTimeExtension, needsBudgetRevision, baseCompletionPct, totalInvestedRial, totalInvestedEur, annualAbsorptionPct } = computeProjectStatusMetrics(cr);
             const displayName = displayProjectName(cr.project_name);
             const totalInvestedParts = [
                 totalInvestedRial != null ? `${toPersianDigits(Number(totalInvestedRial).toLocaleString('en-US'))} میلیارد ریال` : null,
@@ -4461,7 +4501,7 @@
                     ${psMiniBarHtml('زمان', extendedPct != null ? extendedPct : totalPct)}
                     ${extensionWindowPct != null ? psMiniBarHtml('از تطویل', extensionWindowPct) : ''}
                     ${psMiniBarHtml('از پیمان', baseCompletionPct)}
-                    ${(annualAbsorptionPctRial != null || annualAbsorptionPctEur != null) ? `<p class="text-[8px] text-slate-400">جذب سالانه بودجه</p>${psMiniBarHtml('ریال', annualAbsorptionPctRial)}${psMiniBarHtml('ارز', annualAbsorptionPctEur)}` : ''}
+                    ${psMiniBarHtml('سالانه', annualAbsorptionPct)}
                     ${disciplineKeys.map(k => psMiniBarHtml(PS_DISCIPLINE_LABELS[k].split(' ')[0], cr['progress_' + k])).join('')}
                 </div>
                 ${totalInvestedParts.length ? `<p class="text-[9px] text-slate-500 text-center">سرمایه‌گذاری کل به‌روز: ${totalInvestedParts.join(' + ')}</p>` : ''}
@@ -7491,7 +7531,7 @@
         // DOM from page load, only their .value is read/written elsewhere),
         // so this needs to run once, not on every render.
         ['ci_plan_start_date', 'ci_plan_target_date', 'cr_start_date', 'cr_forecast_date', 'cr_milestone_date', 'ci_qwq_due',
-         'cr_consultant_end_date', 'cr_latest_extension_end_date',
+         'cr_consultant_end_date', 'cr_latest_extension_end_date', 'cr_latest_renewal_date',
          'taskFilterDateFrom', 'taskFilterDateTo', 'newTaskStartDate', 'newTaskDueDate']
             .forEach(id => attachJalaliDatePicker(document.getElementById(id)));
 
