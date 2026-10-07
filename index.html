@@ -4239,6 +4239,19 @@
             return Math.max(0, Math.min(100, Math.round((part / whole) * 100)));
         }
 
+        // Same as psPct but with a caller-chosen ceiling instead of a fixed
+        // 100 — «از اصل پیمان بیشتر از ۱۲۵٪ نشود»: جذب بدون‌تعدیل compared
+        // against the ORIGINAL contract ceiling can run a little over 100
+        // before the paperwork for a تعدیل catches up, but much past that
+        // reads as stale/inconsistent data rather than a real number worth
+        // showing uncapped (unlike budgetPct/totalPct, which track overrun
+        // against whichever ceiling is CURRENTLY active and so are expected
+        // to climb well past 100 on a genuinely delayed project).
+        function psPctCapped(part, whole, maxPct) {
+            if (part == null || !whole) return null;
+            return Math.max(0, Math.min(maxPct, Math.round((part / whole) * 100)));
+        }
+
         // میزان جذب بودجه (cr_amount_current_rial/eur, labeled «میزان جذب»)
         // against whichever budget ceiling is currently active — the
         // revised one (revised_budget_amount_*) once a بودجه اصلاحی has
@@ -4295,7 +4308,35 @@
             const needsTimeExtension = activeTimePct != null && activeTimePct >= 100;
             const needsBudgetRevision = budgetPct != null && budgetPct >= 100;
 
-            return { budgetPct, totalPct, extendedPct, extensionWindowPct, needsTimeExtension, needsBudgetRevision };
+            // «چند درصد از اصل پیمان از نظر مالی تکمیل شده، بیشتر از ۱۲۵٪
+            // نشود» — budget_absorption_base (migration 046, «بدون تعدیل»)
+            // against the ORIGINAL ceiling only, never revised_budget_amount_*:
+            // mixing in the revised ceiling here would silently turn this
+            // back into budgetPct. Rial-preferred-with-EUR-fallback, same
+            // shape as budgetPct above.
+            const baseCompletionPct = cr.budget_absorption_base_rial != null && cr.contract_initial_amount_rial
+                ? psPctCapped(cr.budget_absorption_base_rial, cr.contract_initial_amount_rial, 125)
+                : (cr.budget_absorption_base_eur != null && cr.contract_initial_amount_eur ? psPctCapped(cr.budget_absorption_base_eur, cr.contract_initial_amount_eur, 125) : null);
+
+            // «کل سرمایه‌گذاری پروژه به‌روز» — the raw cumulative amounts
+            // themselves (contract_current_amount_*, already labeled «میزان
+            // جذب» in the form), not a percentage; the card shows these
+            // alongside its bars rather than feeding them into one.
+            const totalInvestedRial = cr.contract_current_amount_rial ?? null;
+            const totalInvestedEur = cr.contract_current_amount_eur ?? null;
+
+            // «میزان درصد جذب بودجه سالانه، ریالی و ارزی» — this year's
+            // actual (budget_annual_absorption_*) against this year's own
+            // forecast (budget_annual_forecast_*). Kept as two separate
+            // figures rather than one rial-or-eur fallback like budgetPct:
+            // a project can carry both a Rial and an FX annual line at
+            // once, and collapsing them into one would hide whichever
+            // currency lost. Left uncapped, same reasoning as budgetPct —
+            // this is actual-year-to-date tracking, not a sanity check.
+            const annualAbsorptionPctRial = psPctUncapped(cr.budget_annual_absorption_rial, cr.budget_annual_forecast_rial);
+            const annualAbsorptionPctEur = psPctUncapped(cr.budget_annual_absorption_eur, cr.budget_annual_forecast_eur);
+
+            return { budgetPct, totalPct, extendedPct, extensionWindowPct, needsTimeExtension, needsBudgetRevision, baseCompletionPct, totalInvestedRial, totalInvestedEur, annualAbsorptionPctRial, annualAbsorptionPctEur };
         }
 
         function psGaugeColor(v) {
@@ -4392,8 +4433,12 @@
         function projectStatusCardHtml(cr, idx) {
             const disciplineKeys = psDisciplineKeysForType(cr.contract_type);
             const typeLabel = cr.contract_type === 'سایر' ? (cr.contract_type_other || 'سایر') : (cr.contract_type || '—');
-            const { budgetPct, totalPct, extendedPct, extensionWindowPct, needsTimeExtension, needsBudgetRevision } = computeProjectStatusMetrics(cr);
+            const { budgetPct, totalPct, extendedPct, extensionWindowPct, needsTimeExtension, needsBudgetRevision, baseCompletionPct, totalInvestedRial, totalInvestedEur, annualAbsorptionPctRial, annualAbsorptionPctEur } = computeProjectStatusMetrics(cr);
             const displayName = displayProjectName(cr.project_name);
+            const totalInvestedParts = [
+                totalInvestedRial != null ? `${toPersianDigits(Number(totalInvestedRial).toLocaleString('en-US'))} میلیارد ریال` : null,
+                totalInvestedEur != null ? `${toPersianDigits(Number(totalInvestedEur).toLocaleString('en-US'))} میلیون یورو` : null,
+            ].filter(Boolean);
 
             const alerts = [
                 needsTimeExtension ? 'نیاز به تطویل زمان' : null,
@@ -4415,8 +4460,11 @@
                     ${psMiniBarHtml('بودجه', budgetPct)}
                     ${psMiniBarHtml('زمان', extendedPct != null ? extendedPct : totalPct)}
                     ${extensionWindowPct != null ? psMiniBarHtml('از تطویل', extensionWindowPct) : ''}
+                    ${psMiniBarHtml('از پیمان', baseCompletionPct)}
+                    ${(annualAbsorptionPctRial != null || annualAbsorptionPctEur != null) ? `<p class="text-[8px] text-slate-400">جذب سالانه بودجه</p>${psMiniBarHtml('ریال', annualAbsorptionPctRial)}${psMiniBarHtml('ارز', annualAbsorptionPctEur)}` : ''}
                     ${disciplineKeys.map(k => psMiniBarHtml(PS_DISCIPLINE_LABELS[k].split(' ')[0], cr['progress_' + k])).join('')}
                 </div>
+                ${totalInvestedParts.length ? `<p class="text-[9px] text-slate-500 text-center">سرمایه‌گذاری کل به‌روز: ${totalInvestedParts.join(' + ')}</p>` : ''}
                 ${cr.latest_extension_end_date ? `<p class="text-[9px] text-amber-600 text-center">آخرین تطویل تا ${formatJalali(cr.latest_extension_end_date)}</p>` : ''}
 
                 <p class="text-[9px] text-slate-400 text-center pt-1 border-t">به‌روزرسانی: ${formatJalali(cr.created_at)}</p>
